@@ -1,0 +1,27 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-native",
+    "lib": [
+      "ES2022"
+    ],
+    "moduleSuffixes": [
+      ".ios",
+      ".android",
+      ".native",
+      ""
+    ],
+    "paths": {
+      "@northtap/core": [
+        "../../packages/core/src/index.ts"
+      ]
+    },
+    "types": [
+      "react"
+    ]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ]
+}
