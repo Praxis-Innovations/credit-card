@@ -8,7 +8,7 @@ export function Hero() {
 
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
         <p className="font-display text-5xl font-semibold tracking-tight text-foreground sm:text-6xl md:text-7xl">
-          CardCoach
+          NorthTap
         </p>
         <h1 className="mt-4 max-w-xl font-display text-2xl font-medium leading-snug tracking-tight text-foreground/90 sm:text-3xl md:text-4xl">
           Tap the right card, every time.

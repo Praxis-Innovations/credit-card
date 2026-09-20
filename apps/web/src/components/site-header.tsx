@@ -16,7 +16,7 @@ export function SiteHeader() {
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         <a href="#" className="group flex items-baseline gap-2">
           <span className="font-display text-xl font-semibold tracking-tight text-foreground">
-            CardCoach
+            NorthTap
           </span>
           <span className="hidden text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground sm:inline">
             Canada

@@ -1,5 +1,5 @@
 {
-  "name": "cardcoach",
+  "name": "northtap",
   "private": true,
   "scripts": {
     "dev": "turbo run dev",

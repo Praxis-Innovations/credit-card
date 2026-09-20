@@ -12,7 +12,7 @@
       ""
     ],
     "paths": {
-      "@cardcoach/core": [
+      "@northtap/core": [
         "../../packages/core/src/index.ts"
       ]
     },

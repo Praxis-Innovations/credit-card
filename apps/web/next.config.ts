@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@cardcoach/core"],
+  transpilePackages: ["@northtap/core"],
 };
 
 export default nextConfig;

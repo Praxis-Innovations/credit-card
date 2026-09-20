@@ -4,7 +4,7 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <p>
           <span className="font-display font-semibold text-foreground">
-            CardCoach
+            NorthTap
           </span>{" "}
           · working title · not financial advice
         </p>

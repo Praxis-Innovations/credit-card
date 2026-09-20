@@ -21,12 +21,12 @@ importers:
 
   apps/mobile:
     dependencies:
-      '@cardcoach/core':
-        specifier: workspace:*
-        version: link:../../packages/core
       '@expo/metro-runtime':
         specifier: ^5.0.5
         version: 5.0.5(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0))
+      '@northtap/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       expo:
         specifier: ~53.0.12
         version: 53.0.27(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0)))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0)
@@ -79,7 +79,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@cardcoach/core':
+      '@northtap/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@radix-ui/react-checkbox':

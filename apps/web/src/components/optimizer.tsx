@@ -4,7 +4,7 @@ import {
   CATEGORY_LABELS,
   recommendCards,
   type Category,
-} from "@cardcoach/core";
+} from "@northtap/core";
 import { useMemo, useState } from "react";
 import { CardSelector } from "@/components/card-selector";
 import { CategoryPicker } from "@/components/category-picker";
@@ -95,7 +95,7 @@ export function Optimizer() {
               Want this to remember your cards?
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              The CardCoach app saves your wallet and ranks on the go — iOS,
+              The NorthTap app saves your wallet and ranks on the go — iOS,
               Android, and web.
             </p>
             <Button

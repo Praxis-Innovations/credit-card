@@ -1,6 +1,6 @@
 "use client";
 
-import type { Recommendation } from "@cardcoach/core";
+import type { Recommendation } from "@northtap/core";
 import { Trophy } from "lucide-react";
 import { formatCentsPerDollar, cn } from "@/lib/utils";
 

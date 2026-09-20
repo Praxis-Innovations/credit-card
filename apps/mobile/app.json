@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "CardCoach",
-    "slug": "cardcoach",
+    "name": "NorthTap",
+    "slug": "northtap",
     "version": "0.1.0",
     "orientation": "portrait",
-    "scheme": "cardcoach",
+    "scheme": "northtap",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "platforms": ["ios", "android", "web"],
@@ -13,13 +13,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.cardcoach.app"
+      "bundleIdentifier": "com.northtap.app"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0B3D2E"
       },
-      "package": "com.cardcoach.app"
+      "package": "com.northtap.app"
     },
     "plugins": ["expo-router"]
   }

@@ -16,10 +16,26 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
+const siteTitle = "NorthTap — Tap the right card, every time.";
+const siteDescription =
+  "Canadian credit card rewards optimizer. Pick your wallet, pick a category, see which card earns the most cents back per dollar.";
+
 export const metadata: Metadata = {
-  title: "CardCoach — Tap the right card, every time.",
-  description:
-    "Canadian credit card rewards optimizer. Pick your wallet, pick a category, see which card earns the most cents back per dollar.",
+  title: siteTitle,
+  description: siteDescription,
+  applicationName: "NorthTap",
+  openGraph: {
+    title: siteTitle,
+    description: siteDescription,
+    siteName: "NorthTap",
+    locale: "en_CA",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: siteTitle,
+    description: siteDescription,
+  },
 };
 
 export default function RootLayout({

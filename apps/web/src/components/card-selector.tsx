@@ -1,6 +1,6 @@
 "use client";
 
-import { CARDS, groupCardsByIssuer, type CreditCard } from "@cardcoach/core";
+import { CARDS, groupCardsByIssuer, type CreditCard } from "@northtap/core";
 import { Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";

@@ -14,7 +14,7 @@ config.resolver.nodeModulesPaths = [
 
 // Resolve workspace package source for Metro
 config.resolver.extraNodeModules = {
-  "@cardcoach/core": path.resolve(workspaceRoot, "packages/core"),
+  "@northtap/core": path.resolve(workspaceRoot, "packages/core"),
 };
 
 module.exports = config;

@@ -1,7 +1,7 @@
 "use client";
 
-import type { Category } from "@cardcoach/core";
-import { CATEGORIES, CATEGORY_LABELS } from "@cardcoach/core";
+import type { Category } from "@northtap/core";
+import { CATEGORIES, CATEGORY_LABELS } from "@northtap/core";
 import {
   Bus,
   Clapperboard,

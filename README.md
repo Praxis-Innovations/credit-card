@@ -1,4 +1,4 @@
-# CardCoach
+# NorthTap
 
 Canadian credit card rewards optimizer — **tap the right card, every time.**
 
@@ -18,7 +18,7 @@ rank descending.
 
 ```bash
 pnpm install
-pnpm --filter @cardcoach/core test   # recommendation engine unit tests
+pnpm --filter @northtap/core test   # recommendation engine unit tests
 pnpm --filter web dev                # http://localhost:3000 (marketing + lead-magnet tool)
 pnpm --filter mobile start           # Expo shell (full app UI comes later)
 ```

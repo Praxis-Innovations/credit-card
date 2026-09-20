@@ -1,20 +1,20 @@
-import { CARDS, CATEGORIES } from "@cardcoach/core";
+import { CARDS, CATEGORIES } from "@northtap/core";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 /**
  * Placeholder shell — full mobile UI lands in a follow-up.
- * Confirms Expo Router + @cardcoach/core resolve on iOS/Android/Web.
+ * Confirms Expo Router + @northtap/core resolve on iOS/Android/Web.
  */
 export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        <Text style={styles.eyebrow}>CardCoach</Text>
+        <Text style={styles.eyebrow}>NorthTap</Text>
         <Text style={styles.title}>Mobile shell</Text>
         <Text style={styles.body}>
           Shared core is wired: {CARDS.length} cards · {CATEGORIES.length}{" "}
-          categories. UI builds on top of @cardcoach/core next.
+          categories. UI builds on top of @northtap/core next.
         </Text>
       </View>
     </SafeAreaView>
