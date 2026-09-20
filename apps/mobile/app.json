@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "CardCoach",
+    "slug": "cardcoach",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "cardcoach",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "platforms": ["ios", "android", "web"],
+    "web": {
+      "bundler": "metro"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cardcoach.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0B3D2E"
+      },
+      "package": "com.cardcoach.app"
+    },
+    "plugins": ["expo-router"]
+  }
+}

@@ -1,8 +1,25 @@
-# Nestjs specific
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build
 /dist
-/node_modules
 /build
 /tmp
+.turbo
+.next
+out
+dist
+*.tsbuildinfo
+
+# Expo
+apps/mobile/.expo
+apps/mobile/dist
+apps/mobile/web-build
+*.jks
+*.p8
+*.p12
+*.mobileprovision
 
 # Logs
 logs
@@ -13,12 +30,25 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
-# dotenv environment variable files
+# Env
 .env
+.env.local
 .env.development
+.env.development.local
 .env.test
+.env.test.local
 .env.production
+.env.production.local
 
-# temp directory
+# Temp
 .temp
 .tmp
+.DS_Store
+
+# IDE
+.idea
+.vscode/*
+!.vscode/extensions.json
+
+# Testing
+coverage
