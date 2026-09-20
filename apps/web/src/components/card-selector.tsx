@@ -13,7 +13,6 @@ interface CardSelectorProps {
   ownedIds: string[];
   onToggle: (id: string) => void;
   onClear: () => void;
-  hydrated: boolean;
 }
 
 function feeLabel(card: CreditCard): string {
@@ -24,7 +23,6 @@ export function CardSelector({
   ownedIds,
   onToggle,
   onClear,
-  hydrated,
 }: CardSelectorProps) {
   const [query, setQuery] = useState("");
   const owned = useMemo(() => new Set(ownedIds), [ownedIds]);
@@ -48,19 +46,13 @@ export function CardSelector({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-display text-xl tracking-tight text-foreground">
-            My cards
+            Your cards
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {hydrated ? (
-              <>
-                <span className="font-semibold text-foreground">
-                  {ownedIds.length}
-                </span>{" "}
-                selected · saved on this device
-              </>
-            ) : (
-              "Loading…"
-            )}
+            <span className="font-semibold text-foreground">
+              {ownedIds.length}
+            </span>{" "}
+            selected · this session only
           </p>
         </div>
         {ownedIds.length > 0 && (

@@ -14,15 +14,18 @@ export function Hero() {
           Tap the right card, every time.
         </h1>
         <p className="mt-4 max-w-lg text-base text-muted-foreground sm:text-lg">
-          A deterministic rewards coach for Canadians — pick your wallet, pick
-          a category, see which card earns the most cents back per dollar.
+          The rewards coach for Canadians. Try the free picker below — or get
+          the app to save your wallet and tap smarter every day.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <Button asChild size="lg">
-            <a href="#optimizer">Pick my cards</a>
+            <a href="#optimizer">Try it free</a>
           </Button>
-          <p className="text-sm text-muted-foreground">
-            Free · local-only · no bank linking
+          <Button size="lg" variant="outline" disabled title="App coming soon">
+            Get the app
+          </Button>
+          <p className="w-full text-sm text-muted-foreground sm:w-auto">
+            No login · no bank linking · session-only on the web
           </p>
         </div>
       </div>

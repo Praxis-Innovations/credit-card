@@ -27,7 +27,7 @@ export function SiteHeader() {
             href="#optimizer"
             className="hidden text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground sm:inline"
           >
-            Open tool
+            Try it free
           </a>
           <Button
             variant="ghost"

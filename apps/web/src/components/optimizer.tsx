@@ -9,11 +9,21 @@ import { useMemo, useState } from "react";
 import { CardSelector } from "@/components/card-selector";
 import { CategoryPicker } from "@/components/category-picker";
 import { RankedResults } from "@/components/ranked-results";
-import { useOwnedCards } from "@/lib/use-owned-cards";
+import { Button } from "@/components/ui/button";
 
 export function Optimizer() {
-  const { ownedIds, toggle, clear, hydrated } = useOwnedCards();
+  const [ownedIds, setOwnedIds] = useState<string[]>([]);
   const [category, setCategory] = useState<Category | null>("groceries");
+
+  function toggle(id: string) {
+    setOwnedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
+
+  function clear() {
+    setOwnedIds([]);
+  }
 
   const recommendations = useMemo(() => {
     if (!category || ownedIds.length === 0) return [];
@@ -22,23 +32,24 @@ export function Optimizer() {
 
   const emptyHint =
     ownedIds.length === 0
-      ? "Pick the cards in your wallet to see which one wins for each category."
+      ? "Check a few cards you carry — picks stay for this visit only."
       : category
         ? "No matching cards — try another category."
         : "Tap a spending category to rank your cards.";
 
   return (
     <section id="optimizer" className="scroll-mt-24">
-      <div className="mb-8 max-w-2xl">
+      <div className="mb-8 flex max-w-2xl flex-col gap-3">
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-          The tool
+          Try it free
         </p>
-        <h2 className="mt-2 font-display text-3xl tracking-tight text-foreground sm:text-4xl">
+        <h2 className="font-display text-3xl tracking-tight text-foreground sm:text-4xl">
           Which card should you tap?
         </h2>
-        <p className="mt-3 text-base text-muted-foreground sm:text-lg">
-          Select your wallet, pick a category, and we rank cents-back-per-dollar
-          — earn rate × point value. No bank login. No guesswork.
+        <p className="text-base text-muted-foreground sm:text-lg">
+          A quick session tool — pick cards from the list, choose a category,
+          see cents-back-per-dollar. Nothing is saved. The full app keeps your
+          wallet across visits.
         </p>
       </div>
 
@@ -47,7 +58,6 @@ export function Optimizer() {
           ownedIds={ownedIds}
           onToggle={toggle}
           onClear={clear}
-          hydrated={hydrated}
         />
 
         <div className="flex flex-col gap-5">
@@ -78,6 +88,26 @@ export function Optimizer() {
               recommendations={recommendations}
               emptyHint={emptyHint}
             />
+          </div>
+
+          <div className="rounded-2xl border border-dashed border-border bg-muted/40 px-4 py-5 sm:px-5">
+            <p className="font-display text-lg tracking-tight text-foreground">
+              Want this to remember your cards?
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              The CardCoach app saves your wallet and ranks on the go — iOS,
+              Android, and web.
+            </p>
+            <Button
+              className="mt-4"
+              size="lg"
+              disabled
+              aria-disabled="true"
+              title="App coming soon"
+            >
+              Get the app to save your cards
+            </Button>
+            <p className="mt-2 text-xs text-muted-foreground">Coming soon</p>
           </div>
         </div>
       </div>
