@@ -24,7 +24,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 const siteTitle = "NorthTap - Tap the right card, every time.";
 const siteDescription =
-  "Canadian credit card rewards optimizer. Pick your wallet, pick a category, see which card earns the most cents back per dollar.";
+  "NorthTap is the Canadian rewards coach for purchase-specific credit card picks. See which card in your wallet earns the most before you tap.";
 
 export const metadata: Metadata = {
   title: siteTitle,
