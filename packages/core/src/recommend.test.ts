@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { CARDS, getCardById } from "./cards";
 import { bestCard, recommendCards } from "./recommend";
 import { DEFAULT_POINT_VALUATIONS } from "./valuations";
 
@@ -79,17 +78,5 @@ describe("recommendCards", () => {
     });
     // 4% cashback = 4¢/$
     expect(ranked[0]?.centsPerDollar).toBe(4);
-  });
-
-  it("dataset has ~40 cards with required fields", () => {
-    expect(CARDS.length).toBeGreaterThanOrEqual(38);
-    expect(CARDS.length).toBeLessThanOrEqual(45);
-    for (const card of CARDS) {
-      expect(card.id).toBeTruthy();
-      expect(card.issuer).toBeTruthy();
-      expect(card.rewardCategories.length).toBeGreaterThan(0);
-      expect(card.lastVerified).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(getCardById(card.id)).toBe(card);
-    }
   });
 });

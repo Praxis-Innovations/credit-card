@@ -14,6 +14,8 @@ export const DEFAULT_POINT_VALUATIONS: Record<PointCurrency, number> = {
   "Amex MR": 2.4,
   "BMO Rewards": 0.7,
   WestJet: 1.0,
+  "AIR MILES": 1.5,
+  "Marriott Bonvoy": 0.7,
   cashback: 1.0,
   "PC Optimum": 1.0,
   Rogers: 1.5,

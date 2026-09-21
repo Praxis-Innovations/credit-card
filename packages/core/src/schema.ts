@@ -41,6 +41,8 @@ export const POINT_CURRENCIES = [
   "Amex MR",
   "BMO Rewards",
   "WestJet",
+  "AIR MILES",
+  "Marriott Bonvoy",
   "cashback",
   "PC Optimum",
   "Rogers",
@@ -65,6 +67,7 @@ export const ISSUERS = [
   "National Bank",
   "Desjardins",
   "HSBC",
+  "MBNA",
 ] as const;
 
 export type Issuer = (typeof ISSUERS)[number];
