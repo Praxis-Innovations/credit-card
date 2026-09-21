@@ -81,11 +81,14 @@ describe("recommendCards", () => {
     expect(ranked[0]?.centsPerDollar).toBe(4);
   });
 
-  it("dataset has ~40 cards with required fields", () => {
-    expect(CARDS.length).toBeGreaterThanOrEqual(38);
-    expect(CARDS.length).toBeLessThanOrEqual(45);
+  it("dataset has a broad Canadian catalog with required fields", () => {
+    expect(CARDS.length).toBeGreaterThanOrEqual(55);
+    expect(CARDS.length).toBeLessThanOrEqual(80);
+    const ids = new Set<string>();
     for (const card of CARDS) {
       expect(card.id).toBeTruthy();
+      expect(ids.has(card.id)).toBe(false);
+      ids.add(card.id);
       expect(card.issuer).toBeTruthy();
       expect(card.rewardCategories.length).toBeGreaterThan(0);
       expect(card.lastVerified).toMatch(/^\d{4}-\d{2}-\d{2}$/);
