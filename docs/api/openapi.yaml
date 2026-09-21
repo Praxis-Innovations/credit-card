@@ -1,0 +1,980 @@
+openapi: 3.1.0
+info:
+  title: NorthTap Recommender API
+  version: 0.1.0
+  summary: Purchase-specific Canadian credit card recommendations
+  description: |
+    Contract between NorthTap clients (mobile / future authenticated web) and the
+    recommender backend.
+
+    ## Alignment with the monorepo
+
+    - **Card & recommendation shapes** match `packages/core` (`CreditCard`,
+      `Recommendation`, `Category`, etc.). Implementers SHOULD treat that TypeScript
+      module as the in-process source of truth and keep this OpenAPI file in sync.
+    - **Auth & owned cards** already exist in Supabase (`profiles`, `user_cards`).
+      `user_cards.card_id` is a catalog slug (e.g. `amex-cobalt`), not a DB FK —
+      there is no `cards` table yet. Catalog CRUD below is the intended home for
+      that dataset once it moves off the static `packages/core` seed.
+    - Ranking semantics match `recommendCards()`: sort by `centsPerDollar`
+      descending, then lower `annualFee`, then name.
+
+    ## Auth
+
+    - Public (optional auth): catalog read, recommendation when `ownedCardIds` is
+      supplied in the body (marketing “try it free” / guest flows).
+    - Authenticated (`Authorization: Bearer <supabase_access_jwt>`): omit
+      `ownedCardIds` to use the caller’s `user_cards`; write catalog endpoints
+      require an admin/service role (out of scope for client apps).
+
+    ## Versioning
+
+    All paths are under `/v1`. Breaking changes require a new major path prefix.
+  contact:
+    name: NorthTap
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.northtap.app/v1
+    description: Production (placeholder — host TBD)
+  - url: http://localhost:8787/v1
+    description: Local API gateway (placeholder)
+
+tags:
+  - name: Recommendations
+    description: Rank owned cards for a specific purchase
+  - name: Cards
+    description: Credit card catalog (CRUD + read)
+  - name: Reference
+    description: Enumerations and default valuations
+  - name: UserCards
+    description: >
+      Owned-card wallet. Prefer Supabase PostgREST + RLS for MVP
+      (`supabase.from('user_cards')`); these REST routes are the same contract
+      if a BFF wraps Supabase later.
+
+paths:
+  /recommendations:
+    post:
+      tags: [Recommendations]
+      operationId: createRecommendation
+      summary: Rank cards for a purchase
+      description: |
+        Accepts a purchase description and returns owned cards ranked by
+        estimated value for that spend.
+
+        **Engine input** (maps to `RecommendationInput` in `@northtap/core`):
+        `ownedCardIds`, `category`, optional `spendToDate`, optional `valuations`.
+
+        **Purchase fields** (`amountCad`, optional `merchant`) do not change
+        ranking order (rank is per-dollar) but are used to compute
+        `estimatedRewardCad` / `estimatedCentsBack` for the response and for
+        future merchant→category hints.
+      security:
+        - BearerAuth: []
+        - {}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecommendationRequest"
+            examples:
+              groceryRun:
+                summary: Groceries at Loblaws
+                value:
+                  amountCad: 87.42
+                  category: groceries
+                  merchant: Loblaws
+                  ownedCardIds:
+                    - amex-cobalt
+                    - tangerine-money-back
+                    - scotia-scene-momentum
+              authenticatedWallet:
+                summary: Use server-side owned cards (JWT required)
+                value:
+                  amountCad: 45
+                  category: dining
+                  merchant: Cactus Club
+              withCaps:
+                summary: Cap-aware ranking
+                value:
+                  amountCad: 120
+                  category: groceries
+                  ownedCardIds: [amex-cobalt, amex-simplycash]
+                  spendToDate:
+                    monthly:
+                      groceries: 2500
+      responses:
+        "200":
+          description: Ranked recommendations (best first)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendationResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /cards:
+    get:
+      tags: [Cards]
+      operationId: listCards
+      summary: List credit cards in the catalog
+      description: |
+        Returns the curated Canadian card dataset. Filters are AND-combined.
+        Default sort: issuer ascending, then name ascending.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IssuerQuery"
+        - $ref: "#/components/parameters/NetworkQuery"
+        - $ref: "#/components/parameters/PointCurrencyQuery"
+        - $ref: "#/components/parameters/CategoryQuery"
+        - name: maxAnnualFee
+          in: query
+          description: Include only cards with annualFee ≤ this value (CAD)
+          schema:
+            type: number
+            minimum: 0
+        - name: q
+          in: query
+          description: Case-insensitive substring match on name or id
+          schema:
+            type: string
+            maxLength: 100
+        - $ref: "#/components/parameters/LimitQuery"
+        - $ref: "#/components/parameters/OffsetQuery"
+      responses:
+        "200":
+          description: Card page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+    post:
+      tags: [Cards]
+      operationId: createCard
+      summary: Create a catalog card
+      description: |
+        Admin / data-pipeline only. Creates a card with a stable slug `id`.
+        Clients that only recommend should not call this.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreditCardWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditCard"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /cards/{cardId}:
+    parameters:
+      - $ref: "#/components/parameters/CardIdPath"
+    get:
+      tags: [Cards]
+      operationId: getCard
+      summary: Get a single card by id
+      security: []
+      responses:
+        "200":
+          description: Card
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditCard"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Cards]
+      operationId: replaceCard
+      summary: Replace a catalog card
+      description: Full replacement. `id` in the body MUST match the path parameter.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreditCardWrite"
+      responses:
+        "200":
+          description: Updated card
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditCard"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Cards]
+      operationId: patchCard
+      summary: Partially update a catalog card
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreditCardPatch"
+      responses:
+        "200":
+          description: Updated card
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditCard"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Cards]
+      operationId: deleteCard
+      summary: Delete a catalog card
+      description: |
+        Soft-delete preferred in implementation (retain id for historical
+        `user_cards` rows). Hard delete MUST fail with 409 if any `user_cards`
+        reference the slug, unless `force=true`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: force
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /categories:
+    get:
+      tags: [Reference]
+      operationId: listCategories
+      summary: List spend categories
+      security: []
+      responses:
+        "200":
+          description: Categories with display labels
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryListResponse"
+
+  /issuers:
+    get:
+      tags: [Reference]
+      operationId: listIssuers
+      summary: List known issuers
+      security: []
+      responses:
+        "200":
+          description: Issuer names
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [issuers]
+                properties:
+                  issuers:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Issuer"
+
+  /point-currencies:
+    get:
+      tags: [Reference]
+      operationId: listPointCurrencies
+      summary: List reward currencies
+      security: []
+      responses:
+        "200":
+          description: Point currencies
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pointCurrencies]
+                properties:
+                  pointCurrencies:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PointCurrency"
+
+  /valuations:
+    get:
+      tags: [Reference]
+      operationId: getDefaultValuations
+      summary: Default cents-CAD-per-point valuations
+      description: |
+        Mirrors `DEFAULT_POINT_VALUATIONS` in `@northtap/core`. Clients may
+        override per-request via `RecommendationRequest.valuations`.
+      security: []
+      responses:
+        "200":
+          description: Default valuations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PointValuationsResponse"
+
+  /me/cards:
+    get:
+      tags: [UserCards]
+      operationId: listMyCards
+      summary: List the authenticated user's owned card slugs
+      description: |
+        Equivalent to Supabase:
+        `from('user_cards').select('id, card_id, added_at').order('added_at')`.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Owned cards
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserCardListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [UserCards]
+      operationId: addMyCard
+      summary: Add a card to the user's wallet
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cardId]
+              properties:
+                cardId:
+                  $ref: "#/components/schemas/CardId"
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserCard"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Unknown catalog cardId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /me/cards/{cardId}:
+    parameters:
+      - $ref: "#/components/parameters/CardIdPath"
+    delete:
+      tags: [UserCards]
+      operationId: removeMyCard
+      summary: Remove a card from the user's wallet
+      security:
+        - BearerAuth: []
+      responses:
+        "204":
+          description: Removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase Auth access token (`auth.uid()` maps to `profiles.id`).
+
+  parameters:
+    CardIdPath:
+      name: cardId
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/CardId"
+    IssuerQuery:
+      name: issuer
+      in: query
+      schema:
+        $ref: "#/components/schemas/Issuer"
+    NetworkQuery:
+      name: network
+      in: query
+      schema:
+        $ref: "#/components/schemas/Network"
+    PointCurrencyQuery:
+      name: pointCurrency
+      in: query
+      schema:
+        $ref: "#/components/schemas/PointCurrency"
+    CategoryQuery:
+      name: category
+      in: query
+      description: Only cards that define an earn rate for this category (or `other`)
+      schema:
+        $ref: "#/components/schemas/Category"
+    LimitQuery:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 100
+    OffsetQuery:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+  responses:
+    BadRequest:
+      description: Malformed request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Missing or invalid bearer token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Authenticated but not allowed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Conflict (duplicate id / still referenced)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    UnprocessableEntity:
+      description: Semantically invalid (e.g. empty owned set with no auth wallet)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    CardId:
+      type: string
+      pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      minLength: 2
+      maxLength: 64
+      description: Stable catalog slug (matches `user_cards.card_id`)
+      examples:
+        - amex-cobalt
+        - tangerine-money-back
+
+    Category:
+      type: string
+      description: Normalized spend category (`packages/core` CATEGORIES)
+      enum:
+        - groceries
+        - dining
+        - gas
+        - transit
+        - drugstore
+        - recurring_bills
+        - travel
+        - foreign_currency
+        - entertainment
+        - other
+
+    Issuer:
+      type: string
+      description: Card issuer (`packages/core` ISSUERS). Extensible — new issuers MAY appear before the enum is updated.
+      enum:
+        - American Express
+        - TD
+        - CIBC
+        - Scotiabank
+        - RBC
+        - BMO
+        - Rogers
+        - Tangerine
+        - PC Financial
+        - Simplii
+        - Neo
+        - Canadian Tire
+        - National Bank
+        - Desjardins
+        - HSBC
+
+    PointCurrency:
+      type: string
+      description: Reward currency (`packages/core` POINT_CURRENCIES)
+      enum:
+        - Aeroplan
+        - Scene+
+        - TD Rewards
+        - RBC Avion
+        - CIBC Aventura
+        - Amex MR
+        - BMO Rewards
+        - WestJet
+        - cashback
+        - PC Optimum
+        - Rogers
+        - Triangle
+
+    Network:
+      type: string
+      enum: [Visa, Mastercard, Amex]
+
+    RewardCategory:
+      type: object
+      required: [category, earnRate]
+      additionalProperties: false
+      properties:
+        category:
+          $ref: "#/components/schemas/Category"
+        earnRate:
+          type: number
+          exclusiveMinimum: 0
+          description: >
+            Points (or cashback percentage points) earned per dollar spent.
+            For `pointCurrency: cashback`, earnRate is the cash-back percent
+            (e.g. 2 = 2%).
+        capMonthly:
+          type: number
+          exclusiveMinimum: 0
+          description: Optional monthly spend cap in CAD for this bonus rate
+        capAnnual:
+          type: number
+          exclusiveMinimum: 0
+          description: Optional annual spend cap in CAD for this bonus rate
+
+    WelcomeOffer:
+      type: object
+      required: [summary]
+      additionalProperties: false
+      properties:
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 280
+          description: Human-readable signup / welcome bonus summary
+        estimatedValueCad:
+          type: number
+          minimum: 0
+          description: Rough CAD value when the offer is completed
+
+    CreditCard:
+      type: object
+      required:
+        - id
+        - issuer
+        - name
+        - annualFee
+        - pointCurrency
+        - rewardCategories
+        - lastVerified
+      additionalProperties: false
+      description: Catalog card — same shape as `CreditCard` in `@northtap/core`
+      properties:
+        id:
+          $ref: "#/components/schemas/CardId"
+        issuer:
+          $ref: "#/components/schemas/Issuer"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          examples: [Cobalt, "Money-Back"]
+        annualFee:
+          type: number
+          minimum: 0
+          description: Annual fee in CAD
+        pointCurrency:
+          $ref: "#/components/schemas/PointCurrency"
+        rewardCategories:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/RewardCategory"
+        lastVerified:
+          type: string
+          format: date
+          description: ISO date when rates were last spot-checked
+        welcomeOffer:
+          $ref: "#/components/schemas/WelcomeOffer"
+        network:
+          $ref: "#/components/schemas/Network"
+        tier:
+          type: string
+          maxLength: 40
+          description: Optional marketing tier label (e.g. Premium)
+          examples: [Premium, "Ultra Premium"]
+
+    CreditCardWrite:
+      allOf:
+        - $ref: "#/components/schemas/CreditCard"
+      description: Full card document for create/replace
+
+    CreditCardPatch:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      description: Partial update; `id` is immutable and must not be sent
+      properties:
+        issuer:
+          $ref: "#/components/schemas/Issuer"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        annualFee:
+          type: number
+          minimum: 0
+        pointCurrency:
+          $ref: "#/components/schemas/PointCurrency"
+        rewardCategories:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/RewardCategory"
+        lastVerified:
+          type: string
+          format: date
+        welcomeOffer:
+          oneOf:
+            - $ref: "#/components/schemas/WelcomeOffer"
+            - type: "null"
+        network:
+          oneOf:
+            - $ref: "#/components/schemas/Network"
+            - type: "null"
+        tier:
+          oneOf:
+            - type: string
+              maxLength: 40
+            - type: "null"
+
+    CardListResponse:
+      type: object
+      required: [data, meta]
+      additionalProperties: false
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreditCard"
+        meta:
+          type: object
+          required: [total, limit, offset]
+          additionalProperties: false
+          properties:
+            total:
+              type: integer
+              minimum: 0
+            limit:
+              type: integer
+              minimum: 1
+            offset:
+              type: integer
+              minimum: 0
+
+    SpendToDate:
+      type: object
+      additionalProperties: false
+      description: >
+        Spend already applied toward caps (CAD). Not persisted by the engine;
+        client or future spend-tracking service supplies it.
+      properties:
+        monthly:
+          type: object
+          additionalProperties:
+            type: number
+            minimum: 0
+          description: Map of Category → CAD spent this month toward caps
+        annual:
+          type: object
+          additionalProperties:
+            type: number
+            minimum: 0
+          description: Map of Category → CAD spent this year toward caps
+
+    RecommendationRequest:
+      type: object
+      required: [amountCad, category]
+      additionalProperties: false
+      properties:
+        amountCad:
+          type: number
+          exclusiveMinimum: 0
+          description: Purchase amount in CAD
+        category:
+          $ref: "#/components/schemas/Category"
+        merchant:
+          type: string
+          maxLength: 200
+          description: >
+            Free-text merchant / store name for display and future
+            merchant→category mapping. Does not affect ranking in v1.
+        ownedCardIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/CardId"
+          description: >
+            Explicit wallet. Required when unauthenticated. When authenticated,
+            omit to use `user_cards` for the caller; if both are present,
+            the body list wins.
+        spendToDate:
+          $ref: "#/components/schemas/SpendToDate"
+        valuations:
+          type: object
+          additionalProperties:
+            type: number
+            exclusiveMinimum: 0
+          description: >
+            Optional overrides for cents CAD per point, keyed by PointCurrency.
+            Unspecified currencies use defaults from GET /valuations.
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 10
+          description: Max recommendations to return (after ranking)
+
+    RecommendationItem:
+      type: object
+      required:
+        - rank
+        - card
+        - earnRate
+        - pointValue
+        - centsPerDollar
+        - estimatedCentsBack
+        - estimatedRewardCad
+        - capExhausted
+        - reason
+      additionalProperties: false
+      description: >
+        One ranked result. Core fields mirror `Recommendation` in
+        `@northtap/core`; purchase-scaled estimates are API additions.
+      properties:
+        rank:
+          type: integer
+          minimum: 1
+          description: 1-based position after sort
+        card:
+          $ref: "#/components/schemas/CreditCard"
+        earnRate:
+          type: number
+          minimum: 0
+          description: Effective earn rate after caps (points or cashback % per $)
+        pointValue:
+          type: number
+          minimum: 0
+          description: Cents CAD per point (1 for cashback)
+        centsPerDollar:
+          type: number
+          minimum: 0
+          description: earnRate × pointValue
+        estimatedCentsBack:
+          type: number
+          minimum: 0
+          description: amountCad × centsPerDollar
+        estimatedRewardCad:
+          type: number
+          minimum: 0
+          description: estimatedCentsBack / 100
+        capExhausted:
+          type: boolean
+          description: True when a spend cap forced fallback to base/`other` rate
+        reason:
+          type: string
+          minLength: 1
+          description: Short human-readable explanation of the earn math
+
+    RecommendationResponse:
+      type: object
+      required: [purchase, recommendations]
+      additionalProperties: false
+      properties:
+        purchase:
+          type: object
+          required: [amountCad, category]
+          additionalProperties: false
+          properties:
+            amountCad:
+              type: number
+            category:
+              $ref: "#/components/schemas/Category"
+            merchant:
+              type: [string, "null"]
+        recommendations:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecommendationItem"
+        bestCardId:
+          type: [string, "null"]
+          description: Id of rank-1 card, or null if the wallet yielded no results
+
+    CategoryListResponse:
+      type: object
+      required: [categories]
+      additionalProperties: false
+      properties:
+        categories:
+          type: array
+          items:
+            type: object
+            required: [id, label]
+            additionalProperties: false
+            properties:
+              id:
+                $ref: "#/components/schemas/Category"
+              label:
+                type: string
+                description: UI label (CATEGORY_LABELS)
+
+    PointValuationsResponse:
+      type: object
+      required: [valuations, unit]
+      additionalProperties: false
+      properties:
+        unit:
+          type: string
+          const: cents_cad_per_point
+        valuations:
+          type: object
+          additionalProperties:
+            type: number
+            exclusiveMinimum: 0
+          description: Keyed by PointCurrency
+          example:
+            Aeroplan: 2.0
+            "Scene+": 1.0
+            "TD Rewards": 0.5
+            "RBC Avion": 1.7
+            "CIBC Aventura": 1.2
+            "Amex MR": 2.4
+            "BMO Rewards": 0.7
+            WestJet: 1.0
+            cashback: 1.0
+            "PC Optimum": 1.0
+            Rogers: 1.5
+            Triangle: 1.0
+
+    UserCard:
+      type: object
+      required: [id, cardId, addedAt]
+      additionalProperties: false
+      description: Row shape for `public.user_cards` (camelCase in this API)
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Corresponds to user_cards.id
+        cardId:
+          $ref: "#/components/schemas/CardId"
+        addedAt:
+          type: string
+          format: date-time
+          description: Corresponds to user_cards.added_at
+
+    UserCardListResponse:
+      type: object
+      required: [data]
+      additionalProperties: false
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserCard"
+
+    Error:
+      type: object
+      required: [error]
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+              examples:
+                - bad_request
+                - unauthorized
+                - forbidden
+                - not_found
+                - conflict
+                - empty_wallet
+            message:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
