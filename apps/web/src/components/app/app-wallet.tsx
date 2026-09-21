@@ -48,7 +48,7 @@ export function AppWallet({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-display text-xl tracking-tight text-foreground">
-            Your wallet
+            Your cards
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             <span className="font-semibold text-foreground">

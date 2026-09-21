@@ -10,7 +10,7 @@ import { AppResults } from "@/components/app/app-results";
 import { AppShell } from "@/components/app/app-shell";
 import { AppWallet } from "@/components/app/app-wallet";
 import { AuthPanel } from "@/components/app/auth-panel";
-import { CategoryPicker } from "@/components/category-picker";
+import { CategoryPicker } from "@/components/app/category-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type {
