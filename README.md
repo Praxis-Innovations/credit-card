@@ -13,6 +13,7 @@ rank descending.
 | `apps/web` | **Marketing site only** (Next.js) — landing + session-only “try it free” picker (no persistence) |
 | `apps/mobile` | **Full product** (Expo, iOS / Android / Web) — persistent wallet + richer UX (UI TBD) |
 | `packages/core` | Shared card schema, ~40-card CA dataset, valuations, recommendation engine |
+| `docs/api` | OpenAPI contract for recommender + card catalog ([`docs/api/README.md`](./docs/api/README.md)) |
 
 ## Quick start
 
