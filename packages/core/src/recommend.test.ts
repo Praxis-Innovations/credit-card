@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
+import type { CreditCard } from "./schema";
 import { bestCard, recommendCards } from "./recommend";
 import { DEFAULT_POINT_VALUATIONS } from "./valuations";
+
+const baseCard = {
+  issuer: "TD" as const,
+  pointCurrency: "cashback" as const,
+  network: "Visa" as const,
+  lastVerified: "2026-09-20",
+};
 
 describe("recommendCards", () => {
   it("ranks Amex Cobalt near the top for groceries with default MR valuation", () => {
@@ -52,13 +60,86 @@ describe("recommendCards", () => {
     expect(ranked[0]?.centsPerDollar).toBe(3);
   });
 
-  it("returns empty array when no owned cards match", () => {
+  it("returns empty array when no owned / saved cards", () => {
     expect(
       recommendCards({ ownedCardIds: [], category: "dining" }),
     ).toEqual([]);
     expect(
       recommendCards({ ownedCardIds: ["does-not-exist"], category: "dining" }),
     ).toEqual([]);
+    expect(bestCard({ ownedCardIds: [], category: "dining" })).toBeNull();
+  });
+
+  it("falls back to other when category has no explicit reward row", () => {
+    const cards: CreditCard[] = [
+      {
+        ...baseCard,
+        id: "only-other",
+        name: "Other Only",
+        annualFee: 0,
+        rewardCategories: [{ category: "other", earnRate: 1 }],
+      },
+    ];
+
+    const ranked = recommendCards({
+      ownedCardIds: ["only-other"],
+      category: "dining",
+      cards,
+    });
+
+    expect(ranked).toHaveLength(1);
+    expect(ranked[0]?.earnRate).toBe(1);
+    expect(ranked[0]?.centsPerDollar).toBe(1);
+    // Reason keeps the requested category label; earn rate comes from `other`.
+    expect(ranked[0]?.reason).toMatch(/1% cash back on dining/i);
+  });
+
+  it("breaks ties by lower annual fee, then name", () => {
+    const cards: CreditCard[] = [
+      {
+        ...baseCard,
+        id: "tie-expensive-z",
+        name: "Zeta Cash",
+        annualFee: 120,
+        rewardCategories: [
+          { category: "dining", earnRate: 2 },
+          { category: "other", earnRate: 1 },
+        ],
+      },
+      {
+        ...baseCard,
+        id: "tie-cheap-b",
+        name: "Beta Cash",
+        annualFee: 0,
+        rewardCategories: [
+          { category: "dining", earnRate: 2 },
+          { category: "other", earnRate: 1 },
+        ],
+      },
+      {
+        ...baseCard,
+        id: "tie-cheap-a",
+        name: "Alpha Cash",
+        annualFee: 0,
+        rewardCategories: [
+          { category: "dining", earnRate: 2 },
+          { category: "other", earnRate: 1 },
+        ],
+      },
+    ];
+
+    const ranked = recommendCards({
+      ownedCardIds: ["tie-expensive-z", "tie-cheap-b", "tie-cheap-a"],
+      category: "dining",
+      cards,
+    });
+
+    expect(ranked.map((r) => r.centsPerDollar)).toEqual([2, 2, 2]);
+    expect(ranked.map((r) => r.card.id)).toEqual([
+      "tie-cheap-a",
+      "tie-cheap-b",
+      "tie-expensive-z",
+    ]);
   });
 
   it("bestCard returns the top recommendation", () => {
