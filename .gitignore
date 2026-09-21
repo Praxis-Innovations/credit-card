@@ -58,3 +58,9 @@ apps/web/test-results
 apps/web/playwright-report
 apps/web/blob-report
 apps/web/playwright/.cache
+apps/mobile/test-results
+apps/mobile/playwright-report
+apps/mobile/blob-report
+apps/mobile/playwright/.cache
+.vercel
+.env*

@@ -8,11 +8,18 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "tsc -p tsconfig.json --noEmit"
+    "export:web": "expo export --platform web",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@northtap/core": "workspace:*",
     "@expo/metro-runtime": "^5.0.5",
+    "@northtap/core": "workspace:*",
+    "@react-native-async-storage/async-storage": "^3.1.1",
+    "@supabase/supabase-js": "^2.116.0",
     "expo": "~53.0.12",
     "expo-constants": "~17.1.6",
     "expo-linking": "~7.1.5",
@@ -29,7 +36,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.27.4",
-    "@types/react": "~19.0.10",
-    "typescript": "^5.8.3"
+    "@playwright/test": "^1.55.0",
+    "@types/react": "19.0.14",
+    "serve": "^14.2.6",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   }
 }
