@@ -50,10 +50,12 @@ export default function RootLayout({
   children: ReactNode;
 }>): ReactNode {
   return (
-    <html lang="en-CA" suppressHydrationWarning>
-      <body
-        className={`${dmSans.variable} ${syne.variable} ${jetbrainsMono.variable} font-sans`}
-      >
+    <html
+      lang="en-CA"
+      suppressHydrationWarning
+      className={`${dmSans.variable} ${syne.variable} ${jetbrainsMono.variable}`}
+    >
+      <body className="font-sans">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

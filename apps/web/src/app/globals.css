@@ -34,7 +34,7 @@
   --secondary: #e2ebe8;
   --secondary-foreground: #0c5c56;
   --muted: #e8ecea;
-  --muted-foreground: #5a635f;
+  --muted-foreground: #4a524e;
   --accent: #0c5c56;
   --accent-foreground: #f2faf8;
   --border: #cfd8d4;
@@ -77,7 +77,8 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: var(--font-sans);
+    /* Resolve next/font vars directly - Tailwind @theme --font-sans was not picking them up */
+    font-family: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
     background-color: var(--background);
     background-image:
       radial-gradient(ellipse 70% 40% at 0% -5%, var(--surface-tint), transparent 55%),
@@ -85,12 +86,12 @@
   }
 
   .font-display {
-    font-family: var(--font-display);
+    font-family: var(--font-syne), ui-sans-serif, system-ui, sans-serif;
     font-optical-sizing: auto;
   }
 
   .font-mono-nums {
-    font-family: var(--font-mono);
+    font-family: var(--font-jb-mono), ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
   }
 }

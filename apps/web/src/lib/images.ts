@@ -4,10 +4,6 @@ export const IMAGES = {
     src: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1600&q=80",
     alt: "Customer paying at a cafe counter with a credit card",
   },
-  cityNight: {
-    src: "https://images.unsplash.com/photo-1517935706995-23e644db3f7f?auto=format&fit=crop&w=1600&q=80",
-    alt: "Toronto skyline at dusk over Lake Ontario",
-  },
   cityDay: {
     src: "https://images.unsplash.com/photo-1503614472-8c93d56e92ce?auto=format&fit=crop&w=1600&q=80",
     alt: "Moraine Lake and the Valley of the Ten Peaks in Banff, Alberta",
