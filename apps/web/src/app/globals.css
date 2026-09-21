@@ -3,8 +3,9 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-syne), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jb-mono), ui-monospace, monospace;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -23,38 +24,46 @@
 }
 
 :root {
-  /* Ink green fintech — crisp, confident, a little playful */
-  --background: #f3f6f2;
-  --foreground: #10231c;
-  --card: #fbfcf9;
-  --card-foreground: #10231c;
-  --primary: #0b3d2e;
-  --primary-foreground: #f4faf6;
-  --secondary: #d7e8dc;
-  --secondary-foreground: #0b3d2e;
-  --muted: #e6efe8;
-  --muted-foreground: #4d6b5d;
-  --accent: #c8f135;
-  --accent-foreground: #10231c;
-  --border: #c9d9ce;
-  --ring: #0b3d2e;
+  /* Cold zinc + single teal accent - fintech without indigo/lime slop */
+  --background: #f4f5f4;
+  --foreground: #141816;
+  --card: #fcfcfb;
+  --card-foreground: #141816;
+  --primary: #0c5c56;
+  --primary-foreground: #f2faf8;
+  --secondary: #e2ebe8;
+  --secondary-foreground: #0c5c56;
+  --muted: #e8ecea;
+  --muted-foreground: #4a524e;
+  --accent: #0c5c56;
+  --accent-foreground: #f2faf8;
+  --border: #cfd8d4;
+  --ring: #0c5c56;
+  --highlight: #7ee8d8;
+  --surface-tint: rgba(12, 92, 86, 0.06);
+  --result-top: #0c5c56;
+  --result-top-fg: #f2faf8;
 }
 
 .dark {
-  --background: #0a1612;
-  --foreground: #e8f0ea;
-  --card: #12201a;
-  --card-foreground: #e8f0ea;
-  --primary: #9fd4b5;
-  --primary-foreground: #0a1612;
-  --secondary: #1a2e25;
-  --secondary-foreground: #c5ddd0;
-  --muted: #17261f;
-  --muted-foreground: #8eaa99;
-  --accent: #c8f135;
-  --accent-foreground: #0a1612;
-  --border: #24382e;
-  --ring: #9fd4b5;
+  --background: #0c100f;
+  --foreground: #e6eeeb;
+  --card: #141a18;
+  --card-foreground: #e6eeeb;
+  --primary: #4fd1c5;
+  --primary-foreground: #0c100f;
+  --secondary: #1c2623;
+  --secondary-foreground: #b7d4ce;
+  --muted: #171e1c;
+  --muted-foreground: #8fa39c;
+  --accent: #4fd1c5;
+  --accent-foreground: #0c100f;
+  --border: #2a3531;
+  --ring: #4fd1c5;
+  --highlight: #7ee8d8;
+  --surface-tint: rgba(79, 209, 197, 0.08);
+  --result-top: #134e4a;
+  --result-top-fg: #ecfdf8;
 }
 
 @layer base {
@@ -68,23 +77,49 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: var(--font-sans);
+    /* Resolve next/font vars directly - Tailwind @theme --font-sans was not picking them up */
+    font-family: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+    background-color: var(--background);
     background-image:
-      radial-gradient(ellipse 80% 50% at 10% -10%, rgba(200, 241, 53, 0.18), transparent 55%),
-      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(11, 61, 46, 0.08), transparent 50%),
-      linear-gradient(180deg, var(--background) 0%, var(--background) 100%);
-    background-attachment: fixed;
-  }
-
-  .dark body {
-    background-image:
-      radial-gradient(ellipse 70% 45% at 0% 0%, rgba(200, 241, 53, 0.08), transparent 50%),
-      radial-gradient(ellipse 50% 40% at 100% 10%, rgba(159, 212, 181, 0.06), transparent 45%),
+      radial-gradient(ellipse 70% 40% at 0% -5%, var(--surface-tint), transparent 55%),
       linear-gradient(180deg, var(--background) 0%, var(--background) 100%);
   }
 
   .font-display {
-    font-family: var(--font-display);
+    font-family: var(--font-syne), ui-sans-serif, system-ui, sans-serif;
     font-optical-sizing: auto;
+  }
+
+  .font-mono-nums {
+    font-family: var(--font-jb-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  .text-highlight {
+    color: var(--highlight);
+  }
+
+  .bg-highlight {
+    background-color: var(--highlight);
+  }
+
+  .surface-panel {
+    @apply border border-border bg-card;
+    border-radius: 0.75rem;
+  }
+
+  .grain-overlay {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .dark .grain-overlay {
+    opacity: 0.05;
   }
 }

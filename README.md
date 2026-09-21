@@ -10,7 +10,7 @@ rank descending.
 
 | Package | Role |
 |---------|------|
-| `apps/web` | **Marketing site only** (Next.js) — landing + session-only “try it free” picker (no persistence) |
+| `apps/web` | **Marketing site** (Next.js) — landing showcase; live recommender is at `/app` |
 | `apps/mobile` | **Full product** (Expo, iOS / Android / Web) — persistent wallet + richer UX (UI TBD) |
 | `packages/core` | Shared card schema, ~40-card CA dataset, valuations, recommendation engine |
 | `docs/api` | OpenAPI contract for recommender + card catalog ([`docs/api/README.md`](./docs/api/README.md)) |
@@ -20,13 +20,15 @@ rank descending.
 ```bash
 pnpm install
 pnpm --filter @northtap/core test   # recommendation engine unit tests
-pnpm --filter web dev                # http://localhost:3000 (marketing + lead-magnet tool)
+pnpm --filter web dev                # http://localhost:3000 (marketing landing)
 pnpm --filter mobile start           # Expo shell (full app UI comes later)
 ```
 
 Root scripts: `pnpm dev` (turbo), `pnpm build`, `pnpm lint`, `pnpm test`.
 
+Live purchase-specific recommender UI: `/app` (see recommender-app work).
+
 ## Out of scope (this slice)
 
-No GPS, bank linking, backend, or AI. Web picker is in-memory only — persistent
-“My Cards” belongs in `apps/mobile`.
+No GPS, bank linking, or AI on the marketing site. Persistent "My Cards" belongs in
+authenticated clients (`/app` and `apps/mobile`).

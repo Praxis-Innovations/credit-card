@@ -1,16 +1,28 @@
+import { APP_PATH } from "@/lib/routes";
+
 export function SiteFooter() {
   return (
-    <footer className="mt-20 border-t border-border/70 py-10">
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <p>
-          <span className="font-display font-semibold text-foreground">
+    <footer className="border-t border-border py-12">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 sm:flex-row sm:items-end sm:justify-between sm:px-6">
+        <div>
+          <p className="font-display text-lg font-semibold tracking-tight text-foreground">
             NorthTap
-          </span>{" "}
-          · working title · not financial advice
-        </p>
-        <p className="text-xs">
-          Rates are curated estimates — verify with your issuer before deciding.
-        </p>
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Working title · not financial advice
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:items-end">
+          <a
+            href={APP_PATH}
+            className="text-sm font-semibold text-primary transition-colors hover:text-foreground"
+          >
+            Open the app
+          </a>
+          <p className="max-w-sm text-xs leading-relaxed text-muted-foreground sm:text-right">
+            Rates are curated estimates. Verify with your issuer before deciding.
+          </p>
+        </div>
       </div>
     </footer>
   );

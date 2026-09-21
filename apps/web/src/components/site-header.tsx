@@ -4,6 +4,7 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { APP_PATH } from "@/lib/routes";
 
 export function SiteHeader() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -12,23 +13,26 @@ export function SiteHeader() {
   useEffect(() => setMounted(true), []);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <a href="#" className="group flex items-baseline gap-2">
+        <a href="/" className="flex items-baseline gap-2.5">
           <span className="font-display text-xl font-semibold tracking-tight text-foreground">
             NorthTap
           </span>
-          <span className="hidden text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground sm:inline">
+          <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
             Canada
           </span>
         </a>
-        <div className="flex items-center gap-2">
+        <nav className="flex items-center gap-1 sm:gap-2" aria-label="Primary">
           <a
-            href="#optimizer"
-            className="hidden text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground sm:inline"
+            href="#how-it-works"
+            className="hidden px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground sm:inline"
           >
-            Try it free
+            How it works
           </a>
+          <Button asChild size="sm" className="hidden sm:inline-flex">
+            <a href={APP_PATH}>Open the app</a>
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -43,7 +47,7 @@ export function SiteHeader() {
               <Moon className="h-4 w-4" />
             )}
           </Button>
-        </div>
+        </nav>
       </div>
     </header>
   );
