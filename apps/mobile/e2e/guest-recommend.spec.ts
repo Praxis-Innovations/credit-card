@@ -4,6 +4,7 @@ test.describe("guest purchase → recommend flow (Expo web)", () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.clear();
+      localStorage.setItem("northtap.onboardingComplete", "1");
     });
   });
 

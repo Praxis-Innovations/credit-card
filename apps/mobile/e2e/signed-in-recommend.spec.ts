@@ -1,8 +1,15 @@
 import { expect, test } from "@playwright/test";
 import { installSupabaseMock } from "./helpers/supabase-mock";
 
+async function skipOnboarding(page: import("@playwright/test").Page) {
+  await page.addInitScript(() => {
+    localStorage.setItem("northtap.onboardingComplete", "1");
+  });
+}
+
 test.describe("signed-in purchase → recommend flow (Expo web)", () => {
   test("loads synced wallet and ranks a dining purchase", async ({ page }) => {
+    await skipOnboarding(page);
     await installSupabaseMock(page, {
       initialCardIds: ["amex-cobalt", "tangerine-moneyback"],
     });
@@ -41,6 +48,7 @@ test.describe("signed-in purchase → recommend flow (Expo web)", () => {
   test("persists a newly added card to the mocked user_cards API", async ({
     page,
   }) => {
+    await skipOnboarding(page);
     await installSupabaseMock(page, { initialCardIds: [] });
     await page.goto("/");
 
