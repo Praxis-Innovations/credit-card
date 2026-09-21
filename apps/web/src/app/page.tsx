@@ -13,10 +13,10 @@ export default function HomePage() {
       <SiteHeader />
       <main>
         <Hero />
+        <ValueProps />
         <LifestyleBand />
         <HowItWorks />
         <ProductDemo />
-        <ValueProps />
         <FinalCta />
       </main>
       <SiteFooter />
