@@ -48,12 +48,13 @@ export function CategoryPicker({ value, onChange }: CategoryPickerProps) {
             data-active={active}
             onClick={() => onChange(category)}
             className={cn(
-              "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all",
-              "border-border bg-card text-foreground hover:border-primary/35 hover:bg-muted",
-              "data-[active=true]:border-primary data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-sm",
+              "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all",
+              "border-border bg-background text-foreground hover:border-primary/40 hover:bg-muted",
+              "active:scale-[0.98]",
+              "data-[active=true]:border-primary data-[active=true]:bg-primary data-[active=true]:text-primary-foreground",
             )}
           >
-            <Icon className="h-4 w-4 opacity-80" />
+            <Icon className="h-4 w-4 opacity-80" strokeWidth={1.75} />
             {CATEGORY_LABELS[category]}
           </button>
         );

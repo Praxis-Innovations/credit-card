@@ -32,24 +32,20 @@ export function Optimizer() {
 
   const emptyHint =
     ownedIds.length === 0
-      ? "Check a few cards you carry — picks stay for this visit only."
+      ? "Check a few cards you carry. Picks stay for this visit only."
       : category
-        ? "No matching cards — try another category."
+        ? "No matching cards. Try another category."
         : "Tap a spending category to rank your cards.";
 
   return (
     <section id="optimizer" className="scroll-mt-24">
-      <div className="mb-8 flex max-w-2xl flex-col gap-3">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-          Try it free
-        </p>
+      <div className="mb-10 max-w-2xl">
         <h2 className="font-display text-3xl tracking-tight text-foreground sm:text-4xl">
           Which card should you tap?
         </h2>
-        <p className="text-base text-muted-foreground sm:text-lg">
-          A quick session tool — pick cards from the list, choose a category,
-          see cents-back-per-dollar. Nothing is saved. The full app keeps your
-          wallet across visits.
+        <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
+          Pick cards from the list, choose a category, see cents-back-per-dollar.
+          Nothing is saved here. The full app keeps your wallet across visits.
         </p>
       </div>
 
@@ -60,15 +56,15 @@ export function Optimizer() {
           onClear={clear}
         />
 
-        <div className="flex flex-col gap-5">
-          <div className="rounded-2xl border border-border bg-card/80 p-4 shadow-sm backdrop-blur sm:p-5">
+        <div className="flex flex-col gap-6">
+          <div className="surface-panel p-4 sm:p-5">
             <h3 className="font-display text-xl tracking-tight text-foreground">
               Spending category
             </h3>
             <p className="mt-1 mb-4 text-sm text-muted-foreground">
               {category
                 ? `Ranking for ${CATEGORY_LABELS[category].toLowerCase()}`
-                : "Choose where you’re about to spend"}
+                : "Choose where you are about to spend"}
             </p>
             <CategoryPicker value={category} onChange={setCategory} />
           </div>
@@ -79,7 +75,7 @@ export function Optimizer() {
                 Best card to use
               </h3>
               {recommendations.length > 0 && (
-                <p className="text-xs font-medium text-muted-foreground">
+                <p className="font-mono-nums text-xs font-medium text-muted-foreground">
                   {recommendations.length} ranked
                 </p>
               )}
@@ -90,12 +86,12 @@ export function Optimizer() {
             />
           </div>
 
-          <div className="rounded-2xl border border-dashed border-border bg-muted/40 px-4 py-5 sm:px-5">
+          <div className="border border-dashed border-border bg-muted/50 px-4 py-5 sm:px-5">
             <p className="font-display text-lg tracking-tight text-foreground">
               Want this to remember your cards?
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              The NorthTap app saves your wallet and ranks on the go — iOS,
+              The NorthTap app saves your wallet and ranks on the go on iOS,
               Android, and web.
             </p>
             <Button

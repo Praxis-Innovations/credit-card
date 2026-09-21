@@ -1,22 +1,28 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Fraunces, Outfit } from "next/font/google";
+import { DM_Sans, JetBrains_Mono, Syne } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-const outfit = Outfit({
+const dmSans = DM_Sans({
   subsets: ["latin"],
-  variable: "--font-outfit",
+  variable: "--font-dm-sans",
   display: "swap",
 });
 
-const fraunces = Fraunces({
+const syne = Syne({
   subsets: ["latin"],
-  variable: "--font-fraunces",
+  variable: "--font-syne",
   display: "swap",
 });
 
-const siteTitle = "NorthTap — Tap the right card, every time.";
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jb-mono",
+  display: "swap",
+});
+
+const siteTitle = "NorthTap - Tap the right card, every time.";
 const siteDescription =
   "Canadian credit card rewards optimizer. Pick your wallet, pick a category, see which card earns the most cents back per dollar.";
 
@@ -45,13 +51,16 @@ export default function RootLayout({
 }>): ReactNode {
   return (
     <html lang="en-CA" suppressHydrationWarning>
-      <body className={`${outfit.variable} ${fraunces.variable} font-sans`}>
+      <body
+        className={`${dmSans.variable} ${syne.variable} ${jetbrainsMono.variable} font-sans`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
+          <div className="grain-overlay" aria-hidden />
           {children}
         </ThemeProvider>
       </body>

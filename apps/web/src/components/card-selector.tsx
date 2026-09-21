@@ -42,14 +42,14 @@ export function CardSelector({
   const issuers = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
 
   return (
-    <div className="flex h-full min-h-[420px] flex-col gap-4 rounded-2xl border border-border bg-card/80 p-4 shadow-sm backdrop-blur sm:p-5">
+    <div className="surface-panel flex h-full min-h-[420px] flex-col gap-4 p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-display text-xl tracking-tight text-foreground">
             Your cards
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            <span className="font-semibold text-foreground">
+            <span className="font-mono-nums font-semibold text-foreground">
               {ownedIds.length}
             </span>{" "}
             selected · this session only
@@ -84,7 +84,7 @@ export function CardSelector({
       </div>
 
       <ScrollArea className="h-[min(52vh,480px)] pr-3">
-        <div className="space-y-6 pb-2">
+        <div className="space-y-5 pb-2">
           {issuers.length === 0 && (
             <p className="py-8 text-center text-sm text-muted-foreground">
               No cards match “{query}”.
@@ -92,19 +92,19 @@ export function CardSelector({
           )}
           {issuers.map((issuer) => (
             <section key={issuer}>
-              <h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              <h3 className="mb-2 text-xs font-semibold text-muted-foreground">
                 {issuer}
               </h3>
-              <ul className="space-y-1.5">
+              <ul className="divide-y divide-border/70 border-y border-border/70">
                 {(grouped[issuer] ?? []).map((card) => {
                   const checked = owned.has(card.id);
                   return (
                     <li key={card.id}>
                       <label
                         className={cn(
-                          "flex cursor-pointer items-start gap-3 rounded-xl border border-transparent px-3 py-2.5 transition-colors",
-                          "hover:bg-muted/70",
-                          checked && "border-primary/20 bg-primary/5",
+                          "flex cursor-pointer items-start gap-3 px-2 py-2.5 transition-colors",
+                          "hover:bg-muted/60",
+                          checked && "bg-[var(--surface-tint)]",
                         )}
                       >
                         <Checkbox
@@ -118,7 +118,7 @@ export function CardSelector({
                             <span className="font-semibold text-foreground">
                               {card.name}
                             </span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="font-mono-nums text-xs text-muted-foreground">
                               {feeLabel(card)}
                             </span>
                           </span>
