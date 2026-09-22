@@ -1,7 +1,13 @@
 export type {
+  CardAffiliation,
   Category,
   CreditCard,
   Issuer,
+  LoyaltyProgram,
+  MerchantBrand,
+  MerchantPartnership,
+  PartnershipBenefit,
+  PartnershipBenefitKind,
   PointCurrency,
   PointValuations,
   Recommendation,
@@ -12,13 +18,27 @@ export type {
 } from "./schema";
 
 export {
+  CARD_AFFILIATIONS,
   CATEGORIES,
   CATEGORY_LABELS,
   ISSUERS,
+  PARTNERSHIP_BENEFIT_KINDS,
   POINT_CURRENCIES,
 } from "./schema";
 
 export { CARDS, getCardById, getCardsByIssuer, groupCardsByIssuer } from "./cards";
+
+export {
+  getLoyaltyProgramById,
+  getMerchantBrandById,
+  getPartnershipById,
+  getPartnershipsForBrand,
+  getPartnershipsForCard,
+  getPartnershipsForCategory,
+  LOYALTY_PROGRAMS,
+  MERCHANT_BRANDS,
+  MERCHANT_PARTNERSHIPS,
+} from "./partnerships";
 
 export { DEFAULT_POINT_VALUATIONS, resolveValuations } from "./valuations";
 

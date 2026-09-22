@@ -20,6 +20,8 @@ export const DEFAULT_POINT_VALUATIONS: Record<PointCurrency, number> = {
   "PC Optimum": 1.0,
   Rogers: 1.5,
   Triangle: 1.0,
+  /** 500 Moi points = $4 off at participating Metro banners → 0.8¢/pt. */
+  Moi: 0.8,
 };
 
 export function resolveValuations(
