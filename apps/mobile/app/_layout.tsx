@@ -9,9 +9,14 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
+          animation: "fade",
           contentStyle: { backgroundColor: colors.bg },
         }}
-      />
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="home" />
+        <Stack.Screen name="(onboarding)" options={{ animation: "fade" }} />
+      </Stack>
     </>
   );
 }
