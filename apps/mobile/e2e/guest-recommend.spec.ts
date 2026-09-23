@@ -52,5 +52,8 @@ test.describe("guest purchase → recommend flow (Expo web)", () => {
     await expect(
       page.getByRole("button", { name: "Recommend cards" }),
     ).toBeDisabled();
+    await expect(
+      page.getByRole("button", { name: "Check nearby merchants" }),
+    ).toBeDisabled();
   });
 });
