@@ -1,6 +1,6 @@
 /**
  * Static product preview only. Not wired to recommendCards.
- * The live experience lives at /app (recommender-app).
+ * The live experience is the Expo web app (see APP_PATH in lib/routes).
  */
 export function ProductDemo() {
   return (

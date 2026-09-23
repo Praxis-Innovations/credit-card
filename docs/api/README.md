@@ -1,5 +1,7 @@
 # NorthTap API contract
 
+> **Note:** No route in this repo currently implements this contract. It is a forward-looking spec only, kept in case a real backend/BFF gets built later. The live recommender runs in-process via `recommendCards()` in `apps/mobile` (Expo), not over HTTP.
+
 OpenAPI 3.1 spec for the purchase-specific recommender and card catalog.
 
 | File | Role |
