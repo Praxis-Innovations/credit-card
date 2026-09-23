@@ -2,3 +2,5 @@
 20*.md
 !latest.md
 !latest.json
+!source-health-latest.md
+!source-health-latest.json

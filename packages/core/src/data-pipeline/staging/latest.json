@@ -1,85 +1,16 @@
 {
-  "pipelineVersion": "0.1.0",
-  "runId": "2026-09-23T02-07-59-187Z",
+  "pipelineVersion": "0.2.0",
+  "runId": "2026-09-23T03-14-50-458Z",
   "scope": "big-six",
-  "capturedAt": "2026-09-23T02:07:59.187Z",
+  "crawlScope": "partnerships",
+  "capturedAt": "2026-09-23T03:14:50.458Z",
   "sources": [
-    {
-      "sourceId": "rbc-cards",
-      "url": "https://www.rbcroyalbank.com/credit-cards/",
-      "issuer": "RBC",
-      "kind": "card_listing",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "robotsChecked": true,
-      "outcome": "ok",
-      "httpStatus": 200,
-      "contentType": "text/html",
-      "bytes": 216004
-    },
-    {
-      "sourceId": "td-cards",
-      "url": "https://www.td.com/ca/en/personal-banking/products/credit-cards",
-      "issuer": "TD",
-      "kind": "card_listing",
-      "capturedAt": "2026-09-23T02:07:59.536Z",
-      "robotsChecked": true,
-      "outcome": "ok",
-      "httpStatus": 200,
-      "contentType": "text/html;charset=utf-8",
-      "bytes": 440503
-    },
-    {
-      "sourceId": "scotia-cards",
-      "url": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "issuer": "Scotiabank",
-      "kind": "card_listing",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "robotsChecked": true,
-      "outcome": "ok",
-      "httpStatus": 200,
-      "contentType": "text/html; charset=UTF-8",
-      "bytes": 515498
-    },
-    {
-      "sourceId": "bmo-cards",
-      "url": "https://www.bmo.com/en-ca/main/personal/credit-cards/",
-      "issuer": "BMO",
-      "kind": "card_listing",
-      "capturedAt": "2026-09-23T02:08:00.032Z",
-      "robotsChecked": false,
-      "outcome": "network_error",
-      "error": "The operation was aborted due to timeout"
-    },
-    {
-      "sourceId": "cibc-cards",
-      "url": "https://www.cibc.com/en/personal-banking/credit-cards.html",
-      "issuer": "CIBC",
-      "kind": "card_listing",
-      "capturedAt": "2026-09-23T02:08:30.036Z",
-      "robotsChecked": true,
-      "outcome": "ok",
-      "httpStatus": 200,
-      "contentType": "text/html; charset=UTF-8",
-      "bytes": 504783
-    },
-    {
-      "sourceId": "nbc-cards",
-      "url": "https://www.nbc.ca/en/personal/credit-cards.html",
-      "issuer": "National Bank",
-      "kind": "card_listing",
-      "capturedAt": "2026-09-23T02:08:30.287Z",
-      "robotsChecked": true,
-      "outcome": "ok",
-      "httpStatus": 200,
-      "contentType": "text/html; charset=UTF-8",
-      "bytes": 523724
-    },
     {
       "sourceId": "scotia-shell",
       "url": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
       "issuer": "Scotiabank",
       "kind": "partnership",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
       "robotsChecked": true,
       "outcome": "ok",
       "httpStatus": 200,
@@ -91,7 +22,7 @@
       "url": "https://www.shell.ca/en_ca/drivers/loyalty-and-payment/partners/scotiabank.html",
       "issuer": "Scotiabank",
       "kind": "partnership",
-      "capturedAt": "2026-09-23T02:08:30.848Z",
+      "capturedAt": "2026-09-23T03:14:51.447Z",
       "robotsChecked": true,
       "outcome": "ok",
       "httpStatus": 200,
@@ -103,7 +34,7 @@
       "url": "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
       "issuer": "CIBC",
       "kind": "partnership",
-      "capturedAt": "2026-09-23T02:08:31.156Z",
+      "capturedAt": "2026-09-23T03:14:52.257Z",
       "robotsChecked": true,
       "outcome": "ok",
       "httpStatus": 200,
@@ -115,7 +46,7 @@
       "url": "https://journie.ca/on-en/partners/cibc",
       "issuer": "CIBC",
       "kind": "partnership",
-      "capturedAt": "2026-09-23T02:08:32.799Z",
+      "capturedAt": "2026-09-23T03:14:52.647Z",
       "robotsChecked": true,
       "outcome": "ok",
       "httpStatus": 200,
@@ -127,7 +58,7 @@
       "url": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
       "issuer": "RBC",
       "kind": "loyalty_program",
-      "capturedAt": "2026-09-23T02:08:32.956Z",
+      "capturedAt": "2026-09-23T03:14:52.848Z",
       "robotsChecked": false,
       "outcome": "ok",
       "httpStatus": 200,
@@ -140,7 +71,7 @@
       "url": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html",
       "issuer": "CIBC",
       "kind": "partnership",
-      "capturedAt": "2026-09-23T02:08:33.284Z",
+      "capturedAt": "2026-09-23T03:14:53.417Z",
       "robotsChecked": true,
       "outcome": "ok",
       "httpStatus": 200,
@@ -152,662 +83,13 @@
       "url": "https://www.bmo.com/en-ca/main/personal/credit-cards/air-miles-world-elite-mastercard/",
       "issuer": "BMO",
       "kind": "loyalty_program",
-      "capturedAt": "2026-09-23T02:08:35.291Z",
+      "capturedAt": "2026-09-23T03:14:55.418Z",
       "robotsChecked": false,
       "outcome": "network_error",
       "error": "The operation was aborted due to timeout"
     }
   ],
   "facts": [
-    {
-      "id": "feee68026eab3070",
-      "kind": "card_name",
-      "issuer": "RBC",
-      "subject": "Avion Visa Infinite",
-      "rawValue": "Avion Visa Infinite",
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "match Avion Avion Credit Cards Find the Avion travel credit card that's right for you RBC Avion Visa Infinite Upgrade your travel experience with premium rewards and coverage RBC A"
-    },
-    {
-      "id": "a89bccb9b6e81f01",
-      "kind": "point_currency",
-      "issuer": "RBC",
-      "subject": "Avion Visa Infinite",
-      "rawValue": "RBC Avion",
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "Avion Visa Infinite Upgrade your travel experience with premium rewards and coverage RBC Avion Visa Infinite Privilege Enjoy exclusive rewards, elite perks, and lounge access RBC Avion Visa Platinum Start earning travel "
-    },
-    {
-      "id": "33f7333639b4da78",
-      "kind": "card_name",
-      "issuer": "RBC",
-      "subject": "Avion Visa Infinite Privilege",
-      "rawValue": "Avion Visa Infinite Privilege",
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "Avion Visa Infinite Upgrade your travel experience with premium rewards and coverage RBC Avion Visa Infinite Privilege Enjoy exclusive rewards, elite perks, and lounge access RBC"
-    },
-    {
-      "id": "b19b0907356ab4f2",
-      "kind": "point_currency",
-      "issuer": "RBC",
-      "subject": "Avion Visa Infinite Privilege",
-      "rawValue": "RBC Avion",
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "Avion Visa Infinite Privilege Enjoy exclusive rewards, elite perks, and lounge access RBC Avion Visa Platinum Start earning travel points you can use on any flight, anytime Airline Partners WestJet Credit Cards Find the "
-    },
-    {
-      "id": "f8f85bd06f7f03c4",
-      "kind": "point_currency",
-      "issuer": "RBC",
-      "subject": "Avion Visa Infinite Privilege",
-      "rawValue": "WestJet",
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "Avion Visa Infinite Privilege Enjoy exclusive rewards, elite perks, and lounge access RBC Avion Visa Platinum Start earning travel points you can use on any flight, anytime Airline Partners WestJet Credit Cards Find the "
-    },
-    {
-      "id": "c0c7d29c6022d4fe",
-      "kind": "card_name",
-      "issuer": "RBC",
-      "subject": "Cash Back Mastercard",
-      "rawValue": "Cash Back Mastercard",
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "rds Compare RBC cash back credit cards side by side to find your best match Cash Back RBC Cash Back Mastercard Get cash back on everyday purchases with no annual fee RBC Cash Back"
-    },
-    {
-      "id": "2464cb32222a8d40",
-      "kind": "point_currency",
-      "issuer": "RBC",
-      "subject": "Cash Back Mastercard",
-      "rawValue": "cashback",
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "Cash Back Mastercard Get cash back on everyday purchases with no annual fee RBC Cash Back Preferred World Elite Mastercard Get cash back on every purchase plus premium travel benefits Tools & Resources Credit Card Cash B"
-    },
-    {
-      "id": "486ceb08ae3f5bcd",
-      "kind": "card_name",
-      "issuer": "RBC",
-      "subject": "moi RBC Visa",
-      "rawValue": "moi RBC Visa",
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "annual fee RBC ION+ Visa Earn more points on the things you buy most Specialty Groceries moi RBC Visa Earn Moi points on groceries and everyday essentials with no annual fee More"
-    },
-    {
-      "id": "6c67b6116f3dcea6",
-      "kind": "point_currency",
-      "issuer": "RBC",
-      "subject": "moi RBC Visa",
-      "rawValue": "Moi",
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "moi RBC Visa Earn Moi points on groceries and everyday essentials with no annual fee More Rewards RBC Visa Earn More Rewards points everywhere you shop More Rewards RBC Visa Infinite Get More Rewards points even faster w"
-    },
-    {
-      "id": "d17c082d7dc97695",
-      "kind": "card_name",
-      "issuer": "RBC",
-      "subject": "Ion+",
-      "rawValue": "Ion+",
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "tch Everyday Rewards RBC ION Visa Earn points on everyday spending with no annual fee RBC ION+ Visa Earn more points on the things you buy most Specialty Groceries moi RBC Visa Ear"
-    },
-    {
-      "id": "4886d9eef3f60a39",
-      "kind": "point_currency",
-      "issuer": "RBC",
-      "subject": "Ion+",
-      "rawValue": "Moi",
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "ION+ Visa Earn more points on the things you buy most Specialty Groceries moi RBC Visa Earn Moi points on groceries and everyday essentials with no annual fee More Rewards RBC Visa Earn More Rewards points everywhere you"
-    },
-    {
-      "id": "0dde81161477bb35",
-      "kind": "card_name",
-      "issuer": "RBC",
-      "subject": "Avion Gold Visa",
-      "rawValue": "Avion Gold Visa",
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "Skip to main content AdChoices Promotions EN Contact Us Find a Branch Call 1-800-769-2511"
-    },
-    {
-      "id": "db4cfe3137daeb97",
-      "kind": "card_name",
-      "issuer": "RBC",
-      "subject": "Ion",
-      "rawValue": "Ion",
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "Skip to main content AdChoices Promotions EN Contact Us Find a Branch Call 1-800-769-2511 Email Royal Bank Product Accounts Cre"
-    },
-    {
-      "id": "80bf6253a185c9e1",
-      "kind": "card_name",
-      "issuer": "RBC",
-      "subject": "Cash Back Preferred World Elite Mastercard",
-      "rawValue": "Cash Back Preferred World Elite Mastercard",
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "Back RBC Cash Back Mastercard Get cash back on everyday purchases with no annual fee RBC Cash Back Preferred World Elite Mastercard Get cash back on every purchase plus premium tr"
-    },
-    {
-      "id": "ff4afbdb3d54d317",
-      "kind": "point_currency",
-      "issuer": "RBC",
-      "subject": "Cash Back Preferred World Elite Mastercard",
-      "rawValue": "cashback",
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "Cash Back Preferred World Elite Mastercard Get cash back on every purchase plus premium travel benefits Tools & Resources Credit Card Cash Back Calculator Calculate how much cash back you could earn based on your spendin"
-    },
-    {
-      "id": "09716678b90aecb5",
-      "kind": "annual_fee",
-      "issuer": "RBC",
-      "subject": "RBC listing (unattributed)",
-      "rawValue": "Annual Fee $48",
-      "parsedNumber": 48,
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": ",000 Avion points^ - that’s up to $200 of value in gift cards†! Apply by November 4, 2026 Annual Fee $48 Additional Card $0 Purchase Rate 20.99% Cash Advance Rate 22.99%* Apply Now"
-    },
-    {
-      "id": "ad76f0f59954d319",
-      "kind": "annual_fee",
-      "issuer": "RBC",
-      "subject": "RBC listing (unattributed)",
-      "rawValue": "Annual Fee $139",
-      "parsedNumber": 139,
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "t up to 70,000 WestJet points1 Legal Disclaimer, that's a value of up to $700 off travel. Annual Fee $139 Additional Card $59 Purchase Rate 20.99% Cash Advance Rate 22.99%* Apply N"
-    },
-    {
-      "id": "01594df6bf020f52",
-      "kind": "annual_fee",
-      "issuer": "RBC",
-      "subject": "RBC listing (unattributed)",
-      "rawValue": "Annual Fee $120",
-      "parsedNumber": 120,
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "up to 70,000 Avion points1 - a travel value of up to $1,500!† Apply by November 25, 2026. Annual Fee $120 Additional Card $50 Purchase Rate 20.99% Cash Advance Rate 22.99%* Apply N"
-    },
-    {
-      "id": "c31cb086d911bbc7",
-      "kind": "annual_fee",
-      "issuer": "RBC",
-      "subject": "RBC listing (unattributed)",
-      "rawValue": "Annual Fee $0",
-      "parsedNumber": 0,
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "Offer Get up to 7% cash back for the first 3 months on up to $1,000 in total purchases^. Annual Fee $0 Additional Card $0 Purchase Rate 20.99% Cash Advance Rate 22.99%* Apply Now"
-    },
-    {
-      "id": "5ecd584b98066cb3",
-      "kind": "annual_fee",
-      "issuer": "RBC",
-      "subject": "RBC listing (unattributed)",
-      "rawValue": "Annual Fee $99",
-      "parsedNumber": 99,
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "ecial Offer Get 12% cash back for the first 3 months on up to $2,000 in total purchases^. Annual Fee $99 Additional Card $0 Purchase Rate 20.99% Cash Advance Rate 22.99%* Apply Now"
-    },
-    {
-      "id": "0f08f1c957a4998d",
-      "kind": "annual_fee",
-      "issuer": "RBC",
-      "subject": "RBC listing (unattributed)",
-      "rawValue": "Annual Fee $20",
-      "parsedNumber": 20,
-      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/",
-      "capturedAt": "2026-09-23T02:07:59.188Z",
-      "context": "s on balance transfers^ and no annual fee for the first year*. Apply by November 4, 2026. Annual Fee $20 Additional Card $0 Purchase Rate 12.99% Cash Advance Rate 14.99% Apply Now"
-    },
-    {
-      "id": "76772ed47571e31f",
-      "kind": "card_name",
-      "issuer": "TD",
-      "subject": "Aeroplan Visa Infinite",
-      "rawValue": "Aeroplan Visa Infinite",
-      "sourceUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards",
-      "capturedAt": "2026-09-23T02:07:59.536Z",
-      "context": "Skip to main content PersonalSelected Small Business Commercial Investing TD Asset Managem"
-    },
-    {
-      "id": "fbede0287a5bdf4d",
-      "kind": "card_name",
-      "issuer": "TD",
-      "subject": "Cash Back Visa Infinite",
-      "rawValue": "Cash Back Visa Infinite",
-      "sourceUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards",
-      "capturedAt": "2026-09-23T02:07:59.536Z",
-      "context": "earn more TD® Aeroplan® Visa Infinite* Card TD First Class Travel® Visa Infinite* Card TD Cash Back Visa Infinite* Card TD Credit Cards that suit you Answer a few simple questions"
-    },
-    {
-      "id": "c40ce0cfc4aa71ed",
-      "kind": "point_currency",
-      "issuer": "TD",
-      "subject": "Cash Back Visa Infinite",
-      "rawValue": "cashback",
-      "sourceUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards",
-      "capturedAt": "2026-09-23T02:07:59.536Z",
-      "context": "Cash Back Visa Infinite* Card TD Credit Cards that suit you Answer a few simple questions and we will suggest the ideal TD credit card for you. Find a card Your region is currently set to Change province Change province "
-    },
-    {
-      "id": "1c518c5b04a44c4e",
-      "kind": "card_name",
-      "issuer": "TD",
-      "subject": "First Class Travel Visa Infinite",
-      "rawValue": "First Class Travel Visa Infinite",
-      "sourceUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards",
-      "capturedAt": "2026-09-23T02:07:59.536Z",
-      "context": "Birthday Bonus equal to 10% of the number of TD Rewards Points earned while using the TD First Class Travel Visa Infinite* card over the 12 months preceding the Primary Cardholder"
-    },
-    {
-      "id": "3949d5d923975840",
-      "kind": "point_currency",
-      "issuer": "TD",
-      "subject": "First Class Travel Visa Infinite",
-      "rawValue": "TD Rewards",
-      "sourceUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards",
-      "capturedAt": "2026-09-23T02:07:59.536Z",
-      "context": "First Class Travel Visa Infinite* card over the 12 months preceding the Primary Cardholder’s birthday, up to a maximum of 10,000 TD Rewards Points (travel value at Expedia For TD of up to $50). Previously earned points o"
-    },
-    {
-      "id": "c560ebae7b8b9a6f",
-      "kind": "card_name",
-      "issuer": "TD",
-      "subject": "Cash Back Visa",
-      "rawValue": "Cash Back Visa",
-      "sourceUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards",
-      "capturedAt": "2026-09-23T02:07:59.536Z",
-      "context": "earn more TD® Aeroplan® Visa Infinite* Card TD First Class Travel® Visa Infinite* Card TD Cash Back Visa Infinite* Card TD Credit Cards that suit you Answer a few simple questions"
-    },
-    {
-      "id": "cd76c59ecf69550a",
-      "kind": "point_currency",
-      "issuer": "TD",
-      "subject": "Cash Back Visa",
-      "rawValue": "cashback",
-      "sourceUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards",
-      "capturedAt": "2026-09-23T02:07:59.536Z",
-      "context": "Cash Back Visa Infinite* Card TD Credit Cards that suit you Answer a few simple questions and we will suggest the ideal TD credit card for you. Find a card Your region is currently set to Change province Change province "
-    },
-    {
-      "id": "3cf6cc66c5b5ba77",
-      "kind": "card_name",
-      "issuer": "TD",
-      "subject": "Aeroplan Visa",
-      "rawValue": "Aeroplan Visa",
-      "sourceUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards",
-      "capturedAt": "2026-09-23T02:07:59.536Z",
-      "context": "e Card account (“Account”) while this offer is in effect, and (ii) not have opened any TD-Aeroplan Visa Card account (e.g., Platinum, Infinite, Infinite Privilege or Business] in t"
-    },
-    {
-      "id": "25efc9e3added9fd",
-      "kind": "point_currency",
-      "issuer": "TD",
-      "subject": "Aeroplan Visa",
-      "rawValue": "Aeroplan",
-      "sourceUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards",
-      "capturedAt": "2026-09-23T02:07:59.536Z",
-      "context": "Aeroplan Visa Card account (e.g., Platinum, Infinite, Infinite Privilege or Business] in the last 12 months. Even if you satisfy the above eligibility conditions and TD approves your application for an Account, the award"
-    },
-    {
-      "id": "85ad1d46f71f52e8",
-      "kind": "annual_fee",
-      "issuer": "TD",
-      "subject": "TD listing (unattributed)",
-      "rawValue": "Annual Fee 21.99",
-      "parsedNumber": 21.99,
-      "sourceUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards",
-      "capturedAt": "2026-09-23T02:07:59.536Z",
-      "context": "yours and receive an Annual Fee rebate for the first yearUIDNQEN2. Conditions Apply. $139 Annual Fee 21.99% Interest: Purchases 22.99% Interest: Cash Advances View Details secure A"
-    },
-    {
-      "id": "e4e2054aae3bfb40",
-      "kind": "card_name",
-      "issuer": "Scotiabank",
-      "subject": "Gold American Express",
-      "rawValue": "Gold American Express",
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "veragePrefer cash back rewardsPrefer not to pay an annual fee Continue Get the Scotiabank Gold American Express® Card Are you a Scotiabank customer with access to online banking? Y"
-    },
-    {
-      "id": "73a674f47287e7a7",
-      "kind": "card_name",
-      "issuer": "Scotiabank",
-      "subject": "Passport Visa Infinite",
-      "rawValue": "Passport Visa Infinite",
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "n in to get startedSign in to Scotia Online and start your application for the Scotiabank Passport Visa Infinite credit card No Start your applicationStart your application online"
-    },
-    {
-      "id": "0ab5c8754eb286cb",
-      "kind": "card_name",
-      "issuer": "Scotiabank",
-      "subject": "Momentum Visa Infinite",
-      "rawValue": "Momentum Visa Infinite",
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "Apply NowApply now to Momentum Infinite card See if it's right for you for the Scotiabank Momentum Visa Infinite credit card Is this credit card right for you? Right for you if you"
-    },
-    {
-      "id": "d192d1634acddf77",
-      "kind": "card_name",
-      "issuer": "Scotiabank",
-      "subject": "Scene+ Visa",
-      "rawValue": "Scene+ Visa",
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "ator Scene+ Debit Cards Ultimate Package Preferred Package Scene+ Credit Cards Scotiabank Scene+ Visa Card Scotiabank Passport Visa Infinite card Scotiabank Gold American Express c"
-    },
-    {
-      "id": "e3f756da3a2b4959",
-      "kind": "point_currency",
-      "issuer": "Scotiabank",
-      "subject": "Scene+ Visa",
-      "rawValue": "Scene+",
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "Scene+ Visa Card Scotiabank Passport Visa Infinite card Scotiabank Gold American Express card Scotiabank American Express card Scotiabank Platinum American Express card ScotiaGold Passport Visa card Scene+ for Students P"
-    },
-    {
-      "id": "4638bc9fe75176a6",
-      "kind": "card_name",
-      "issuer": "Scotiabank",
-      "subject": "Scene+ Visa Infinite",
-      "rawValue": "Scene+ Visa Infinite",
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "Skip to content Is this credit card right for you? Right for you if you: Want to obtain a"
-    },
-    {
-      "id": "1b3e45692a21b0c5",
-      "kind": "card_name",
-      "issuer": "Scotiabank",
-      "subject": "Momentum Visa",
-      "rawValue": "Momentum Visa",
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "Apply NowApply now to Momentum Infinite card See if it's right for you for the Scotiabank Momentum Visa Infinite credit card Is this credit card right for you? Right for you if you"
-    },
-    {
-      "id": "8ca140205b925fda",
-      "kind": "card_name",
-      "issuer": "Scotiabank",
-      "subject": "Platinum American Express",
-      "rawValue": "Platinum American Express",
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "te card Scotiabank Gold American Express card Scotiabank American Express card Scotiabank Platinum American Express card ScotiaGold Passport Visa card Scene+ for Students Preferred"
-    },
-    {
-      "id": "85245caf20b3bfa1",
-      "kind": "point_currency",
-      "issuer": "Scotiabank",
-      "subject": "Platinum American Express",
-      "rawValue": "Scene+",
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "Platinum American Express card ScotiaGold Passport Visa card Scene+ for Students Preferred Package for Students and Youth - 16 and over Preferred Package for Students and Youth - Under 16 Scotiabank Scene+ Visa Card for "
-    },
-    {
-      "id": "3b7d60b3de98914c",
-      "kind": "annual_fee",
-      "issuer": "Scotiabank",
-      "subject": "Scotiabank listing (unattributed)",
-      "rawValue": "Annual Fee $139",
-      "parsedNumber": 139,
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "edit Cards eligible for ongoing annual fee waiver Scotiabank Passport™ Visa Infinite Card Annual Fee $139/year Interest rates 19.99% purchases 22.99% cash advances Scotia Momentum®"
-    },
-    {
-      "id": "6be9f9cd8432fa02",
-      "kind": "annual_fee",
-      "issuer": "Scotiabank",
-      "subject": "Scotiabank listing (unattributed)",
-      "rawValue": "Annual Fee $120",
-      "parsedNumber": 120,
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "Interest rates 19.99% purchases 22.99% cash advances Scotia Momentum® Visa Infinite Card Annual Fee $120/year Interest rates 19.99% purchases 22.99% cash advances Scotiabank Gold"
-    },
-    {
-      "id": "311df6ccb1470cd9",
-      "kind": "annual_fee",
-      "issuer": "Scotiabank",
-      "subject": "Scotiabank listing (unattributed)",
-      "rawValue": "Annual fee $150",
-      "parsedNumber": 150,
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "t year welcome offers, rewards and savings*, including up to 35,000 bonus Scene+ points.4 Annual fee $150 Purchase interest rate 20.99% Cash advance rate 22.99% You could earn Up t"
-    },
-    {
-      "id": "7c416634563c2e48",
-      "kind": "annual_fee",
-      "issuer": "Scotiabank",
-      "subject": "Scotiabank listing (unattributed)",
-      "rawValue": "Annual fee $120",
-      "parsedNumber": 120,
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "ffers, first year rewards and savings value, including up to 50,000 bonus Scene+ points.2 Annual fee $120 Purchase interest rate 21.99% Cash advance rate 22.99% You could earn Up t"
-    },
-    {
-      "id": "249081c9a54c1838",
-      "kind": "annual_fee",
-      "issuer": "Scotiabank",
-      "subject": "Scotiabank listing (unattributed)",
-      "rawValue": "Annual fee $0",
-      "parsedNumber": 0,
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "0,000 bonus Scene+ points within your first 3 months (that’s up to $100 towards travel).9 Annual fee $0 Purchase interest rate 21.99% Cash advance rate 22.99% You could earn Up to"
-    },
-    {
-      "id": "43b186a4c1c639b5",
-      "kind": "annual_fee",
-      "issuer": "Scotiabank",
-      "subject": "Scotiabank listing (unattributed)",
-      "rawValue": "annual fee $49",
-      "parsedNumber": 49,
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "on balance transfers for the first 9 months (2% fee per cash advance; 22.99% after that; annual fee $49).11 Annual fee Purchase interest rate Cash advance rate $49 20.99% 22.99% Y"
-    },
-    {
-      "id": "6a7022f35d6d1774",
-      "kind": "annual_fee",
-      "issuer": "Scotiabank",
-      "subject": "Scotiabank listing (unattributed)",
-      "rawValue": "annual fee $0",
-      "parsedNumber": 0,
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "on balance transfers for the first 9 months (2% fee per cash advance, 22.99% after that; annual fee $0).13 Annual fee Purchase interest rate Cash advance rate $0 20.99% 22.99% You"
-    },
-    {
-      "id": "3ba25f6ee938cbd2",
-      "kind": "earn_rate",
-      "issuer": "Scotiabank",
-      "subject": "Scotiabank",
-      "rawValue": "earn 1 point per $1",
-      "parsedNumber": 1,
-      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:07:59.753Z",
-      "context": "um threshold is calculated annually from January 1st to December 31st each year. You will earn 1 point per $1 on purchases made on the Account after the 2 points per $1 / $50,000 a"
-    },
-    {
-      "id": "5d633e06811aafba",
-      "kind": "card_name",
-      "issuer": "CIBC",
-      "subject": "Aeroplan Visa Infinite",
-      "rawValue": "Aeroplan Visa Infinite",
-      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards.html",
-      "capturedAt": "2026-09-23T02:08:30.036Z",
-      "context": "e[2].VWIAG.Published(null,null,90,null)(#O2#)% Quebec residents Learn more about the CIBC Aeroplan Visa Infinite Card. Apply now for a CIBC Aeroplan Visa Infinite Card. Opens a new"
-    },
-    {
-      "id": "36534efa3c165a93",
-      "kind": "point_currency",
-      "issuer": "CIBC",
-      "subject": "Aeroplan Visa Infinite",
-      "rawValue": "Aeroplan",
-      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards.html",
-      "capturedAt": "2026-09-23T02:08:30.036Z",
-      "context": "Aeroplan Visa Infinite Card. Apply now for a CIBC Aeroplan Visa Infinite Card. Opens a new window. Terms and conditions Skip to terms and conditions for the CIBC Aeroplan Visa Infinite Card. CIBC Select Visa* Card Low in"
-    },
-    {
-      "id": "438e9e9686f73e71",
-      "kind": "card_name",
-      "issuer": "CIBC",
-      "subject": "Dividend Visa Infinite",
-      "rawValue": "Dividend Visa Infinite",
-      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards.html",
-      "capturedAt": "2026-09-23T02:08:30.036Z",
-      "context": "ber} out of {total} question(s) Show more questions Get started Apply online for the CIBC Dividend Visa Infinite Card. Meet with us Opens in a new window. Find a banking centre Ope"
-    },
-    {
-      "id": "28e8d2988be96b01",
-      "kind": "card_name",
-      "issuer": "CIBC",
-      "subject": "Dividend Visa",
-      "rawValue": "Dividend Visa",
-      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards.html",
-      "capturedAt": "2026-09-23T02:08:30.036Z",
-      "context": "ber} out of {total} question(s) Show more questions Get started Apply online for the CIBC Dividend Visa Infinite Card. Meet with us Opens in a new window. Find a banking centre Ope"
-    },
-    {
-      "id": "d90edf1b2fc14433",
-      "kind": "card_name",
-      "issuer": "CIBC",
-      "subject": "Aventura Visa Infinite",
-      "rawValue": "Aventura Visa Infinite",
-      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards.html",
-      "capturedAt": "2026-09-23T02:08:30.036Z",
-      "context": "te[2].VWVA.Published(null,null,90,null)(#O2#)% Quebec residents Learn more about the CIBC Aventura Visa Infinite Card. Apply now for a CIBC Aventura Visa Infinite Card. Opens a new"
-    },
-    {
-      "id": "03561680ba4f6b7f",
-      "kind": "point_currency",
-      "issuer": "CIBC",
-      "subject": "Aventura Visa Infinite",
-      "rawValue": "Aeroplan",
-      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards.html",
-      "capturedAt": "2026-09-23T02:08:30.036Z",
-      "context": "Aventura Visa Infinite Card. Apply now for a CIBC Aventura Visa Infinite Card. Opens a new window. Terms and conditions Skip to terms and conditions for the CIBC Aventura Visa Infinite Card.. CIBC Aeroplan® Visa Infinite"
-    },
-    {
-      "id": "66ec127c07bf0dab",
-      "kind": "point_currency",
-      "issuer": "CIBC",
-      "subject": "Aventura Visa Infinite",
-      "rawValue": "CIBC Aventura",
-      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards.html",
-      "capturedAt": "2026-09-23T02:08:30.036Z",
-      "context": "Aventura Visa Infinite Card. Apply now for a CIBC Aventura Visa Infinite Card. Opens a new window. Terms and conditions Skip to terms and conditions for the CIBC Aventura Visa Infinite Card.. CIBC Aeroplan® Visa Infinite"
-    },
-    {
-      "id": "037ce43c2c18eaa0",
-      "kind": "card_name",
-      "issuer": "CIBC",
-      "subject": "Aeroplan Visa",
-      "rawValue": "Aeroplan Visa",
-      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards.html",
-      "capturedAt": "2026-09-23T02:08:30.036Z",
-      "context": "e[2].VWIAG.Published(null,null,90,null)(#O2#)% Quebec residents Learn more about the CIBC Aeroplan Visa Infinite Card. Apply now for a CIBC Aeroplan Visa Infinite Card. Opens a new"
-    },
-    {
-      "id": "9854a647a14f8842",
-      "kind": "point_currency",
-      "issuer": "CIBC",
-      "subject": "Aeroplan Visa",
-      "rawValue": "Aeroplan",
-      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards.html",
-      "capturedAt": "2026-09-23T02:08:30.036Z",
-      "context": "Aeroplan Visa Infinite Card. Apply now for a CIBC Aeroplan Visa Infinite Card. Opens a new window. Terms and conditions Skip to terms and conditions for the CIBC Aeroplan Visa Infinite Card. CIBC Select Visa* Card Low in"
-    },
-    {
-      "id": "ef0e2ae0d8f86d77",
-      "kind": "annual_fee",
-      "issuer": "CIBC",
-      "subject": "CIBC listing (unattributed)",
-      "rawValue": "Annual fee $0",
-      "parsedNumber": 0,
-      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards.html",
-      "capturedAt": "2026-09-23T02:08:30.036Z",
-      "context": "ercard® Rewards Limited time offer Join and earn up to $280 in value† with no annual fee. Annual fee $0 Purchase interest rate3<span class=\"body-copy\">Purchase interest rate<sup>3<"
-    },
-    {
-      "id": "509a03da66549e1b",
-      "kind": "annual_fee",
-      "issuer": "CIBC",
-      "subject": "CIBC listing (unattributed)",
-      "rawValue": "Annual fee $139",
-      "parsedNumber": 139,
-      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards.html",
-      "capturedAt": "2026-09-23T02:08:30.036Z",
-      "context": "isa Infinite* Card Travel Digital exclusive offer Apply and earn up to $1,900 in value!†. Annual fee $139 Purchase interest rate3 RDS%rate[2].VWVA.Published(null,null,6,null)(#O2#)"
-    },
-    {
-      "id": "59633666e96ab264",
-      "kind": "annual_fee",
-      "issuer": "CIBC",
-      "subject": "CIBC listing (unattributed)",
-      "rawValue": "Annual fee $29",
-      "parsedNumber": 29,
-      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards.html",
-      "capturedAt": "2026-09-23T02:08:30.036Z",
-      "context": "r your credit card balance — get 0% interest for up to 10 months with a 1% transfer fee.† Annual fee $29 Purchase interest rate1 RDS%rate[2].VSSEL.Published(null,null,6,null)(#O2#)"
-    },
-    {
-      "id": "5b60e52c51d6d48d",
-      "kind": "card_name",
-      "issuer": "National Bank",
-      "subject": "World Elite Mastercard",
-      "rawValue": "World Elite Mastercard",
-      "sourceUrl": "https://www.nbc.ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:08:30.287Z",
-      "context": "rtain conditions may apply. Only the primary cardholder (“Cardholder”) of a National Bank World Elite Mastercard credit card whose account is in good standing may request a “Travel"
-    },
-    {
-      "id": "a33e7b9a2c21195f",
-      "kind": "card_name",
-      "issuer": "National Bank",
-      "subject": "Allure World Elite Mastercard",
-      "rawValue": "Allure World Elite Mastercard",
-      "sourceUrl": "https://www.nbc.ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:08:30.287Z",
-      "context": "Go to page contentGo to main menuSign in to my accountPersonalBusinessWealth ManagementAbo"
-    },
-    {
-      "id": "d70efa1341fac764",
-      "kind": "annual_fee",
-      "issuer": "National Bank",
-      "subject": "National Bank listing (unattributed)",
-      "rawValue": "Annual fee2",
-      "parsedNumber": 2,
-      "sourceUrl": "https://www.nbc.ca/en/personal/credit-cards.html",
-      "capturedAt": "2026-09-23T02:08:30.287Z",
-      "context": "insurance11 Extended purchase protection4 Travel insurance for trips of 10 days or less 4 Annual fee2 ${p2.productPricing.AF_CRD.productPricingValue|amount:\"true\"} $0 for the first"
-    },
     {
       "id": "a7b34f4e8b88dca1",
       "kind": "partnership_mention",
@@ -816,7 +98,8 @@
       "subject": "Shell ↔ Shell",
       "rawValue": "Shell",
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "Student Banking Bundle The Student Hub Explore Scene+ Programs Programs & Services Scene+ Shell Indigenous Peoples Smart savings tools Hockey for All Scotia Perks Bank The Rest® sa"
     },
     {
@@ -827,7 +110,8 @@
       "subject": "Shell ↔ Shell Go+",
       "rawValue": "Shell Go+",
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "t up to 10¢/ L in value at Shell With our new partnership, you can link your card to your Shell Go+ account today so you can take advantage of this exclusive offer on your next fue"
     },
     {
@@ -838,7 +122,8 @@
       "subject": "Shell ↔ Scene+",
       "rawValue": "Scene+",
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "ards Travel & lifestyle credit cards No annual fee credit cards Low interest credit cards Scene+ rewards credit cards Student credit cards Newcomer credit cards Award-winning credi"
     },
     {
@@ -850,7 +135,8 @@
       "rawValue": "10¢/ L",
       "parsedNumber": 10,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "ency Foreign exchange rates Foreign exchange services View All Hit the road and get up to 10¢/ L in value at Shell With our new partnership, you can link your card to your Shell Go"
     },
     {
@@ -862,7 +148,8 @@
       "rawValue": "3¢/L",
       "parsedNumber": 3,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "ue on fuel purchases at Shell Explore eligible cardsExplore eligible cards Instantly Save 3¢/L1 When you pay with your linked credit or debit card on all fuel purchases. Instantly"
     },
     {
@@ -874,7 +161,8 @@
       "rawValue": "4¢/L",
       "parsedNumber": 4,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "When you pay with your linked credit or debit card on all fuel purchases. Instantly Save 4¢/L2 When you fuel up with Shell V-Power® and pay with your linked credit card that earns"
     },
     {
@@ -886,7 +174,8 @@
       "rawValue": "7 cents per l",
       "parsedNumber": 7,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "chase fuel at Shell. Visit shell.ca/loyalty to learn more. Terms & Conditions 1 Get up to 7 cents per litre in instant fuel discounts for a limited time and earn up to 3 cents per"
     },
     {
@@ -898,7 +187,8 @@
       "rawValue": "3 cents per l",
       "parsedNumber": 3,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "1 Get up to 7 cents per litre in instant fuel discounts for a limited time and earn up to 3 cents per litre in Scene+ rewards value with an eligible Scotiabank payment card linked"
     },
     {
@@ -910,7 +200,8 @@
       "rawValue": "3 cents per L",
       "parsedNumber": 3,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "rds value with an eligible Scotiabank payment card linked to a Shell Go+ Account: Instant 3 cents per Litre Discount on Fuel Purchases (All Grades): Receive an instant 3 cents per"
     },
     {
@@ -922,7 +213,8 @@
       "rawValue": "4 cents per L",
       "parsedNumber": 4,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "unt. This discount is subject to the Scotiabank Fuel Benefit Terms and Conditions.Instant 4 cents per Litre Discount on Premium Fuel: Between May 26, 2026 and June 1, 2027 (“Promot"
     },
     {
@@ -934,7 +226,8 @@
       "rawValue": "4 cents per l",
       "parsedNumber": 4,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "um Fuel: Between May 26, 2026 and June 1, 2027 (“Promotional Period”), receive an instant 4 cents per litre discount on purchases of V-Power® gasoline, or V-Power® diesel (“Premium"
     },
     {
@@ -946,7 +239,8 @@
       "rawValue": "8 cents per l",
       "parsedNumber": 8,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "dditional terms. For Scotia® Home Hardware PRO Visa* Business Cardholders only: Get up to 8 cents per litre in instant fuel discounts for a limited time and earn up to 2 cents per"
     },
     {
@@ -958,7 +252,8 @@
       "rawValue": "2 cents per l",
       "parsedNumber": 2,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": ": Get up to 8 cents per litre in instant fuel discounts for a limited time and earn up to 2 cents per litre in Scene+ rewards value with a Scotia® Home Hardware PRO Visa* Business"
     },
     {
@@ -970,7 +265,8 @@
       "rawValue": "5 cents per L",
       "parsedNumber": 5,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "rms and Conditions or Tangerine Fuel Benefit Terms and Conditions (as applicable).Instant 5 cents per Litre Discount on Premium Fuel: Between May 26, 2026 and June 1, 2027 (“Promot"
     },
     {
@@ -982,7 +278,8 @@
       "rawValue": "5 cents per l",
       "parsedNumber": 5,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "um Fuel: Between May 26, 2026 and June 1, 2027 (“Promotional Period”), receive an instant 5 cents per litre discount on purchases of V-Power®* gasoline, or V-Power®* diesel (“Premi"
     },
     {
@@ -994,7 +291,8 @@
       "rawValue": "2 cents per L",
       "parsedNumber": 2,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "fer terms are in addition to the Scotiabank Fuel Benefit Terms and Conditions. Earn up to 2 cents per Litre in Scene+ points Value (Equivalent) on Fuel Purchases: As a Scene+ Membe"
     },
     {
@@ -1006,7 +304,8 @@
       "rawValue": "10 cents per l",
       "parsedNumber": 10,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "or full details including redemption options and additional terms. Note: Highest value of 10 cents per litre assumes a Premium Fuel Purchase made with an eligible Scotiabank Credit"
     },
     {
@@ -1017,7 +316,8 @@
       "subject": "shell-scene-scotia-scene-cards",
       "rawValue": "known_source_for:shell-scene-scotia-scene-cards",
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "Page is a cited sourceUrl for production partnership shell-scene-scotia-scene-cards"
     },
     {
@@ -1028,7 +328,8 @@
       "subject": "shell-go-tangerine-scotia-cashback",
       "rawValue": "known_source_for:shell-go-tangerine-scotia-cashback",
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "Page is a cited sourceUrl for production partnership shell-go-tangerine-scotia-cashback"
     },
     {
@@ -1038,7 +339,8 @@
       "subject": "Gold American Express",
       "rawValue": "Gold American Express",
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "redit Cards Scotiabank Scene+ Visa Card Scotiabank Passport Visa Infinite card Scotiabank Gold American Express card Scotiabank American Express card Scotiabank Platinum American E"
     },
     {
@@ -1048,7 +350,8 @@
       "subject": "Gold American Express",
       "rawValue": "Scene+",
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "Gold American Express card Scotiabank American Express card Scotiabank Platinum American Express card ScotiaGold Passport Visa card Scene+ for Students Preferred Package for Students and Youth - 16 and over Preferred Pac"
     },
     {
@@ -1058,7 +361,8 @@
       "subject": "Passport Visa Infinite",
       "rawValue": "Passport Visa Infinite",
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "mate Package Preferred Package Scene+ Credit Cards Scotiabank Scene+ Visa Card Scotiabank Passport Visa Infinite card Scotiabank Gold American Express card Scotiabank American Expr"
     },
     {
@@ -1068,7 +372,8 @@
       "subject": "Passport Visa Infinite",
       "rawValue": "Scene+",
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "Passport Visa Infinite card Scotiabank Gold American Express card Scotiabank American Express card Scotiabank Platinum American Express card ScotiaGold Passport Visa card Scene+ for Students Preferred Package for Student"
     },
     {
@@ -1078,7 +383,8 @@
       "subject": "Momentum Visa Infinite",
       "rawValue": "Momentum Visa Infinite",
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "Apply NowApply now to Momentum Infinite card See if it's right for you for the Scotiabank Momentum Visa Infinite credit card Is this credit card right for you? Right for you if you"
     },
     {
@@ -1088,7 +394,8 @@
       "subject": "Scene+ Visa",
       "rawValue": "Scene+ Visa",
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "ator Scene+ Debit Cards Ultimate Package Preferred Package Scene+ Credit Cards Scotiabank Scene+ Visa Card Scotiabank Passport Visa Infinite card Scotiabank Gold American Express c"
     },
     {
@@ -1098,7 +405,8 @@
       "subject": "Scene+ Visa",
       "rawValue": "Scene+",
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "Scene+ Visa Card Scotiabank Passport Visa Infinite card Scotiabank Gold American Express card Scotiabank American Express card Scotiabank Platinum American Express card ScotiaGold Passport Visa card Scene+ for Students P"
     },
     {
@@ -1108,7 +416,8 @@
       "subject": "Scene+ Visa Infinite",
       "rawValue": "Scene+ Visa Infinite",
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "Skip to content Personal Business Commercial Global Markets Global Wealth About Us Investo"
     },
     {
@@ -1118,7 +427,8 @@
       "subject": "Momentum Visa",
       "rawValue": "Momentum Visa",
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "Apply NowApply now to Momentum Infinite card See if it's right for you for the Scotiabank Momentum Visa Infinite credit card Is this credit card right for you? Right for you if you"
     },
     {
@@ -1128,7 +438,8 @@
       "subject": "Platinum American Express",
       "rawValue": "Platinum American Express",
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "te card Scotiabank Gold American Express card Scotiabank American Express card Scotiabank Platinum American Express card ScotiaGold Passport Visa card Scene+ for Students Preferred"
     },
     {
@@ -1138,7 +449,8 @@
       "subject": "Platinum American Express",
       "rawValue": "Scene+",
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "Platinum American Express card ScotiaGold Passport Visa card Scene+ for Students Preferred Package for Students and Youth - 16 and over Preferred Package for Students and Youth - Under 16 Scotiabank Scene+ Visa Card for "
     },
     {
@@ -1149,7 +461,8 @@
       "rawValue": "Annual fee $150",
       "parsedNumber": 150,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "t year welcome offers, rewards and savings*, including up to 35,000 bonus Scene+ points.♢ Annual fee $150 Purchase interest rate 20.99% Cash advance rate 22.99% You could earn Up t"
     },
     {
@@ -1160,7 +473,8 @@
       "rawValue": "Annual fee $120",
       "parsedNumber": 120,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "fers, first year rewards and savings value, including up to 50,000 bonus Scene+ points.** Annual fee $120 Purchase interest rate 21.99% Cash advance rate 22.99% You could earn Up t"
     },
     {
@@ -1171,7 +485,8 @@
       "rawValue": "Annual fee $0",
       "parsedNumber": 0,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "nk® Scene+TM Visa* Card Earn up to 5,000 bonus Scene+ points within your first 3 months.1 Annual fee $0 Purchase interest rate 21.99% Cash advance rate 22.99% You could earn Up to"
     },
     {
@@ -1182,7 +497,8 @@
       "rawValue": "Annual fee $199",
       "parsedNumber": 199,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "ear and up to 40,000 bonus Scene+ points with the Passport™ Visa Infinite Business* Card1 Annual fee $199 Purchase interest rate 20.99% Cash advance rate 22.99% Apply NowApply now"
     },
     {
@@ -1193,7 +509,8 @@
       "rawValue": "Annual fee $399",
       "parsedNumber": 399,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "to $3,000* in value in the first 14 months, including up to 100,0004 bonus Scene+ points. Annual fee $399 Purchase interest rate 9.99% Cash advance rate 9.99% You could earn Up to"
     },
     {
@@ -1204,7 +521,8 @@
       "rawValue": "Annual fee $599",
       "parsedNumber": 599,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "rn up to 80,000 bonus Scene+ points in your first 14 months. That’s up to $800 in value.‡ Annual fee $599 Purchase interest rate 20.99% Cash advance rate 22.99% You could earn Up t"
     },
     {
@@ -1215,7 +533,8 @@
       "rawValue": "annual fee $49",
       "parsedNumber": 49,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "on balance transfers for the first 9 months (2% fee per cash advance; 22.99% after that; annual fee $49).1 Annual fee Purchase interest rate Cash advance rate $49 20.99% 22.99% Yo"
     },
     {
@@ -1226,7 +545,8 @@
       "rawValue": "annual fee $0",
       "parsedNumber": 0,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "on balance transfers for the first 9 months (2% fee per cash advance, 22.99% after that; annual fee $0).1 Annual fee Purchase interest rate Cash advance rate $0 20.99% 22.99% You"
     },
     {
@@ -1237,7 +557,8 @@
       "rawValue": "annual fee $29",
       "parsedNumber": 29,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "on balance transfers for the first 9 months (2% fee per cash advance, 13.99% after that; annual fee $29).2 Plus no annual fee in the first year.2 Annual fee $29 Purchase interest"
     },
     {
@@ -1248,7 +569,8 @@
       "rawValue": "Annual fee $29",
       "parsedNumber": 29,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "cash advance, 13.99% after that; annual fee $29).2 Plus no annual fee in the first year.2 Annual fee $29 Purchase interest rate 13.99% Cash advance rate 13.99% Apply NowApply now S"
     },
     {
@@ -1259,7 +581,8 @@
       "rawValue": "annual fee $79",
       "parsedNumber": 79,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "ntroductory interest rate on Balance transfers for the first 6 months (22.99% after that; annual fee $79).1 Annual fee $79 Purchase interest rate 20.99% Cash advance rate 22.99% Ap"
     },
     {
@@ -1270,7 +593,8 @@
       "rawValue": "Annual fee $79",
       "parsedNumber": 79,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "st rate on Balance transfers for the first 6 months (22.99% after that; annual fee $79).1 Annual fee $79 Purchase interest rate 20.99% Cash advance rate 22.99% Apply NowApply now S"
     },
     {
@@ -1281,7 +605,8 @@
       "rawValue": "earn 1 Scene+ point per ",
       "parsedNumber": 1,
       "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-      "capturedAt": "2026-09-23T02:08:30.604Z",
+      "capturedAt": "2026-09-23T03:14:50.460Z",
+      "status": "pending",
       "context": "nts by paying with your linked Scotiabank payment card. If you’re a Scene+ member, you’ll earn 1 Scene+ point per litre on all fuel purchases, and 1 point per $1 spent on car wash"
     },
     {
@@ -1292,8 +617,35 @@
       "subject": "shell-scene-scotia-scene-cards",
       "rawValue": "known_source_for:shell-scene-scotia-scene-cards",
       "sourceUrl": "https://www.shell.ca/en_ca/drivers/loyalty-and-payment/partners/scotiabank.html",
-      "capturedAt": "2026-09-23T02:08:30.848Z",
+      "capturedAt": "2026-09-23T03:14:51.447Z",
+      "status": "pending",
       "context": "Page is a cited sourceUrl for production partnership shell-scene-scotia-scene-cards"
+    },
+    {
+      "id": "b4cf53c98dd0ef72",
+      "kind": "offer_expiry",
+      "issuer": "CIBC",
+      "brand": "JOURNIE",
+      "subject": "JOURNIE",
+      "rawValue": "until December 6, 2027",
+      "expiresAt": "2027-12-06",
+      "sourceUrl": "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
+      "capturedAt": "2026-09-23T03:14:52.257Z",
+      "status": "pending",
+      "context": "of credit to help conquer your goals. Enjoy a low introductory rate†, equal to CIBC Prime, until December 6, 2027. Learn more about this low introductory rate. Investments Investme"
+    },
+    {
+      "id": "b4cf53c98dd0ef72",
+      "kind": "offer_expiry",
+      "issuer": "CIBC",
+      "brand": "JOURNIE",
+      "subject": "JOURNIE",
+      "rawValue": "until December 6, 2027",
+      "expiresAt": "2027-12-06",
+      "sourceUrl": "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
+      "capturedAt": "2026-09-23T03:14:52.257Z",
+      "status": "pending",
+      "context": "f credit to help conquer your goals. Enjoy a low introductory rate†, equal to CIBC Prime, until December 6, 2027. Learn more about this low introductory rate. Investments Investmen"
     },
     {
       "id": "5da0a4d6df161075",
@@ -1303,7 +655,8 @@
       "subject": "JOURNIE ↔ JOURNIE",
       "rawValue": "Journie",
       "sourceUrl": "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
-      "capturedAt": "2026-09-23T02:08:31.156Z",
+      "capturedAt": "2026-09-23T03:14:52.257Z",
+      "status": "pending",
       "context": "ct us. Opens in a new window. Current language: English Opens in a dialog. Special Offers Journie Rewards Journie Rewards Dividend Visa modal CIBC and Journie Rewards Save up to 10"
     },
     {
@@ -1314,7 +667,8 @@
       "subject": "JOURNIE ↔ Costco",
       "rawValue": "Costco",
       "sourceUrl": "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
-      "capturedAt": "2026-09-23T02:08:31.156Z",
+      "capturedAt": "2026-09-23T03:14:52.257Z",
+      "status": "pending",
       "context": "niors Foreign Workers New to Canada Skilled Trades Banking Bundle US Cross-Border Banking Costco Member Offers Indigenous Military Banking Tools and Resources Compare Bank Accounts"
     },
     {
@@ -1325,7 +679,8 @@
       "subject": "JOURNIE ↔ Aeroplan",
       "rawValue": "Aeroplan",
       "sourceUrl": "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
-      "capturedAt": "2026-09-23T02:08:31.156Z",
+      "capturedAt": "2026-09-23T03:14:52.257Z",
+      "status": "pending",
       "context": "arn more about the CIBC Smart Account offer. Credit Cards Discover Our Cards Travel Cards Aeroplan Cards Cash Back Cards Costco Cards Rewards Cards No Fee Cards Low Interest Cards"
     },
     {
@@ -1336,7 +691,8 @@
       "subject": "JOURNIE ↔ Pioneer",
       "rawValue": "Pioneer",
       "sourceUrl": "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
-      "capturedAt": "2026-09-23T02:08:31.156Z",
+      "capturedAt": "2026-09-23T03:14:52.257Z",
+      "status": "pending",
       "context": "any time. ™ All of Journie Rewards trademarks are owned by Parkland Corporation. ™ All of Pioneer’s trademarks are owned by Parkland Corporation. ™ Ultramar is a registered tradema"
     },
     {
@@ -1347,7 +703,8 @@
       "subject": "JOURNIE ↔ Ultramar",
       "rawValue": "Ultramar",
       "sourceUrl": "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
-      "capturedAt": "2026-09-23T02:08:31.156Z",
+      "capturedAt": "2026-09-23T03:14:52.257Z",
+      "status": "pending",
       "context": "Parkland Corporation. ™ All of Pioneer’s trademarks are owned by Parkland Corporation. ™ Ultramar is a registered trademark of Valero Energy Inc., used under license. CHEVRON is a"
     },
     {
@@ -1359,7 +716,8 @@
       "rawValue": "10 cents per l",
       "parsedNumber": 10,
       "sourceUrl": "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
-      "capturedAt": "2026-09-23T02:08:31.156Z",
+      "capturedAt": "2026-09-23T03:14:52.257Z",
+      "status": "pending",
       "context": "s Journie Rewards Journie Rewards Dividend Visa modal CIBC and Journie Rewards Save up to 10 cents per litre on gas!1 Link and use your eligible CIBC card with Journie Rewards Link"
     },
     {
@@ -1371,7 +729,8 @@
       "rawValue": "3 cents per l",
       "parsedNumber": 3,
       "sourceUrl": "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
-      "capturedAt": "2026-09-23T02:08:31.156Z",
+      "capturedAt": "2026-09-23T03:14:52.257Z",
+      "status": "pending",
       "context": "at the pump Join Journie Rewards and link your eligible CIBC debit and credit cards1 Save 3 cents per litre every time you fill up1 + Save 7 cents per litre every time you reach 30"
     },
     {
@@ -1383,7 +742,8 @@
       "rawValue": "7 cents per l",
       "parsedNumber": 7,
       "sourceUrl": "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
-      "capturedAt": "2026-09-23T02:08:31.156Z",
+      "capturedAt": "2026-09-23T03:14:52.257Z",
+      "status": "pending",
       "context": "igible CIBC debit and credit cards1 Save 3 cents per litre every time you fill up1 + Save 7 cents per litre every time you reach 300 Journie points1 Here’s how to link your card St"
     },
     {
@@ -1395,7 +755,8 @@
       "rawValue": "3 cent per l",
       "parsedNumber": 3,
       "sourceUrl": "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
-      "capturedAt": "2026-09-23T02:08:31.156Z",
+      "capturedAt": "2026-09-23T03:14:52.257Z",
+      "status": "pending",
       "context": "ed help, call us at 1-800-465-2422Opens your phone app.. Earning rewards How do I get the 3 cent per litre gas discount at participating stations? Select to show or hide answer. If"
     },
     {
@@ -1406,7 +767,8 @@
       "subject": "journie-cibc-gas-discount",
       "rawValue": "known_source_for:journie-cibc-gas-discount",
       "sourceUrl": "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
-      "capturedAt": "2026-09-23T02:08:31.156Z",
+      "capturedAt": "2026-09-23T03:14:52.257Z",
+      "status": "pending",
       "context": "Page is a cited sourceUrl for production partnership journie-cibc-gas-discount"
     },
     {
@@ -1416,7 +778,8 @@
       "subject": "Dividend Visa Infinite",
       "rawValue": "Dividend Visa Infinite",
       "sourceUrl": "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
-      "capturedAt": "2026-09-23T02:08:31.156Z",
+      "capturedAt": "2026-09-23T03:14:52.257Z",
+      "status": "pending",
       "context": "Skip to Online Banking Skip to Content Skip to Navigation Personal Business Commercial Imp"
     },
     {
@@ -1426,7 +789,8 @@
       "subject": "Dividend Visa",
       "rawValue": "Dividend Visa",
       "sourceUrl": "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
-      "capturedAt": "2026-09-23T02:08:31.156Z",
+      "capturedAt": "2026-09-23T03:14:52.257Z",
+      "status": "pending",
       "context": "rrent language: English Opens in a dialog. Special Offers Journie Rewards Journie Rewards Dividend Visa modal CIBC and Journie Rewards Save up to 10 cents per litre on gas!1 Link a"
     },
     {
@@ -1437,7 +801,8 @@
       "subject": "JOURNIE ↔ JOURNIE",
       "rawValue": "Journie",
       "sourceUrl": "https://journie.ca/on-en/partners/cibc",
-      "capturedAt": "2026-09-23T02:08:32.799Z",
+      "capturedAt": "2026-09-23T03:14:52.647Z",
+      "status": "pending",
       "context": "oreStack up and save up to 10¢/LSave more when you link your eligible CIBC card with your Journie account. Save 3¢/L every time you pay with your eligible linked CIBC card.* Save a"
     },
     {
@@ -1449,7 +814,8 @@
       "rawValue": "10¢/L",
       "parsedNumber": 10,
       "sourceUrl": "https://journie.ca/on-en/partners/cibc",
-      "capturedAt": "2026-09-23T02:08:32.799Z",
+      "capturedAt": "2026-09-23T03:14:52.647Z",
+      "status": "pending",
       "context": "with your eligible CIBC card at participating locations.Learn MoreStack up and save up to 10¢/LSave more when you link your eligible CIBC card with your Journie account. Save 3¢/L"
     },
     {
@@ -1461,7 +827,8 @@
       "rawValue": "3¢/L",
       "parsedNumber": 3,
       "sourceUrl": "https://journie.ca/on-en/partners/cibc",
-      "capturedAt": "2026-09-23T02:08:32.799Z",
+      "capturedAt": "2026-09-23T03:14:52.647Z",
+      "status": "pending",
       "context": "p to 10¢/LSave more when you link your eligible CIBC card with your Journie account. Save 3¢/L every time you pay with your eligible linked CIBC card.* Save an extra 7¢/L when you"
     },
     {
@@ -1473,7 +840,8 @@
       "rawValue": "7¢/L",
       "parsedNumber": 7,
       "sourceUrl": "https://journie.ca/on-en/partners/cibc",
-      "capturedAt": "2026-09-23T02:08:32.799Z",
+      "capturedAt": "2026-09-23T03:14:52.647Z",
+      "status": "pending",
       "context": "account. Save 3¢/L every time you pay with your eligible linked CIBC card.* Save an extra 7¢/L when you reach 300 Journie points.** Linking is super easy and rewarding. Download th"
     },
     {
@@ -1484,7 +852,8 @@
       "subject": "journie-cibc-gas-discount",
       "rawValue": "known_source_for:journie-cibc-gas-discount",
       "sourceUrl": "https://journie.ca/on-en/partners/cibc",
-      "capturedAt": "2026-09-23T02:08:32.799Z",
+      "capturedAt": "2026-09-23T03:14:52.647Z",
+      "status": "pending",
       "context": "Page is a cited sourceUrl for production partnership journie-cibc-gas-discount"
     },
     {
@@ -1495,7 +864,8 @@
       "subject": "Moi ↔ Moi",
       "rawValue": "Moi",
       "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
-      "capturedAt": "2026-09-23T02:08:32.956Z",
+      "capturedAt": "2026-09-23T03:14:52.848Z",
+      "status": "pending",
       "context": "re. Enrol Now (opens new tab) Close EN▾ English French Sign in Join now Avion Rewards and Moi Linked Loyalty FAQ How do I link my credit and debit cards to Moi Rewards? You can lin"
     },
     {
@@ -1506,7 +876,8 @@
       "subject": "Moi ↔ Moi",
       "rawValue": "moi",
       "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
-      "capturedAt": "2026-09-23T02:08:32.956Z",
+      "capturedAt": "2026-09-23T03:14:52.848Z",
+      "status": "pending",
       "context": "rds? You can link your Moi card and RBC Card(s) at any time by: Visiting avionrewards.com/moi or Sign in to your RBC Online Banking, select the card you want to link and then “Link"
     },
     {
@@ -1517,7 +888,8 @@
       "subject": "Moi ↔ Metro",
       "rawValue": "Metro",
       "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
-      "capturedAt": "2026-09-23T02:08:32.956Z",
+      "capturedAt": "2026-09-23T03:14:52.848Z",
+      "status": "pending",
       "context": "ou need to link your cards once to enjoy the exclusive benefits of RBC’s partnership with Metro. After you’re linked, you will earn extra Moi points on all your eligible purchases"
     },
     {
@@ -1528,7 +900,8 @@
       "subject": "moi-rewards-rbc-linked",
       "rawValue": "known_source_for:moi-rewards-rbc-linked",
       "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
-      "capturedAt": "2026-09-23T02:08:32.956Z",
+      "capturedAt": "2026-09-23T03:14:52.848Z",
+      "status": "pending",
       "context": "Page is a cited sourceUrl for production partnership moi-rewards-rbc-linked"
     },
     {
@@ -1538,7 +911,8 @@
       "subject": "Avion Visa Infinite",
       "rawValue": "Avion Visa Infinite",
       "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
-      "capturedAt": "2026-09-23T02:08:32.956Z",
+      "capturedAt": "2026-09-23T03:14:52.848Z",
+      "status": "pending",
       "context": "Skip to main content Travel Shop Redeem Membership FAQ EN▾ English Français Sign in Join n"
     },
     {
@@ -1548,7 +922,8 @@
       "subject": "Avion Visa Infinite Privilege",
       "rawValue": "Avion Visa Infinite Privilege",
       "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
-      "capturedAt": "2026-09-23T02:08:32.956Z",
+      "capturedAt": "2026-09-23T03:14:52.848Z",
+      "status": "pending",
       "context": "Skip to main content Travel Shop Redeem Membership FAQ EN▾ English Français Sign in Join n"
     },
     {
@@ -1558,7 +933,8 @@
       "subject": "moi RBC Visa",
       "rawValue": "moi RBC Visa",
       "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
-      "capturedAt": "2026-09-23T02:08:32.956Z",
+      "capturedAt": "2026-09-23T03:14:52.848Z",
+      "status": "pending",
       "context": "any Moi points due to missing transactions made with your linked RBC Card. Can I link my moi RBC Visa credit card to earn more Moi points? No, you’re earning the most points per p"
     },
     {
@@ -1568,7 +944,8 @@
       "subject": "moi RBC Visa",
       "rawValue": "Moi",
       "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
-      "capturedAt": "2026-09-23T02:08:32.956Z",
+      "capturedAt": "2026-09-23T03:14:52.848Z",
+      "status": "pending",
       "context": "moi RBC Visa credit card to earn more Moi points? No, you’re earning the most points per purchase possible with your moi RBC Visa card. I have a moi RBC Visa credit card. Can I link my other RBC Card products to my Moi R"
     },
     {
@@ -1578,7 +955,8 @@
       "subject": "Ion+",
       "rawValue": "Ion+",
       "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
-      "capturedAt": "2026-09-23T02:08:32.956Z",
+      "capturedAt": "2026-09-23T03:14:52.848Z",
+      "status": "pending",
       "context": "Skip to main content Travel Shop Redeem Membership FAQ EN▾ English Français Sign in Join n"
     },
     {
@@ -1588,7 +966,8 @@
       "subject": "Avion Gold Visa",
       "rawValue": "Avion Gold Visa",
       "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
-      "capturedAt": "2026-09-23T02:08:32.956Z",
+      "capturedAt": "2026-09-23T03:14:52.848Z",
+      "status": "pending",
       "context": "Skip to main content Travel Shop Redeem Membership FAQ EN▾ English Français Sign in Join n"
     },
     {
@@ -1598,8 +977,35 @@
       "subject": "Ion",
       "rawValue": "Ion",
       "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
-      "capturedAt": "2026-09-23T02:08:32.956Z",
+      "capturedAt": "2026-09-23T03:14:52.848Z",
+      "status": "pending",
       "context": "Travel Shop Redeem Membership FAQ EN▾ English Français Sign in Join now MENU Sign In to Avion Rewards Sign in with: Online Banking Business Credit Card Commercial Credit Card Don’t"
+    },
+    {
+      "id": "fb7af674e343d848",
+      "kind": "offer_expiry",
+      "issuer": "CIBC",
+      "brand": "Costco",
+      "subject": "Costco",
+      "rawValue": "until December 6, 2027",
+      "expiresAt": "2027-12-06",
+      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html",
+      "capturedAt": "2026-09-23T03:14:53.417Z",
+      "status": "pending",
+      "context": "of credit to help conquer your goals. Enjoy a low introductory rate†, equal to CIBC Prime, until December 6, 2027. Learn more about this low introductory rate. Investments Investme"
+    },
+    {
+      "id": "fb7af674e343d848",
+      "kind": "offer_expiry",
+      "issuer": "CIBC",
+      "brand": "Costco",
+      "subject": "Costco",
+      "rawValue": "until December 6, 2027",
+      "expiresAt": "2027-12-06",
+      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html",
+      "capturedAt": "2026-09-23T03:14:53.417Z",
+      "status": "pending",
+      "context": "f credit to help conquer your goals. Enjoy a low introductory rate†, equal to CIBC Prime, until December 6, 2027. Learn more about this low introductory rate. Investments Investmen"
     },
     {
       "id": "d78e680f7b30655b",
@@ -1609,7 +1015,8 @@
       "subject": "Costco ↔ Costco",
       "rawValue": "Costco",
       "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html",
-      "capturedAt": "2026-09-23T02:08:33.284Z",
+      "capturedAt": "2026-09-23T03:14:53.417Z",
+      "status": "pending",
       "context": "niors Foreign Workers New to Canada Skilled Trades Banking Bundle US Cross-Border Banking Costco Member Offers Indigenous Military Banking Tools and Resources Compare Bank Accounts"
     },
     {
@@ -1620,7 +1027,8 @@
       "subject": "Costco ↔ Aeroplan",
       "rawValue": "Aeroplan",
       "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html",
-      "capturedAt": "2026-09-23T02:08:33.284Z",
+      "capturedAt": "2026-09-23T03:14:53.417Z",
+      "status": "pending",
       "context": "arn more about the CIBC Smart Account offer. Credit Cards Discover Our Cards Travel Cards Aeroplan Cards Cash Back Cards Costco Cards Rewards Cards No Fee Cards Low Interest Cards"
     },
     {
@@ -1631,7 +1039,8 @@
       "subject": "costco-cibc-mastercard-direct",
       "rawValue": "known_source_for:costco-cibc-mastercard-direct",
       "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html",
-      "capturedAt": "2026-09-23T02:08:33.284Z",
+      "capturedAt": "2026-09-23T03:14:53.417Z",
+      "status": "pending",
       "context": "Page is a cited sourceUrl for production partnership costco-cibc-mastercard-direct"
     },
     {
@@ -1641,7 +1050,8 @@
       "subject": "Costco Mastercard",
       "rawValue": "Costco Mastercard",
       "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html",
-      "capturedAt": "2026-09-23T02:08:33.284Z",
+      "capturedAt": "2026-09-23T03:14:53.417Z",
+      "status": "pending",
       "context": "urrent language: English Opens in a dialog. Personal Credit Cards Credit Card Finder CIBC Costco Mastercard CIBC Costco Mastercard CIBC Costco Cash Back Gift Certificate COSTCO CAR"
     },
     {
@@ -1651,7 +1061,8 @@
       "subject": "Costco Mastercard",
       "rawValue": "cashback",
       "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html",
-      "capturedAt": "2026-09-23T02:08:33.284Z",
+      "capturedAt": "2026-09-23T03:14:53.417Z",
+      "status": "pending",
       "context": "Costco Mastercard CIBC Costco Mastercard CIBC Costco Cash Back Gift Certificate COSTCO CARDs CIBC Costco Mastercard Earn cash back everywhere you shop, including at Costco, with no annual fee and no limit on how much cas"
     },
     {
@@ -1662,7 +1073,8 @@
       "rawValue": "Annual fee $0",
       "parsedNumber": 0,
       "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html",
-      "capturedAt": "2026-09-23T02:08:33.284Z",
+      "capturedAt": "2026-09-23T03:14:53.417Z",
+      "status": "pending",
       "context": "sesⓘ where Mastercard is accepted. Not a Costco member?ⓘ Sign up here Opens a new window. Annual fee $0 Additional cardholders $0 up to 3 Purchase interest rateⓘ RDS%rate[2].MPCOS."
     }
   ]

@@ -1,8 +1,11 @@
 import type { CreditCard, MerchantPartnership } from "../schema";
+import { findingFingerprint } from "./decisions";
+import { isExpiryReviewDue } from "./expiry";
 import { namesLooselyMatch, normalizeName } from "./extract/html";
 import { BIG_SIX_ISSUERS } from "./types";
 import type {
   BigSixIssuer,
+  CrawlScope,
   DiffFinding,
   DiffReport,
   StagingFact,
@@ -15,6 +18,31 @@ export interface DiffInput {
   snapshot: StagingSnapshot;
   cards: CreditCard[];
   partnerships: MerchantPartnership[];
+  /** Fingerprints previously rejected — suppressed from active findings. */
+  rejectedFingerprints?: Set<string>;
+  now?: Date;
+}
+
+function finding(
+  partial: Omit<DiffFinding, "fingerprint" | "status"> & {
+    fingerprint?: string;
+    status?: DiffFinding["status"];
+  },
+): DiffFinding {
+  const fingerprint =
+    partial.fingerprint ??
+    findingFingerprint({
+      kind: partial.kind,
+      issuer: partial.issuer,
+      subject: partial.subject,
+      productionValue: partial.productionValue,
+      stagingValue: partial.stagingValue,
+    });
+  return {
+    ...partial,
+    fingerprint,
+    status: partial.status ?? "pending",
+  };
 }
 
 /**
@@ -23,28 +51,32 @@ export interface DiffInput {
  */
 export function diffStagingAgainstProduction(input: DiffInput): DiffReport {
   const { snapshot, cards, partnerships } = input;
-  const findings: DiffFinding[] = [];
+  const rejected = input.rejectedFingerprints ?? new Set<string>();
+  const now = input.now ?? new Date();
+  const rawFindings: DiffFinding[] = [];
   const bigSixCards = cards.filter((c) =>
     (BIG_SIX_ISSUERS as readonly string[]).includes(c.issuer),
   );
 
   for (const attempt of snapshot.sources) {
     if (attempt.outcome !== "ok") {
-      findings.push({
-        kind: "source_failure",
-        severity: "review",
-        issuer: attempt.issuer,
-        subject: attempt.sourceId,
-        summary: `Source fetch ${attempt.outcome}${attempt.httpStatus ? ` (HTTP ${attempt.httpStatus})` : ""}${attempt.error ? `: ${attempt.error}` : ""}`,
-        stagingValue: attempt.outcome,
-        sourceUrls: [attempt.url],
-        relatedFactIds: [],
-      });
+      rawFindings.push(
+        finding({
+          kind: "source_failure",
+          severity: "review",
+          issuer: attempt.issuer,
+          subject: attempt.sourceId,
+          summary: `Source fetch ${attempt.outcome}${attempt.httpStatus ? ` (HTTP ${attempt.httpStatus})` : ""}${attempt.error ? `: ${attempt.error}` : ""}`,
+          stagingValue: attempt.outcome,
+          sourceUrls: [attempt.url],
+          relatedFactIds: [],
+        }),
+      );
     }
   }
 
   for (const issuer of BIG_SIX_ISSUERS) {
-    findings.push(
+    rawFindings.push(
       ...diffCardsForIssuer(
         issuer,
         bigSixCards.filter((c) => c.issuer === issuer),
@@ -53,7 +85,18 @@ export function diffStagingAgainstProduction(input: DiffInput): DiffReport {
     );
   }
 
-  findings.push(...diffPartnerships(snapshot.facts, partnerships));
+  rawFindings.push(...diffPartnerships(snapshot.facts, partnerships));
+  rawFindings.push(...diffExpiries(snapshot.facts, now));
+
+  let suppressedRejectedCount = 0;
+  const findings: DiffFinding[] = [];
+  for (const f of rawFindings) {
+    if (rejected.has(f.fingerprint)) {
+      suppressedRejectedCount++;
+      continue;
+    }
+    findings.push(f);
+  }
 
   const summary = {
     newCardCandidates: count(findings, "new_card_candidate"),
@@ -63,16 +106,46 @@ export function diffStagingAgainstProduction(input: DiffInput): DiffReport {
     newPartnershipCandidates: count(findings, "new_partnership_candidate"),
     partnershipConflicts: count(findings, "partnership_conflict"),
     sourceFailures: count(findings, "source_failure"),
+    expiryReviewsDue: count(findings, "expiry_review_due"),
+    sourceHealthFailures: count(findings, "source_health_failure"),
   };
 
   return {
     generatedAt: new Date().toISOString(),
     runId: snapshot.runId,
+    crawlScope: snapshot.crawlScope,
     productionCardCount: bigSixCards.length,
     stagingFactCount: snapshot.facts.length,
     findings,
+    suppressedRejectedCount,
     summary,
   };
+}
+
+function diffExpiries(facts: StagingFact[], now: Date): DiffFinding[] {
+  const out: DiffFinding[] = [];
+  const seen = new Set<string>();
+  for (const fact of facts) {
+    if (fact.kind !== "offer_expiry" || !fact.expiresAt) continue;
+    if (!isExpiryReviewDue(fact.expiresAt, now)) continue;
+    const key = `${fact.issuer}|${fact.subject}|${fact.expiresAt}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(
+      finding({
+        kind: "expiry_review_due",
+        severity: "review",
+        issuer: fact.issuer,
+        subject: fact.subject,
+        summary: `Offer/promo text cites expiry ${fact.expiresAt} — review before/near that date`,
+        stagingValue: fact.rawValue,
+        sourceUrls: [fact.sourceUrl],
+        relatedFactIds: [fact.id],
+        expiresAt: fact.expiresAt,
+      }),
+    );
+  }
+  return out;
 }
 
 function diffCardsForIssuer(
@@ -94,34 +167,39 @@ function diffCardsForIssuer(
     );
     if (nameHit) {
       matchedProductionIds.add(card.id);
-      out.push({
-        kind: "unchanged_signal",
-        severity: "info",
-        issuer,
-        subject: card.name,
-        summary: `Catalog card still mentioned on issuer pages`,
-        productionValue: card.name,
-        stagingValue: nameHit.rawValue,
-        sourceUrls: [nameHit.sourceUrl],
-        relatedFactIds: [nameHit.id],
-      });
+      out.push(
+        finding({
+          kind: "unchanged_signal",
+          severity: "info",
+          issuer,
+          subject: card.name,
+          summary: `Catalog card still mentioned on issuer pages`,
+          productionValue: card.name,
+          stagingValue: nameHit.rawValue,
+          sourceUrls: [nameHit.sourceUrl],
+          relatedFactIds: [nameHit.id],
+          status: "verified",
+        }),
+      );
     }
 
     const feeHit = feeFacts.find((f) => namesLooselyMatch(f.subject, card.name));
     if (feeHit && feeHit.parsedNumber !== undefined) {
       matchedProductionIds.add(card.id);
       if (Math.abs(feeHit.parsedNumber - card.annualFee) > FEE_TOLERANCE) {
-        out.push({
-          kind: "fee_change_candidate",
-          severity: "review",
-          issuer,
-          subject: card.name,
-          summary: `Annual fee on page ($${feeHit.parsedNumber}) differs from catalog ($${card.annualFee})`,
-          productionValue: String(card.annualFee),
-          stagingValue: String(feeHit.parsedNumber),
-          sourceUrls: [feeHit.sourceUrl],
-          relatedFactIds: [feeHit.id],
-        });
+        out.push(
+          finding({
+            kind: "fee_change_candidate",
+            severity: "review",
+            issuer,
+            subject: card.name,
+            summary: `Annual fee on page ($${feeHit.parsedNumber}) differs from catalog ($${card.annualFee})`,
+            productionValue: String(card.annualFee),
+            stagingValue: String(feeHit.parsedNumber),
+            sourceUrls: [feeHit.sourceUrl],
+            relatedFactIds: [feeHit.id],
+          }),
+        );
       }
     }
 
@@ -131,23 +209,27 @@ function diffCardsForIssuer(
     if (currencyHit) {
       const prodNorm = normalizeName(card.pointCurrency);
       const stageNorm = normalizeName(currencyHit.rawValue);
-      if (prodNorm !== stageNorm && !prodNorm.includes(stageNorm) && !stageNorm.includes(prodNorm)) {
-        out.push({
-          kind: "point_currency_change_candidate",
-          severity: "review",
-          issuer,
-          subject: card.name,
-          summary: `Point currency hint "${currencyHit.rawValue}" differs from catalog "${card.pointCurrency}"`,
-          productionValue: card.pointCurrency,
-          stagingValue: currencyHit.rawValue,
-          sourceUrls: [currencyHit.sourceUrl],
-          relatedFactIds: [currencyHit.id],
-        });
+      if (
+        prodNorm !== stageNorm &&
+        !prodNorm.includes(stageNorm) &&
+        !stageNorm.includes(prodNorm)
+      ) {
+        out.push(
+          finding({
+            kind: "point_currency_change_candidate",
+            severity: "review",
+            issuer,
+            subject: card.name,
+            summary: `Point currency hint "${currencyHit.rawValue}" differs from catalog "${card.pointCurrency}"`,
+            productionValue: card.pointCurrency,
+            stagingValue: currencyHit.rawValue,
+            sourceUrls: [currencyHit.sourceUrl],
+            relatedFactIds: [currencyHit.id],
+          }),
+        );
       }
     }
 
-    // Earn-rate: flag only when a parsed rate near the card name contradicts
-    // a published category rate (exact equality check on magnitude).
     const cardEarn = earnFacts.filter(
       (f) =>
         namesLooselyMatch(f.subject, card.name) ||
@@ -160,24 +242,25 @@ function diffCardsForIssuer(
         (rc) => Math.abs(rc.earnRate - earn.parsedNumber!) < FEE_TOLERANCE,
       );
       if (!matchesAny && earn.parsedNumber >= 1) {
-        out.push({
-          kind: "earn_rate_change_candidate",
-          severity: "review",
-          issuer,
-          subject: card.name,
-          summary: `Earn-rate snippet "${earn.rawValue}" does not match any catalog rate for this card`,
-          productionValue: card.rewardCategories
-            .map((rc) => `${rc.category}:${rc.earnRate}`)
-            .join(", "),
-          stagingValue: earn.rawValue,
-          sourceUrls: [earn.sourceUrl],
-          relatedFactIds: [earn.id],
-        });
+        out.push(
+          finding({
+            kind: "earn_rate_change_candidate",
+            severity: "review",
+            issuer,
+            subject: card.name,
+            summary: `Earn-rate snippet "${earn.rawValue}" does not match any catalog rate for this card`,
+            productionValue: card.rewardCategories
+              .map((rc) => `${rc.category}:${rc.earnRate}`)
+              .join(", "),
+            stagingValue: earn.rawValue,
+            sourceUrls: [earn.sourceUrl],
+            relatedFactIds: [earn.id],
+          }),
+        );
       }
     }
   }
 
-  // New card candidates: name facts that don't match any production card
   const novelNames = new Map<string, StagingFact>();
   for (const fact of nameFacts) {
     if (fact.subject.includes("(unattributed)")) continue;
@@ -190,26 +273,25 @@ function diffCardsForIssuer(
     }
   }
   for (const fact of novelNames.values()) {
-    // Ignore very generic / non-product subjects
     const tokens = normalizeName(fact.subject).split(" ").filter(Boolean);
     if (tokens.length < 2) continue;
     if (!/\b(visa|mastercard|american express|amex)\b/i.test(fact.subject)) {
       continue;
     }
-    out.push({
-      kind: "new_card_candidate",
-      severity: "review",
-      issuer,
-      subject: fact.subject,
-      summary: `Page mentions card-like product not matched in cards.ts`,
-      stagingValue: fact.rawValue,
-      sourceUrls: [fact.sourceUrl],
-      relatedFactIds: [fact.id],
-    });
+    out.push(
+      finding({
+        kind: "new_card_candidate",
+        severity: "review",
+        issuer,
+        subject: fact.subject,
+        summary: `Page mentions card-like product not matched in cards.ts`,
+        stagingValue: fact.rawValue,
+        sourceUrls: [fact.sourceUrl],
+        relatedFactIds: [fact.id],
+      }),
+    );
   }
 
-  // Removed candidates: only when we successfully fetched a listing page and
-  // saw OTHER cards from this issuer, but not this one (weak signal).
   const listingOk = facts.some(
     (f) => f.kind === "card_name" && f.sourceUrl.length > 0,
   );
@@ -220,17 +302,19 @@ function diffCardsForIssuer(
         namesLooselyMatch(f.subject, card.name),
       );
       if (!mentioned) {
-        out.push({
-          kind: "removed_card_candidate",
-          severity: "info",
-          issuer,
-          subject: card.name,
-          summary:
-            "Catalog card was not detected on fetched listing text (may be JS-only, renamed, or still offered — verify before removing)",
-          productionValue: card.name,
-          sourceUrls: [...new Set(nameFacts.map((f) => f.sourceUrl))],
-          relatedFactIds: [],
-        });
+        out.push(
+          finding({
+            kind: "removed_card_candidate",
+            severity: "info",
+            issuer,
+            subject: card.name,
+            summary:
+              "Catalog card was not detected on fetched listing text (may be JS-only, renamed, or still offered — verify before removing)",
+            productionValue: card.name,
+            sourceUrls: [...new Set(nameFacts.map((f) => f.sourceUrl))],
+            relatedFactIds: [],
+          }),
+        );
       }
     }
   }
@@ -246,8 +330,6 @@ function diffPartnerships(
   const benefitFacts = facts.filter((f) => f.kind === "benefit_amount");
   const mentionFacts = facts.filter((f) => f.kind === "partnership_mention");
 
-  // Conflicts: staging benefit amounts vs partnerships that share this source
-  // URL or clearly share the same merchant/loyalty brand id.
   for (const benefit of benefitFacts) {
     if (benefit.parsedNumber === undefined) continue;
     const brandNeedle = benefit.brand
@@ -270,16 +352,18 @@ function diffPartnerships(
     });
 
     if (related.length === 0) {
-      out.push({
-        kind: "new_partnership_candidate",
-        severity: "review",
-        issuer: benefit.issuer,
-        subject: benefit.subject,
-        summary: `Benefit amount "${benefit.rawValue}" has no matching production partnership for this brand/source`,
-        stagingValue: benefit.rawValue,
-        sourceUrls: [benefit.sourceUrl],
-        relatedFactIds: [benefit.id],
-      });
+      out.push(
+        finding({
+          kind: "new_partnership_candidate",
+          severity: "review",
+          issuer: benefit.issuer,
+          subject: benefit.subject,
+          summary: `Benefit amount "${benefit.rawValue}" has no matching production partnership for this brand/source`,
+          stagingValue: benefit.rawValue,
+          sourceUrls: [benefit.sourceUrl],
+          relatedFactIds: [benefit.id],
+        }),
+      );
       continue;
     }
 
@@ -288,24 +372,25 @@ function diffPartnerships(
       (a) => Math.abs(a - benefit.parsedNumber!) < FEE_TOLERANCE,
     );
     if (!matches) {
-      out.push({
-        kind: "partnership_conflict",
-        severity: "conflict",
-        issuer: benefit.issuer,
-        subject: benefit.subject,
-        summary: `Staged benefit "${benefit.rawValue}" contradicts cited amounts on related partnerships [${related.map((p) => p.id).join(", ")}]`,
-        productionValue: amounts.join(", "),
-        stagingValue: String(benefit.parsedNumber),
-        sourceUrls: [
-          benefit.sourceUrl,
-          ...related.flatMap((p) => p.sourceUrls),
-        ],
-        relatedFactIds: [benefit.id],
-      });
+      out.push(
+        finding({
+          kind: "partnership_conflict",
+          severity: "conflict",
+          issuer: benefit.issuer,
+          subject: benefit.subject,
+          summary: `Staged benefit "${benefit.rawValue}" contradicts cited amounts on related partnerships [${related.map((p) => p.id).join(", ")}]`,
+          productionValue: amounts.join(", "),
+          stagingValue: String(benefit.parsedNumber),
+          sourceUrls: [
+            benefit.sourceUrl,
+            ...related.flatMap((p) => p.sourceUrls),
+          ],
+          relatedFactIds: [benefit.id],
+        }),
+      );
     }
   }
 
-  // New partnership mentions: brand pairs not covered by production ids / notes
   const knownBrandNeedles = new Set(
     partnerships.flatMap((p) => [
       p.id,
@@ -325,21 +410,22 @@ function diffPartnerships(
     const covered = [...knownBrandNeedles].some((needle) =>
       normalizeName(needle).includes(normalizeName(brand).slice(0, 12)),
     );
-    // Only flag if we also saw a benefit on same URL (stronger new-deal signal)
     const benefitOnSamePage = benefitFacts.some(
       (b) => b.sourceUrl === mention.sourceUrl,
     );
     if (!covered && benefitOnSamePage) {
-      out.push({
-        kind: "new_partnership_candidate",
-        severity: "review",
-        issuer: mention.issuer,
-        subject: mention.subject,
-        summary: `Partnership mention "${brand}" with benefit text is not clearly covered by partnerships.ts`,
-        stagingValue: mention.rawValue,
-        sourceUrls: [mention.sourceUrl],
-        relatedFactIds: [mention.id],
-      });
+      out.push(
+        finding({
+          kind: "new_partnership_candidate",
+          severity: "review",
+          issuer: mention.issuer,
+          subject: mention.subject,
+          summary: `Partnership mention "${brand}" with benefit text is not clearly covered by partnerships.ts`,
+          stagingValue: mention.rawValue,
+          sourceUrls: [mention.sourceUrl],
+          relatedFactIds: [mention.id],
+        }),
+      );
     }
   }
 
@@ -351,4 +437,12 @@ function count(
   kind: DiffFinding["kind"],
 ): number {
   return findings.filter((f) => f.kind === kind).length;
+}
+
+/** Empty crawlScope helper for older snapshots in tests. */
+export function withCrawlScope(
+  snapshot: Omit<StagingSnapshot, "crawlScope"> & { crawlScope?: CrawlScope },
+  scope: CrawlScope = "full",
+): StagingSnapshot {
+  return { ...snapshot, crawlScope: snapshot.crawlScope ?? scope };
 }

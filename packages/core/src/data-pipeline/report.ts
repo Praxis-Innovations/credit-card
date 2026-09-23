@@ -1,4 +1,5 @@
 import type { DiffFinding, DiffReport, StagingSnapshot } from "./types";
+import type { SourceHealthReport } from "./source-health";
 
 /** Human-readable Markdown review report from a staging run + diff. */
 export function formatDiffReportMarkdown(
@@ -9,11 +10,15 @@ export function formatDiffReportMarkdown(
   lines.push(`# NorthTap data-pipeline review — Big Six`);
   lines.push("");
   lines.push(`- **Run ID:** \`${report.runId}\``);
+  lines.push(`- **Crawl scope:** \`${report.crawlScope}\` (cards monthly / partnerships bi-weekly / full on the 1st)`);
   lines.push(`- **Generated:** ${report.generatedAt}`);
   lines.push(`- **Staging captured:** ${snapshot.capturedAt}`);
   lines.push(`- **Pipeline version:** ${snapshot.pipelineVersion}`);
   lines.push(`- **Production Big Six cards:** ${report.productionCardCount}`);
   lines.push(`- **Staging facts:** ${report.stagingFactCount}`);
+  lines.push(
+    `- **Suppressed (already rejected):** ${report.suppressedRejectedCount}`,
+  );
   lines.push("");
   lines.push(`## Summary`);
   lines.push("");
@@ -25,10 +30,11 @@ export function formatDiffReportMarkdown(
   lines.push(`| Earn-rate change candidates | ${report.summary.earnRateChanges} |`);
   lines.push(`| New partnership candidates | ${report.summary.newPartnershipCandidates} |`);
   lines.push(`| Partnership conflicts | ${report.summary.partnershipConflicts} |`);
+  lines.push(`| Expiry reviews due | ${report.summary.expiryReviewsDue} |`);
   lines.push(`| Source failures | ${report.summary.sourceFailures} |`);
   lines.push("");
   lines.push(
-    `> Staging is **not** production. Nothing here is written to \`cards.ts\` or \`partnerships.ts\` until a human verifies and promotes it.`,
+    `> Staging is **not** production. Promote via \`pipeline:promote\` → Supabase \`status=verified\` (human-gated). Rejected fingerprints are persisted so they are not re-flagged weekly.`,
   );
   lines.push("");
 
@@ -45,8 +51,12 @@ export function formatDiffReportMarkdown(
 
   const sections: Array<{ title: string; kinds: DiffFinding["kind"][] }> = [
     {
-      title: "Partnership conflicts (verify before trusting catalog)",
+      title: "Partnership conflicts (with corroboration)",
       kinds: ["partnership_conflict"],
+    },
+    {
+      title: "Expiry reviews due",
+      kinds: ["expiry_review_due"],
     },
     {
       title: "Fee change candidates",
@@ -72,6 +82,10 @@ export function formatDiffReportMarkdown(
       title: "Source failures",
       kinds: ["source_failure"],
     },
+    {
+      title: "Source-health failures",
+      kinds: ["source_health_failure"],
+    },
   ];
 
   for (const section of sections) {
@@ -96,7 +110,7 @@ export function formatDiffReportMarkdown(
     lines.push(`_None detected._`);
   } else {
     for (const f of confirmed.slice(0, 80)) {
-      lines.push(`- **${f.issuer}** / ${f.subject}`);
+      lines.push(`- **${f.issuer}** / ${f.subject} (\`${f.fingerprint.slice(0, 8)}\`)`);
     }
     if (confirmed.length > 80) {
       lines.push(`- _…and ${confirmed.length - 80} more_`);
@@ -108,7 +122,8 @@ export function formatDiffReportMarkdown(
 
 function formatFinding(f: DiffFinding): string {
   const bits = [
-    `- **[${f.severity}] ${f.issuer} — ${f.subject}**`,
+    `- **[${f.severity}/${f.status}] ${f.issuer} — ${f.subject}**`,
+    `  - fingerprint: \`${f.fingerprint}\``,
     `  - ${f.summary}`,
   ];
   if (f.productionValue !== undefined) {
@@ -117,8 +132,41 @@ function formatFinding(f: DiffFinding): string {
   if (f.stagingValue !== undefined) {
     bits.push(`  - Staging: \`${f.stagingValue}\``);
   }
+  if (f.expiresAt) {
+    bits.push(`  - Expires: \`${f.expiresAt}\``);
+  }
+  if (f.corroboration) {
+    bits.push(
+      `  - Corroboration: ${f.corroboration.note}${
+        f.corroboration.thirdSourceUrl
+          ? ` (<${f.corroboration.thirdSourceUrl}>)`
+          : ""
+      }${
+        f.corroboration.agreesWith
+          ? ` — agreesWith=\`${f.corroboration.agreesWith}\``
+          : ""
+      }`,
+    );
+    if (f.corroboration.thirdValue) {
+      bits.push(`  - Third-source snippet: \`${f.corroboration.thirdValue}\``);
+    }
+  }
   if (f.sourceUrls.length) {
     bits.push(`  - Sources: ${f.sourceUrls.map((u) => `<${u}>`).join(", ")}`);
   }
   return bits.join("\n");
+}
+
+export function appendHealthToReviewMarkdown(
+  base: string,
+  health: SourceHealthReport,
+): string {
+  if (health.summary.failed === 0) return base;
+  return `${base}\n---\n\n## Immediate: source-health failures\n\n${health.checks
+    .filter((c) => c.outcome !== "ok")
+    .map(
+      (c) =>
+        `- **${c.table}/${c.id}** [${c.outcome}]${c.markedStale ? " → stale" : ""} — <${c.sourceUrl}>`,
+    )
+    .join("\n")}\n`;
 }

@@ -13,7 +13,9 @@
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "pipeline:run": "tsx src/data-pipeline/run.ts"
+    "pipeline:run": "tsx src/data-pipeline/run.ts",
+    "pipeline:source-health": "tsx src/data-pipeline/run-source-health.ts",
+    "pipeline:promote": "tsx src/data-pipeline/promote.ts"
   },
   "devDependencies": {
     "tsx": "^4.23.15",
@@ -21,6 +23,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
     "cheerio": "^1.2.0",
     "robots-parser": "^3.0.1"
   }

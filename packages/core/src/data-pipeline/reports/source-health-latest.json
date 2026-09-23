@@ -1,0 +1,76 @@
+{
+  "generatedAt": "2026-09-23T03:16:06.679Z",
+  "runId": "2026-09-23T03-16-06-679Z",
+  "checks": [
+    {
+      "table": "merchant_brands",
+      "id": "shell",
+      "sourceUrl": "https://scotiabank.investorroom.com/2026-05-26-Scotiabank-Offers-Clients-More-Ways-to-Earn-Through-Scene-with-Shell-Canada",
+      "checkedAt": "2026-09-23T03:16:06.679Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "pioneer",
+      "sourceUrl": "https://journie.ca/pe-en/terms",
+      "checkedAt": "2026-09-23T03:16:06.679Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "ultramar",
+      "sourceUrl": "https://journie.ca/pe-en/terms",
+      "checkedAt": "2026-09-23T03:16:06.679Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "fas-gas",
+      "sourceUrl": "https://journie.ca/pe-en/terms",
+      "checkedAt": "2026-09-23T03:16:06.679Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "chevron-parkland",
+      "sourceUrl": "https://journie.ca/pe-en/terms",
+      "checkedAt": "2026-09-23T03:16:06.679Z",
+      "outcome": "claim_missing",
+      "httpStatus": 200,
+      "detail": "None of claims matched: Chevron (Parkland)"
+    },
+    {
+      "table": "merchant_brands",
+      "id": "on-the-run",
+      "sourceUrl": "https://journie.ca/pe-en/terms",
+      "checkedAt": "2026-09-23T03:16:06.679Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "canadian-tire-gas-plus",
+      "sourceUrl": "https://gasplus.canadiantire.ca/en/triangle-rewards.html",
+      "checkedAt": "2026-09-23T03:16:06.679Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "petro-canada",
+      "sourceUrl": "https://triangle.canadiantire.ca/en/partners.html",
+      "checkedAt": "2026-09-23T03:16:06.679Z",
+      "outcome": "unreachable",
+      "detail": "The operation was aborted due to timeout"
+    }
+  ],
+  "summary": {
+    "ok": 6,
+    "failed": 2,
+    "markedStale": 0
+  }
+}

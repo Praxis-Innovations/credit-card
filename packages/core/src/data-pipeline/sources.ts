@@ -101,7 +101,7 @@ export const BIG_SIX_SOURCES: CrawlSource[] = [
   },
 ];
 
-export const PIPELINE_VERSION = "0.1.0";
+export const PIPELINE_VERSION = "0.2.0";
 
 /** Delay between requests to the same host (ms). Conservative by design. */
 export const PER_HOST_DELAY_MS = 2_500;

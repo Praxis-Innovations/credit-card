@@ -1,13 +1,24 @@
 name: Data pipeline (Big Six)
 
-# Weekly crawl → staging JSON + review report.
-# Never promotes into cards.ts / partnerships.ts.
+# Risk-based crawl → staging JSON + review report.
+# Never auto-promotes into cards.ts / partnerships.ts / Supabase.
 
 on:
   schedule:
-    # Monday 14:00 UTC — off-peak for CA bank sites; weekly is enough for fee/partnership drift.
-    - cron: "0 14 * * 1"
+    # 1st of month 14:00 UTC — full (cards + partnerships)
+    - cron: "0 14 1 * *"
+    # 15th of month 14:00 UTC — partnerships / promos only (bi-weekly)
+    - cron: "0 14 15 * *"
   workflow_dispatch:
+    inputs:
+      scope:
+        description: "Crawl scope"
+        type: choice
+        options:
+          - full
+          - cards
+          - partnerships
+        default: partnerships
 
 permissions:
   contents: write
@@ -20,7 +31,7 @@ concurrency:
 jobs:
   crawl-and-diff:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,10 +50,26 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Test diff logic
-        run: pnpm --filter @northtap/core test -- src/data-pipeline/diff.test.ts
+      - name: Resolve scope
+        id: scope
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ inputs.scope }}" >> "$GITHUB_OUTPUT"
+          elif [ "$(date -u +%d)" = "01" ]; then
+            echo "value=full" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=partnerships" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Test pipeline unit tests
+        run: pnpm --filter @northtap/core test -- src/data-pipeline
 
       - name: Run pipeline
+        env:
+          PIPELINE_SCOPE: ${{ steps.scope.outputs.value }}
+          # Optional: load remote rejected fingerprints / future health hooks
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: pnpm --filter @northtap/core pipeline:run
 
       - name: Upload artifacts
@@ -53,6 +80,7 @@ jobs:
             packages/core/src/data-pipeline/staging/latest.json
             packages/core/src/data-pipeline/reports/latest.md
             packages/core/src/data-pipeline/reports/latest.json
+            packages/core/src/data-pipeline/state/review-decisions.json
 
       - name: Commit staging + report to data-pipeline/staging
         uses: stefanzweifel/git-auto-commit-action@v5
@@ -63,6 +91,7 @@ jobs:
           file_pattern: |
             packages/core/src/data-pipeline/staging/**
             packages/core/src/data-pipeline/reports/**
+            packages/core/src/data-pipeline/state/**
 
       - name: Upsert review issue
         uses: actions/github-script@v7
@@ -73,9 +102,10 @@ jobs:
             const body = fs.readFileSync(reportPath, 'utf8');
             const title = 'Data pipeline review: Big Six';
             const header = [
-              '_Automated weekly staging crawl. **Do not** treat this as production.',
-              '_Promotion into `cards.ts` / `partnerships.ts` requires human verification._',
+              '_Automated risk-based staging crawl. **Do not** treat this as production._',
+              '_Promote with `pipeline:promote` (Supabase `status=verified`) or reject fingerprints so they stop re-flagging._',
               '',
+              `Scope: \`${{ steps.scope.outputs.value }}\``,
               `Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               `Staging branch: \`data-pipeline/staging\``,
               '',
@@ -99,7 +129,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: existing.number,
-                body: `Updated from run ${context.runId} (${new Date().toISOString()}).`,
+                body: `Updated from run ${context.runId} (${new Date().toISOString()}, scope=${{ steps.scope.outputs.value }}).`,
               });
             } else {
               await github.rest.issues.create({
