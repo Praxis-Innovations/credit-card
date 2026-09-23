@@ -56,7 +56,8 @@ function extractRawKey(request: Request): string | null {
   const match = /^Bearer\s+(.+)$/i.exec(auth.trim());
   const token = match?.[1]?.trim();
   if (!token) return null;
-  // JWT wallet auth is out of scope for this pass — only API keys.
+  // JWT wallet auth is intentionally unsupported — api keys only.
+  // Tokens that look like JWTs (contain '.') are rejected as invalid keys.
   if (token.includes(".")) return null;
   return token;
 }
@@ -92,8 +93,10 @@ export interface AuthSuccess {
 }
 
 /**
- * Require a valid API key. Skips nothing except when caller opts out
- * (health uses skipAuth). Applies fixed-window rate limiting per key.
+ * Require a valid API key. Health is the only unauthenticated route.
+ *
+ * Intentionally API-key only — never treat a Supabase JWT as identity and never
+ * look up `user_cards`. Callers pass opaque ownedCardIds for recommendations.
  */
 export async function requireApiKey(request: Request): Promise<AuthSuccess> {
   const raw = extractRawKey(request);

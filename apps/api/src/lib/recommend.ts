@@ -61,6 +61,10 @@ export interface RecommendationResponse {
   bestCardId: string | null;
 }
 
+/**
+ * Stateless recommendation: ranks caller-supplied `ownedCardIds` by invoking
+ * `@northtap/core` server-side. Never loads `user_cards` or inspects identity.
+ */
 export async function createRecommendation(
   input: RecommendationRequestBody,
 ): Promise<RecommendationResponse> {

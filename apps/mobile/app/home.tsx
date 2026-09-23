@@ -231,6 +231,11 @@ export default function HomeScreen() {
 
     setRecommendations(result.recommendations);
     setLastPurchase(result.purchase);
+    if (result.offline) {
+      setNearbyHint(
+        "Offline mode — ranked from your cached wallet (category rates only; partnerships may be stale).",
+      );
+    }
     setBusy(false);
   }
 

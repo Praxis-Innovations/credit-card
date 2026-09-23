@@ -12,20 +12,28 @@ info:
     - **Card & recommendation shapes** match `packages/core` (`CreditCard`,
       `Recommendation`, `Category`, etc.). Implementers SHOULD treat that TypeScript
       module as the in-process source of truth and keep this OpenAPI file in sync.
-    - **Auth & owned cards** live in Supabase (`profiles`, `user_cards`).
-      Catalog tables (`cards`, `loyalty_programs`, `merchant_brands`,
+    - Catalog tables (`cards`, `loyalty_programs`, `merchant_brands`,
       `merchant_partnerships`) seed from `packages/core` and are served by
       `apps/api`. Only `status: verified` rows are public.
-    - Ranking semantics match `recommendCards()`: sort by `centsPerDollar`
-      descending, then lower `annualFee`, then name.
+    - **Wallet ownership** (`profiles`, `user_cards`) is orthogonal — clients
+      talk to Supabase directly; `apps/api` never reads `user_cards`.
+    - `POST /recommendations` runs ranking **server-side** via
+      `@northtap/core` `recommendCards()` / `recommendCardsForMerchant()` —
+      the client sends inputs and receives a ranked decision (not raw rates to
+      rank locally, except as an offline fallback in Expo).
+    - Ranking semantics: sort by `centsPerDollar` descending, then lower
+      `annualFee`, then name.
 
-    ## Auth
+    ## Auth & ownership boundary
 
     - All `/v1/*` routes except `GET /v1/health` require an API key via
-      `X-Api-Key` or `Authorization: Bearer <api_key>` (not a Supabase JWT).
+      `X-Api-Key` or `Authorization: Bearer <api_key>`.
+    - **API keys only.** This service does not accept Supabase JWTs for identity
+      and must never gain user-authentication or wallet-lookup capability.
+    - Wallet ownership (`user_cards`) stays **entirely** on Supabase Auth + RLS
+      in client apps. Callers always pass opaque `ownedCardIds` in the body;
+      the API never knows whose wallet those IDs came from.
     - Keys are stored hashed in Supabase `api_keys` with a rate-limit tier.
-    - Wallet ownership (`user_cards`) remains on Supabase PostgREST + RLS;
-      this API does not implement `/me/cards` in v0.1.
     - Catalog admin write routes are intentionally unimplemented — crawler
       promotion into `cards` / partnerships tables is a separate workstream.
 
@@ -54,8 +62,9 @@ tags:
     description: Enumerations and health
   - name: UserCards
     description: >
-      Owned-card wallet — still via Supabase PostgREST + RLS
-      (`supabase.from('user_cards')`). Not implemented on apps/api in v0.1.
+      Documented for clients only. Wallet CRUD is Supabase PostgREST + RLS
+      (`supabase.from('user_cards')`) and is NOT served by apps/api. Do not
+      add wallet lookup to the API-key surface.
 
 paths:
   /recommendations:
@@ -64,16 +73,18 @@ paths:
       operationId: createRecommendation
       summary: Rank cards for a purchase
       description: |
-        Accepts a purchase description and returns owned cards ranked by
-        estimated value for that spend.
+        Stateless server-side ranking. The API invokes
+        `recommendCards()` / `recommendCardsForMerchant()` from `@northtap/core`
+        and returns a ranked decision. It does **not** load the caller's wallet
+        from Supabase — `ownedCardIds` are caller-supplied opaque catalog slugs.
 
         **Engine input** (maps to `RecommendationInput` in `@northtap/core`):
-        `ownedCardIds`, `category`, optional `spendToDate`, optional `valuations`.
+        `ownedCardIds`, `category`, optional `merchantBrandId`, optional
+        `spendToDate`, optional `valuations`.
 
         **Purchase fields** (`amountCad`, optional `merchant`) do not change
         ranking order (rank is per-dollar) but are used to compute
-        `estimatedRewardCad` / `estimatedCentsBack` for the response and for
-        future merchant→category hints.
+        `estimatedRewardCad` / `estimatedCentsBack` for the response.
       security:
         - ApiKeyAuth: []
       requestBody:
@@ -93,12 +104,6 @@ paths:
                     - amex-cobalt
                     - tangerine-money-back
                     - scotia-scene-momentum
-              authenticatedWallet:
-                summary: Use server-side owned cards (JWT required)
-                value:
-                  amountCad: 45
-                  category: dining
-                  merchant: Cactus Club
               withCaps:
                 summary: Cap-aware ranking
                 value:
@@ -675,8 +680,8 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: >
-        Reserved for future wallet JWT flows. v0.1 recommendations require an
-        API key and explicit `ownedCardIds` in the body.
+        Not used by apps/api. Wallet identity is Supabase Auth on the client
+        only. Do not wire JWT wallet lookup into this service.
 
   parameters:
     CardIdPath:
@@ -1033,9 +1038,9 @@ components:
           items:
             $ref: "#/components/schemas/CardId"
           description: >
-            Explicit wallet. Required when unauthenticated. When authenticated,
-            omit to use `user_cards` for the caller; if both are present,
-            the body list wins.
+            Caller-supplied catalog slugs for cards to rank. Always required.
+            Loaded by the client from Supabase `user_cards` (JWT + RLS) or guest
+            storage — never resolved by this API.
         spendToDate:
           $ref: "#/components/schemas/SpendToDate"
         valuations:
