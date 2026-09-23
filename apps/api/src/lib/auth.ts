@@ -10,22 +10,24 @@ export interface ApiKeyRecord {
   rateLimitPerMinute: number;
 }
 
-/** Matches scripts/generate-catalog-seed.ts SEED_API_KEY (hash seeded in SQL). */
-export const SEED_API_KEY =
-  "nt_live_northtap_expo_internal_v1_7f3a9c2e8b1d4f06";
+/**
+ * In-memory key hashes for static-catalog / unit-test mode (no Supabase).
+ * Populated from NORTHTAP_STATIC_API_KEY at runtime, or via registerStaticApiKey
+ * in tests — never hardcode plaintext keys in source.
+ */
+const STATIC_KEYS: Record<string, ApiKeyRecord> = {};
 
-const SEED_KEY_HASH = createHash("sha256")
-  .update(SEED_API_KEY, "utf8")
-  .digest("hex");
-
-const STATIC_KEYS: Record<string, ApiKeyRecord> = {
-  [SEED_KEY_HASH]: {
-    id: "static-seed-internal",
-    ownerLabel: "NorthTap Expo (internal)",
+function registerFromEnv(): void {
+  const raw = process.env.NORTHTAP_STATIC_API_KEY?.trim();
+  if (!raw) return;
+  STATIC_KEYS[hashApiKey(raw)] = {
+    id: "env-static-internal",
+    ownerLabel: "NorthTap (NORTHTAP_STATIC_API_KEY)",
     tier: "internal",
     rateLimitPerMinute: 600,
-  },
-};
+  };
+}
+registerFromEnv();
 
 let supabaseAdmin: SupabaseClient | null | undefined;
 
@@ -45,6 +47,27 @@ function getAdminClient(): SupabaseClient | null {
 
 export function hashApiKey(raw: string): string {
   return createHash("sha256").update(raw, "utf8").digest("hex");
+}
+
+/** Test-only: register a throwaway key without committing secrets. */
+export function registerStaticApiKey(
+  plaintext: string,
+  record?: Partial<ApiKeyRecord>,
+): ApiKeyRecord {
+  const entry: ApiKeyRecord = {
+    id: record?.id ?? `test-${hashApiKey(plaintext).slice(0, 8)}`,
+    ownerLabel: record?.ownerLabel ?? "test",
+    tier: record?.tier ?? "internal",
+    rateLimitPerMinute: record?.rateLimitPerMinute ?? 600,
+  };
+  STATIC_KEYS[hashApiKey(plaintext)] = entry;
+  return entry;
+}
+
+/** Test-only */
+export function clearStaticApiKeys(): void {
+  for (const k of Object.keys(STATIC_KEYS)) delete STATIC_KEYS[k];
+  registerFromEnv();
 }
 
 function extractRawKey(request: Request): string | null {

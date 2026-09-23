@@ -1688,13 +1688,14 @@ on conflict (id) do update set
   verified_at = excluded.verified_at,
   status = excluded.status;
 
--- Internal Expo / NorthTap API key (plaintext in apps/api/.env.example + apps/mobile/.env.example).
--- Hash only — never store the raw key in the database.
+-- Internal Expo / NorthTap API key: hash only in this migration.
+-- Plaintext lives in Vercel / local .env.local (NORTHTAP_STATIC_API_KEY /
+-- EXPO_PUBLIC_NORTHTAP_API_KEY / NORTHTAP_SEED_API_KEY) — never commit it.
 insert into public.api_keys (
   key_hash, key_prefix, owner_label, tier, rate_limit_per_minute, active
 ) values (
-  '3e21a6560e3a991acff5077657e8d8cb57dc5ec03e7413ffb3b25bd1150508b9',
-  'nt_live_nort',
+  '08f44c4913063e05e5dcb4ff47f04f45eb197a07e34418427e5b23360e372183',
+  'nt_live_d382',
   'NorthTap Expo (internal)',
   'internal'::public.api_key_tier,
   600,

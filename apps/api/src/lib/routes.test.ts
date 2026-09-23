@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { SEED_API_KEY } from "../lib/auth";
+import {
+  clearStaticApiKeys,
+  registerStaticApiKey,
+} from "../lib/auth";
 import { resetRateLimits } from "../lib/rate-limit";
 import { GET as getHealth } from "../app/v1/health/route";
 import { GET as getCards } from "../app/v1/cards/route";
@@ -17,7 +20,10 @@ import { POST as postRecommendations } from "../app/v1/recommendations/route";
 
 process.env.NORTHTAP_CATALOG_SOURCE = "static";
 
-function authHeaders(key = SEED_API_KEY): HeadersInit {
+/** Throwaway key for unit tests — not a real credential. */
+const TEST_API_KEY = "test-api-key-not-a-production-secret";
+
+function authHeaders(key = TEST_API_KEY): HeadersInit {
   return { "X-Api-Key": key };
 }
 
@@ -34,6 +40,8 @@ async function jsonOf(res: Response): Promise<unknown> {
 
 beforeEach(() => {
   resetRateLimits();
+  clearStaticApiKeys();
+  registerStaticApiKey(TEST_API_KEY);
 });
 
 describe("GET /v1/health", () => {

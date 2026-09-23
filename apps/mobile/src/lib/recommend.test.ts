@@ -19,7 +19,7 @@ vi.mock("./ssr-safe-storage", () => ({
 import { requestRecommendation } from "./recommend";
 import { loadWalletCardCache } from "./wallet-card-cache";
 
-const API_KEY = "nt_live_northtap_expo_internal_v1_7f3a9c2e8b1d4f06";
+const API_KEY = "test-api-key-not-a-production-secret";
 
 const cobaltCard = {
   id: "amex-cobalt",
