@@ -20,7 +20,7 @@ export function isCategory(value: unknown): value is Category {
 
 /**
  * In-process implementation of POST /v1/recommendations (OpenAPI).
- * Same shaping as apps/web/src/lib/recommend-api.ts — calls recommendCards()
+ * Shapes recommendation responses for the mobile UI — calls recommendCards()
  * from @northtap/core; no network hop required in Expo.
  */
 export function buildRecommendationResponse(
