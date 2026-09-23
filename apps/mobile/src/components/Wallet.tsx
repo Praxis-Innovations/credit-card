@@ -1,6 +1,7 @@
-import { CARDS, groupCardsByIssuer, type CreditCard } from "@northtap/core";
+import { groupCardsByIssuer, type CreditCard } from "@northtap/core";
 import { useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Platform,
   Pressable,
   ScrollView,
@@ -12,6 +13,9 @@ import {
 import { colors } from "../lib/theme";
 
 interface WalletProps {
+  cards: CreditCard[];
+  cardsLoading?: boolean;
+  cardsError?: string | null;
   ownedIds: string[];
   onToggle: (id: string) => void;
   onClear: () => void;
@@ -22,20 +26,28 @@ function feeLabel(card: CreditCard): string {
   return card.annualFee === 0 ? "No fee" : `$${card.annualFee}/yr`;
 }
 
-export function Wallet({ ownedIds, onToggle, onClear, syncHint }: WalletProps) {
+export function Wallet({
+  cards,
+  cardsLoading,
+  cardsError,
+  ownedIds,
+  onToggle,
+  onClear,
+  syncHint,
+}: WalletProps) {
   const [query, setQuery] = useState("");
   const owned = useMemo(() => new Set(ownedIds), [ownedIds]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return CARDS;
-    return CARDS.filter(
+    if (!q) return cards;
+    return cards.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
         c.issuer.toLowerCase().includes(q) ||
         c.pointCurrency.toLowerCase().includes(q),
     );
-  }, [query]);
+  }, [query, cards]);
 
   const grouped = useMemo(() => groupCardsByIssuer(filtered), [filtered]);
   const issuers = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
@@ -81,51 +93,66 @@ export function Wallet({ ownedIds, onToggle, onClear, syncHint }: WalletProps) {
         ) : null}
       </View>
 
-      <ScrollView
-        style={styles.list}
-        nestedScrollEnabled
-        keyboardShouldPersistTaps="handled"
-      >
-        {issuers.length === 0 ? (
-          <Text style={styles.empty}>No cards match “{query}”.</Text>
-        ) : null}
-        {issuers.map((issuer) => (
-          <View key={issuer} style={styles.section}>
-            <Text style={styles.issuer}>{issuer}</Text>
-            {(grouped[issuer] ?? []).map((card) => {
-              const checked = owned.has(card.id);
-              return (
-                <Pressable
-                  key={card.id}
-                  onPress={() => onToggle(card.id)}
-                  style={[styles.row, checked && styles.rowChecked]}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked }}
-                  accessibilityLabel={`${card.issuer} ${card.name}`}
-                  // RN Web does not always mirror accessibilityState.checked → aria-checked.
-                  {...(Platform.OS === "web"
-                    ? ({ "aria-checked": checked } as Record<string, boolean>)
-                    : null)}
-                >
-                  <View style={[styles.box, checked && styles.boxChecked]}>
-                    {checked ? <Text style={styles.check}>✓</Text> : null}
-                  </View>
-                  <View style={styles.rowBody}>
-                    <View style={styles.nameRow}>
-                      <Text style={styles.cardName}>{card.name}</Text>
-                      <Text style={styles.fee}>{feeLabel(card)}</Text>
+      {cardsLoading ? (
+        <View style={styles.emptyState}>
+          <ActivityIndicator color={colors.primary} />
+          <Text style={styles.empty}>Loading card catalog…</Text>
+        </View>
+      ) : cardsError ? (
+        <Text style={styles.empty}>{cardsError}</Text>
+      ) : (
+        <ScrollView
+          style={styles.list}
+          nestedScrollEnabled
+          keyboardShouldPersistTaps="handled"
+        >
+          {issuers.length === 0 ? (
+            <Text style={styles.empty}>
+              {query
+                ? `No cards match “${query}”.`
+                : "No cards in the catalog yet."}
+            </Text>
+          ) : null}
+          {issuers.map((issuer) => (
+            <View key={issuer} style={styles.section}>
+              <Text style={styles.issuer}>{issuer}</Text>
+              {(grouped[issuer] ?? []).map((card) => {
+                const checked = owned.has(card.id);
+                return (
+                  <Pressable
+                    key={card.id}
+                    onPress={() => onToggle(card.id)}
+                    style={[styles.row, checked && styles.rowChecked]}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked }}
+                    accessibilityLabel={`${card.issuer} ${card.name}`}
+                    {...(Platform.OS === "web"
+                      ? ({ "aria-checked": checked } as Record<
+                          string,
+                          boolean
+                        >)
+                      : null)}
+                  >
+                    <View style={[styles.box, checked && styles.boxChecked]}>
+                      {checked ? <Text style={styles.check}>✓</Text> : null}
                     </View>
-                    <Text style={styles.meta}>
-                      {card.pointCurrency}
-                      {card.network ? ` · ${card.network}` : ""}
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-        ))}
-      </ScrollView>
+                    <View style={styles.rowBody}>
+                      <View style={styles.nameRow}>
+                        <Text style={styles.cardName}>{card.name}</Text>
+                        <Text style={styles.fee}>{feeLabel(card)}</Text>
+                      </View>
+                      <Text style={styles.meta}>
+                        {card.pointCurrency}
+                        {card.network ? ` · ${card.network}` : ""}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -192,6 +219,11 @@ const styles = StyleSheet.create({
   },
   list: {
     maxHeight: 400,
+  },
+  emptyState: {
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 32,
   },
   empty: {
     textAlign: "center",

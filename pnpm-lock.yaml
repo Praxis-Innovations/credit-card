@@ -19,6 +19,40 @@ importers:
         specifier: ^5.8.3
         version: 5.9.3
 
+  apps/api:
+    dependencies:
+      '@northtap/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@supabase/supabase-js':
+        specifier: ^2.116.0
+        version: 2.116.0
+      next:
+        specifier: ^15.3.4
+        version: 15.5.25(@playwright/test@1.63.0)(@types/node@22.20.4)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react:
+        specifier: ^19.1.0
+        version: 19.3.0
+      react-dom:
+        specifier: ^19.1.0
+        version: 19.3.0(react@19.3.0)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.15.32
+        version: 22.20.4
+      '@types/react':
+        specifier: 19.0.14
+        version: 19.0.14
+      '@types/react-dom':
+        specifier: 19.0.6
+        version: 19.0.6(@types/react@19.0.14)
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/node@22.20.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)
+
   apps/mobile:
     dependencies:
       '@expo/metro-runtime':

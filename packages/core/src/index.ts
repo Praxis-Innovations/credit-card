@@ -54,6 +54,7 @@ export {
   recommendCardsForMerchant,
   summarizePartnershipBenefits,
   type MerchantRecommendation,
+  type PartnershipCatalog,
   type RecommendForMerchantInput,
 } from "./recommend-merchant";
 

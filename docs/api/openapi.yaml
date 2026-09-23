@@ -12,20 +12,22 @@ info:
     - **Card & recommendation shapes** match `packages/core` (`CreditCard`,
       `Recommendation`, `Category`, etc.). Implementers SHOULD treat that TypeScript
       module as the in-process source of truth and keep this OpenAPI file in sync.
-    - **Auth & owned cards** already exist in Supabase (`profiles`, `user_cards`).
-      `user_cards.card_id` is a catalog slug (e.g. `amex-cobalt`), not a DB FK —
-      there is no `cards` table yet. Catalog CRUD below is the intended home for
-      that dataset once it moves off the static `packages/core` seed.
+    - **Auth & owned cards** live in Supabase (`profiles`, `user_cards`).
+      Catalog tables (`cards`, `loyalty_programs`, `merchant_brands`,
+      `merchant_partnerships`) seed from `packages/core` and are served by
+      `apps/api`. Only `status: verified` rows are public.
     - Ranking semantics match `recommendCards()`: sort by `centsPerDollar`
       descending, then lower `annualFee`, then name.
 
     ## Auth
 
-    - Public (optional auth): catalog read, recommendation when `ownedCardIds` is
-      supplied in the body (marketing “try it free” / guest flows).
-    - Authenticated (`Authorization: Bearer <supabase_access_jwt>`): omit
-      `ownedCardIds` to use the caller’s `user_cards`; write catalog endpoints
-      require an admin/service role (out of scope for client apps).
+    - All `/v1/*` routes except `GET /v1/health` require an API key via
+      `X-Api-Key` or `Authorization: Bearer <api_key>` (not a Supabase JWT).
+    - Keys are stored hashed in Supabase `api_keys` with a rate-limit tier.
+    - Wallet ownership (`user_cards`) remains on Supabase PostgREST + RLS;
+      this API does not implement `/me/cards` in v0.1.
+    - Catalog admin write routes are intentionally unimplemented — crawler
+      promotion into `cards` / partnerships tables is a separate workstream.
 
     ## Versioning
 
@@ -37,22 +39,23 @@ info:
 
 servers:
   - url: https://api.northtap.app/v1
-    description: Production (placeholder — host TBD)
+    description: Production (Vercel apps/api project)
   - url: http://localhost:8787/v1
-    description: Local API gateway (placeholder)
+    description: Local Next.js apps/api (`pnpm --filter api dev`)
 
 tags:
   - name: Recommendations
     description: Rank owned cards for a specific purchase
   - name: Cards
-    description: Credit card catalog (CRUD + read)
+    description: Credit card catalog (read)
+  - name: Merchants
+    description: Merchant brands and loyalty partnerships
   - name: Reference
-    description: Enumerations and default valuations
+    description: Enumerations and health
   - name: UserCards
     description: >
-      Owned-card wallet. Prefer Supabase PostgREST + RLS for MVP
-      (`supabase.from('user_cards')`); these REST routes are the same contract
-      if a BFF wraps Supabase later.
+      Owned-card wallet — still via Supabase PostgREST + RLS
+      (`supabase.from('user_cards')`). Not implemented on apps/api in v0.1.
 
 paths:
   /recommendations:
@@ -72,8 +75,7 @@ paths:
         `estimatedRewardCad` / `estimatedCentsBack` for the response and for
         future merchant→category hints.
       security:
-        - BearerAuth: []
-        - {}
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -128,7 +130,8 @@ paths:
       description: |
         Returns the curated Canadian card dataset. Filters are AND-combined.
         Default sort: issuer ascending, then name ascending.
-      security: []
+      security:
+        - ApiKeyAuth: []
       parameters:
         - $ref: "#/components/parameters/IssuerQuery"
         - $ref: "#/components/parameters/NetworkQuery"
@@ -196,7 +199,8 @@ paths:
       tags: [Cards]
       operationId: getCard
       summary: Get a single card by id
-      security: []
+      security:
+        - ApiKeyAuth: []
       responses:
         "200":
           description: Card
@@ -294,7 +298,8 @@ paths:
       tags: [Reference]
       operationId: listCategories
       summary: List spend categories
-      security: []
+      security:
+        - ApiKeyAuth: []
       responses:
         "200":
           description: Categories with display labels
@@ -308,7 +313,8 @@ paths:
       tags: [Reference]
       operationId: listIssuers
       summary: List known issuers
-      security: []
+      security:
+        - ApiKeyAuth: []
       responses:
         "200":
           description: Issuer names
@@ -328,7 +334,8 @@ paths:
       tags: [Reference]
       operationId: listPointCurrencies
       summary: List reward currencies
-      security: []
+      security:
+        - ApiKeyAuth: []
       responses:
         "200":
           description: Point currencies
@@ -351,7 +358,8 @@ paths:
       description: |
         Mirrors `DEFAULT_POINT_VALUATIONS` in `@northtap/core`. Clients may
         override per-request via `RecommendationRequest.valuations`.
-      security: []
+      security:
+        - ApiKeyAuth: []
       responses:
         "200":
           description: Default valuations
@@ -359,6 +367,226 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PointValuationsResponse"
+
+
+  /health:
+    get:
+      tags: [Reference]
+      operationId: getHealth
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, service]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+                  service:
+                    type: string
+                  version:
+                    type: string
+                  time:
+                    type: string
+                    format: date-time
+
+  /loyalty-programs:
+    get:
+      tags: [Merchants]
+      operationId: listLoyaltyPrograms
+      summary: List loyalty programs
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Loyalty programs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoyaltyProgramListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /loyalty-programs/{programId}:
+    parameters:
+      - name: programId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Merchants]
+      operationId: getLoyaltyProgram
+      summary: Get a loyalty program by id
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Loyalty program
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoyaltyProgram"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /merchant-brands:
+    get:
+      tags: [Merchants]
+      operationId: listMerchantBrands
+      summary: List merchant brands
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            $ref: "#/components/schemas/Category"
+        - name: q
+          in: query
+          description: Case-insensitive substring match on name or id
+          schema:
+            type: string
+            maxLength: 100
+        - $ref: "#/components/parameters/LimitQuery"
+        - $ref: "#/components/parameters/OffsetQuery"
+      responses:
+        "200":
+          description: Brand page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MerchantBrandListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /merchant-brands/{brandId}:
+    parameters:
+      - name: brandId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Merchants]
+      operationId: getMerchantBrand
+      summary: Get a merchant brand by id
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Brand
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MerchantBrand"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /merchant-brands/{brandId}/partnerships:
+    parameters:
+      - name: brandId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Merchants]
+      operationId: listPartnershipsForBrand
+      summary: List partnerships for a brand
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Partnerships for the brand
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnershipListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /partnerships:
+    get:
+      tags: [Merchants]
+      operationId: listPartnerships
+      summary: List merchant partnerships
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: cardId
+          in: query
+          schema:
+            $ref: "#/components/schemas/CardId"
+        - name: brandId
+          in: query
+          schema:
+            type: string
+        - name: loyaltyProgramId
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            $ref: "#/components/schemas/Category"
+        - name: status
+          in: query
+          description: Public API only returns verified; other values yield an empty page
+          schema:
+            type: string
+            enum: [pending, verified, stale, rejected]
+        - $ref: "#/components/parameters/LimitQuery"
+        - $ref: "#/components/parameters/OffsetQuery"
+      responses:
+        "200":
+          description: Partnership page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnershipListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /partnerships/{partnershipId}:
+    parameters:
+      - name: partnershipId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Merchants]
+      operationId: getPartnership
+      summary: Get a partnership by id
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Partnership
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MerchantPartnership"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /me/cards:
     get:
@@ -434,11 +662,21 @@ paths:
 
 components:
   securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+      description: |
+        NorthTap API key. Alternatively send `Authorization: Bearer <api_key>`.
+        Keys are SHA-256 hashed in `public.api_keys`. Rate limits are per key
+        (internal tier 600/min; standard 60/min).
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Supabase Auth access token (`auth.uid()` maps to `profiles.id`).
+      description: >
+        Reserved for future wallet JWT flows. v0.1 recommendations require an
+        API key and explicit `ownedCardIds` in the body.
 
   parameters:
     CardIdPath:
@@ -567,6 +805,7 @@ components:
         - National Bank
         - Desjardins
         - HSBC
+        - MBNA
 
     PointCurrency:
       type: string
@@ -580,10 +819,13 @@ components:
         - Amex MR
         - BMO Rewards
         - WestJet
+        - AIR MILES
+        - Marriott Bonvoy
         - cashback
         - PC Optimum
         - Rogers
         - Triangle
+        - Moi
 
     Network:
       type: string
@@ -777,8 +1019,13 @@ components:
           type: string
           maxLength: 200
           description: >
-            Free-text merchant / store name for display and future
-            merchant→category mapping. Does not affect ranking in v1.
+            Free-text merchant / store name for display.
+        merchantBrandId:
+          type: string
+          description: >
+            When set, ranking uses partnership-aware
+            `recommendCardsForMerchant()` for this catalog brand id.
+          examples: [shell, costco-gas]
         ownedCardIds:
           type: array
           minItems: 1
@@ -856,6 +1103,12 @@ components:
           type: string
           minLength: 1
           description: Short human-readable explanation of the earn math
+        usedPartnership:
+          type: boolean
+          description: True when a merchant partnership drove the score/reason
+        partnershipId:
+          type: string
+          description: Partnership id when usedPartnership is true
 
     RecommendationResponse:
       type: object
@@ -872,6 +1125,8 @@ components:
             category:
               $ref: "#/components/schemas/Category"
             merchant:
+              type: [string, "null"]
+            merchantBrandId:
               type: [string, "null"]
         recommendations:
           type: array
@@ -953,6 +1208,191 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/UserCard"
+
+
+    CatalogStatus:
+      type: string
+      enum: [pending, verified, stale, rejected]
+
+    LoyaltyProgram:
+      type: object
+      required: [id, name, sourceUrl, lastVerified]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: [string, "null"]
+        pointCurrency:
+          oneOf:
+            - $ref: "#/components/schemas/PointCurrency"
+            - type: "null"
+        sourceUrl:
+          type: string
+          format: uri
+        lastVerified:
+          type: string
+          format: date
+
+    LoyaltyProgramListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/LoyaltyProgram"
+
+    MerchantBrand:
+      type: object
+      required: [id, name, category, sourceUrl, lastVerified]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        category:
+          $ref: "#/components/schemas/Category"
+        operator:
+          type: [string, "null"]
+        notes:
+          type: [string, "null"]
+        sourceUrl:
+          type: string
+          format: uri
+        lastVerified:
+          type: string
+          format: date
+
+    MerchantBrandListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/MerchantBrand"
+        meta:
+          type: object
+          required: [total, limit, offset]
+          properties:
+            total:
+              type: integer
+            limit:
+              type: integer
+            offset:
+              type: integer
+
+    PartnershipBenefit:
+      type: object
+      required: [kind, amount, summary]
+      properties:
+        kind:
+          type: string
+          enum:
+            - cents_per_litre_instant
+            - cents_per_litre_rewards
+            - points_per_litre
+            - points_per_dollar
+            - cashback_percent
+        amount:
+          type: number
+        summary:
+          type: string
+        appliesTo:
+          type: string
+        capLitresMonthly:
+          type: number
+        capLitresPerFill:
+          type: number
+        capAnnualSpendCad:
+          type: number
+        promotional:
+          type: boolean
+        promotionalEnds:
+          type: string
+          format: date
+        pointCurrency:
+          $ref: "#/components/schemas/PointCurrency"
+
+    MerchantPartnership:
+      type: object
+      required:
+        - id
+        - brandIds
+        - cardIds
+        - affiliation
+        - requirements
+        - benefits
+        - stacksWithCardCategoryRewards
+        - sourceUrls
+        - lastVerified
+      properties:
+        id:
+          type: string
+        brandIds:
+          type: array
+          items:
+            type: string
+        merchantBrandIds:
+          type: array
+          items:
+            type: string
+          description: Alias of brandIds (packages/core field name)
+        loyaltyProgramId:
+          type: [string, "null"]
+        cardIds:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardId"
+        affiliation:
+          type: string
+          enum: [linked, affiliated, direct]
+        requirements:
+          type: string
+        benefits:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartnershipBenefit"
+        stacksWithCardCategoryRewards:
+          type: boolean
+        notes:
+          type: [string, "null"]
+        sourceUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+        sourceUrl:
+          type: [string, "null"]
+          description: Convenience — first entry of sourceUrls
+        lastVerified:
+          type: string
+          format: date
+        status:
+          $ref: "#/components/schemas/CatalogStatus"
+
+    PartnershipListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        brandId:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/MerchantPartnership"
+        meta:
+          type: object
+          required: [total, limit, offset]
+          properties:
+            total:
+              type: integer
+            limit:
+              type: integer
+            offset:
+              type: integer
 
     Error:
       type: object
