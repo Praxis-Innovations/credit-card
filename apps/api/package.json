@@ -8,10 +8,12 @@
     "start": "next start --port 8787",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "pipeline:run": "tsx src/data-pipeline/run.ts",
+    "pipeline:source-health": "tsx src/data-pipeline/run-source-health.ts",
+    "pipeline:promote": "tsx src/data-pipeline/promote.ts"
   },
   "dependencies": {
-    "@northtap/core": "workspace:*",
     "@supabase/supabase-js": "^2.116.0",
     "next": "^15.3.4",
     "react": "^19.1.0",
@@ -21,6 +23,9 @@
     "@types/node": "^22.15.32",
     "@types/react": "19.0.14",
     "@types/react-dom": "19.0.6",
+    "cheerio": "^1.2.0",
+    "robots-parser": "^3.0.1",
+    "tsx": "^4.23.15",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   }

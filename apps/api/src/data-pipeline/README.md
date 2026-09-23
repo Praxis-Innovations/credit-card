@@ -15,10 +15,10 @@ Raw crawler output is **never** written into production datasets
 | `reports/*.md` | Human-readable candidates (conflicts include corroboration) |
 | `state/review-decisions.json` | Rejected fingerprints so weekly diffs stop re-flagging |
 
-**Not on the public `@northtap/core` barrel.** The crawler is Node/CI-only
-(`node:url`, cheerio, etc.) and must not be pulled into `apps/web` or Expo.
-Import via `@northtap/core/data-pipeline` or run the `pipeline:*` scripts
-(`tsx src/data-pipeline/run.ts`, etc.).
+**Not imported by any `apps/api` route.** The crawler is Node/CI-only
+(`node:url`, cheerio, etc.) and runs through the `pipeline:*` scripts
+(`tsx src/data-pipeline/run.ts`, etc.). It reads the seed datasets from
+`apps/api/src/domain`; `apps/web` and Expo never import it.
 
 Promotion uses `pipeline:promote` → Supabase upsert with `status=verified`,
 `verified_at=now()`, `reviewed_by=<reviewer>`.
@@ -53,10 +53,10 @@ If only one source exists, the report says so explicitly.
 ## Commands
 
 ```bash
-pnpm --filter @northtap/core pipeline:run              # PIPELINE_SCOPE=full|cards|partnerships
-pnpm --filter @northtap/core pipeline:source-health
-pnpm --filter @northtap/core pipeline:promote -- --file path/to/approvals.json [--dry-run]
-pnpm --filter @northtap/core test
+pnpm --filter api pipeline:run              # PIPELINE_SCOPE=full|cards|partnerships
+pnpm --filter api pipeline:source-health
+pnpm --filter api pipeline:promote -- --file path/to/approvals.json [--dry-run]
+pnpm --filter api test -- src/data-pipeline
 ```
 
 Secrets (Actions / local env, **never committed**):

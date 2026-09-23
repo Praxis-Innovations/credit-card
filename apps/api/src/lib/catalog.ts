@@ -10,7 +10,7 @@ import {
   type MerchantBrand,
   type MerchantPartnership,
   type PartnershipBenefit,
-} from "@northtap/core";
+} from "@/domain";
 
 export type CatalogSource = "static" | "supabase";
 

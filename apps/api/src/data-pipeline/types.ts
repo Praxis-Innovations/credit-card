@@ -1,4 +1,4 @@
-import type { Issuer } from "../schema";
+import type { Issuer } from "../domain/schema";
 
 /** Issuers in scope for this pipeline pass. */
 export const BIG_SIX_ISSUERS = [

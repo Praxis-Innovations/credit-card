@@ -1,4 +1,5 @@
-import { groupCardsByIssuer, type CreditCard } from "@northtap/core";
+import { groupCardsByIssuer } from "../lib/group-cards";
+import type { CreditCard } from "../lib/api-types";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,

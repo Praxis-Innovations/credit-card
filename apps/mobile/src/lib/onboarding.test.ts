@@ -65,6 +65,7 @@ describe("onboarding demo recommendation", () => {
             amountCad: DEMO_PURCHASE.amountCad,
             category: DEMO_PURCHASE.category,
             merchant: DEMO_PURCHASE.merchant,
+            merchantQuery: null,
             merchantBrandId: null,
           },
           recommendations: [

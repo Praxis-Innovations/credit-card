@@ -110,7 +110,7 @@ export async function installNorthtapApiMock(page: Page) {
         category: string;
         merchant?: string;
         ownedCardIds?: string[];
-        merchantBrandId?: string;
+        merchantQuery?: string;
       };
       const owned = new Set(body.ownedCardIds ?? []);
       const ranked = E2E_CARDS.filter((c) => owned.has(c.id))
@@ -129,7 +129,7 @@ export async function installNorthtapApiMock(page: Page) {
         const estimatedCentsBack = body.amountCad * rec.centsPerDollar;
         const estimatedRewardCad = estimatedCentsBack / 100;
         const label = body.category;
-        const where = body.merchant ?? label;
+        const where = body.merchant ?? body.merchantQuery ?? label;
         const reason =
           index === 0
             ? `${rec.card.name} gives ${rec.earnRate}${rec.card.pointCurrency === "cashback" ? "%" : "×"} ${rec.card.pointCurrency === "cashback" ? "cash back" : rec.card.pointCurrency} on ${label} — best for this $${body.amountCad.toFixed(2)} purchase at ${where} (~$${estimatedRewardCad.toFixed(2)} back)`
@@ -156,7 +156,8 @@ export async function installNorthtapApiMock(page: Page) {
             amountCad: body.amountCad,
             category: body.category,
             merchant: body.merchant ?? null,
-            merchantBrandId: body.merchantBrandId ?? null,
+            merchantQuery: body.merchantQuery ?? null,
+            merchantBrandId: null,
           },
           recommendations,
           bestCardId: recommendations[0]?.card.id ?? null,

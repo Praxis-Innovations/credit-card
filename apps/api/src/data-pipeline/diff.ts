@@ -1,4 +1,4 @@
-import type { CreditCard, MerchantPartnership } from "../schema";
+import type { CreditCard, MerchantPartnership } from "../domain/schema";
 import { findingFingerprint } from "./decisions";
 import { isExpiryReviewDue } from "./expiry";
 import { namesLooselyMatch, normalizeName } from "./extract/html";

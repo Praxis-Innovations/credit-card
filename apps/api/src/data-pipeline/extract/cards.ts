@@ -1,4 +1,4 @@
-import type { CreditCard } from "../../schema";
+import type { CreditCard } from "../../domain/schema";
 import type { CrawlSource, StagingFact } from "../types";
 import {
   htmlToText,

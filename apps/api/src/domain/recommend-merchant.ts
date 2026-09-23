@@ -24,7 +24,7 @@ export const ASSUMED_CAD_PER_LITRE = 1.5;
 
 /**
  * Optional override for merchant / loyalty / partnership lookups.
- * When omitted, uses the built-in `@northtap/core` static catalogs.
+ * When omitted, uses the built-in static catalogs.
  */
 export interface PartnershipCatalog {
   brands?: MerchantBrand[];

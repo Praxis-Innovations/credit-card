@@ -17,7 +17,6 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "^5.0.5",
-    "@northtap/core": "workspace:*",
     "@react-native-async-storage/async-storage": "^3.1.1",
     "@supabase/supabase-js": "^2.116.0",
     "expo": "~53.0.12",

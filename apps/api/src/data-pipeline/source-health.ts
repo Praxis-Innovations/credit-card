@@ -2,7 +2,7 @@ import {
   LOYALTY_PROGRAMS,
   MERCHANT_BRANDS,
   MERCHANT_PARTNERSHIPS,
-} from "../partnerships";
+} from "../domain/partnerships";
 import { htmlToText, textContainsClaim } from "./extract/html";
 import { FETCH_TIMEOUT_MS, PER_HOST_DELAY_MS, USER_AGENT } from "./sources";
 import type { CatalogSourceRow } from "./supabase";

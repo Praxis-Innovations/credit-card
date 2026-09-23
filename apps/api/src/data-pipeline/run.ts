@@ -1,8 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { CARDS } from "../cards";
-import { MERCHANT_PARTNERSHIPS } from "../partnerships";
+import { CARDS } from "../domain/cards";
+import { MERCHANT_PARTNERSHIPS } from "../domain/partnerships";
 import { parseScope, sourcesForScope } from "./cadence";
 import { corroborateConflicts } from "./corroborate";
 import {

@@ -19,7 +19,7 @@ create type public.api_key_tier as enum (
 );
 
 -- ---------------------------------------------------------------------------
--- cards — mirrors packages/core CreditCard
+-- cards — mirrors apps/api/src/domain CreditCard
 -- ---------------------------------------------------------------------------
 create table if not exists public.cards (
   id text primary key,
@@ -38,7 +38,7 @@ create table if not exists public.cards (
 );
 
 comment on table public.cards is
-  'Credit card catalog. Shape mirrors packages/core CreditCard; id is the stable slug.';
+  'Credit card catalog. Shape mirrors apps/api/src/domain CreditCard; id is the stable slug.';
 
 create index if not exists cards_issuer_idx on public.cards (issuer);
 create index if not exists cards_point_currency_idx on public.cards (point_currency);
@@ -94,7 +94,7 @@ create index if not exists merchant_brands_status_idx
 -- ---------------------------------------------------------------------------
 -- merchant_partnerships
 -- brand_ids is an array so multi-banner deals (Empire / Parkland) stay one row,
--- matching packages/core MerchantPartnership.merchantBrandIds.
+-- matching apps/api/src/domain MerchantPartnership.merchantBrandIds.
 -- ---------------------------------------------------------------------------
 create table if not exists public.merchant_partnerships (
   id text primary key,

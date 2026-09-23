@@ -1,4 +1,4 @@
-import type { MerchantPartnership } from "../../schema";
+import type { MerchantPartnership } from "../../domain/schema";
 import type { CrawlSource, StagingFact } from "../types";
 import { htmlToText, makeFact, snippetAround } from "./html";
 

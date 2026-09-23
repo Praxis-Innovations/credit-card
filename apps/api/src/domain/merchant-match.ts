@@ -137,10 +137,13 @@ function scoreBrand(
 /**
  * Match a free-text place name (and optional OSM tags) to a catalog
  * {@link MerchantBrand}. Returns null when nothing confident matches.
+ *
+ * Pass `brands` to search a Supabase-backed catalog; defaults to the static seed.
  */
 export function matchMerchantBrand(
   query: string,
   context?: PlaceMatchContext,
+  brands: MerchantBrand[] = MERCHANT_BRANDS,
 ): MerchantBrand | null {
   const parts = [query, ...(context?.tags ?? [])]
     .filter((p) => typeof p === "string" && p.trim().length > 0)
@@ -148,7 +151,7 @@ export function matchMerchantBrand(
   if (parts.length === 0) return null;
 
   let best: { brand: MerchantBrand; score: number } | null = null;
-  for (const brand of MERCHANT_BRANDS) {
+  for (const brand of brands) {
     let score = 0;
     for (const part of parts) {
       score = Math.max(score, scoreBrand(brand, part, context));
@@ -170,14 +173,18 @@ export function matchMerchantBrand(
  */
 export function matchNearestMerchantBrand(
   places: Array<{ name: string; context?: PlaceMatchContext }>,
+  brands: MerchantBrand[] = MERCHANT_BRANDS,
 ): MerchantBrand | null {
   for (const place of places) {
-    const hit = matchMerchantBrand(place.name, place.context);
+    const hit = matchMerchantBrand(place.name, place.context, brands);
     if (hit) return hit;
   }
   return null;
 }
 
-export function brandsForCategory(category: Category): MerchantBrand[] {
-  return MERCHANT_BRANDS.filter((b) => b.category === category);
+export function brandsForCategory(
+  category: Category,
+  brands: MerchantBrand[] = MERCHANT_BRANDS,
+): MerchantBrand[] {
+  return brands.filter((b) => b.category === category);
 }

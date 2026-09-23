@@ -10,7 +10,7 @@ on:
       approvals_path:
         description: "Path to approvals JSON in the repo"
         required: true
-        default: "packages/core/src/data-pipeline/approvals.example.json"
+        default: "apps/api/src/data-pipeline/approvals.example.json"
       dry_run:
         description: "Skip Supabase writes (still updates local review-decisions)"
         type: boolean
@@ -45,16 +45,18 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          APPROVALS_PATH: ${{ inputs.approvals_path }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          ARGS=(--file "${{ inputs.approvals_path }}")
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
+          ARGS=(--file "$GITHUB_WORKSPACE/$APPROVALS_PATH")
+          if [ "$DRY_RUN" = "true" ]; then
             ARGS+=(--dry-run)
           fi
-          pnpm --filter @northtap/core pipeline:promote -- "${ARGS[@]}"
+          pnpm --filter api pipeline:promote -- "${ARGS[@]}"
 
       - name: Commit local review decisions
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore(data-pipeline): apply review decisions"
           file_pattern: |
-            packages/core/src/data-pipeline/state/review-decisions.json
+            apps/api/src/data-pipeline/state/review-decisions.json

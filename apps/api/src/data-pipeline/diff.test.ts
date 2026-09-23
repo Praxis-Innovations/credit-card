@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CreditCard, MerchantPartnership } from "../schema";
+import type { CreditCard, MerchantPartnership } from "../domain/schema";
 import { defaultScopeForDate, sourcesForScope } from "./cadence";
 import { findingFingerprint } from "./decisions";
 import { diffStagingAgainstProduction } from "./diff";

@@ -3,8 +3,9 @@ export default function ApiHome() {
     <main style={{ fontFamily: "system-ui", padding: "2rem", maxWidth: 720 }}>
       <h1>NorthTap API</h1>
       <p>
-        Shared reference catalog + <strong>stateless</strong> recommendation
-        computation. Contract: <code>docs/api/openapi.yaml</code>
+        Standalone public catalog + <strong>stateless</strong> recommendation
+        API. Domain engine lives in <code>apps/api/src/domain</code>. Contract:{" "}
+        <code>docs/api/openapi.yaml</code>
       </p>
       <ul>
         <li>
@@ -15,16 +16,14 @@ export default function ApiHome() {
           catalog
         </li>
         <li>
-          <code>POST /v1/recommendations</code> — server-side{" "}
-          <code>recommendCards()</code> /{" "}
-          <code>recommendCardsForMerchant()</code> given caller-supplied{" "}
-          <code>ownedCardIds</code>
+          <code>POST /v1/recommendations</code> — server-side ranking; optional{" "}
+          <code>merchantQuery</code> resolved against merchant brands here
         </li>
       </ul>
       <p>
         Authenticate with <code>X-Api-Key</code>. This service never accepts
-        Supabase JWTs and never reads <code>user_cards</code> — wallet ownership
-        stays on Supabase Auth + RLS in client apps.
+        Supabase JWTs and never reads <code>user_cards</code>. Client apps
+        (Expo) are HTTP-only consumers — no domain package dependency.
       </p>
     </main>
   );

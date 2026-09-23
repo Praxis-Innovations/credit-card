@@ -33,7 +33,7 @@ create trigger on_auth_user_created
   execute function public.handle_new_user();
 
 -- ---------------------------------------------------------------------------
--- user_cards: which card slugs a user owns (catalog lives in packages/core)
+-- user_cards: which card slugs a user owns (catalog lives in apps/api/src/domain)
 -- ---------------------------------------------------------------------------
 create table if not exists public.user_cards (
   id uuid primary key default gen_random_uuid(),
