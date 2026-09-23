@@ -10,12 +10,12 @@ rank descending. Merchant partnerships can boost or replace category rates.
 
 | Package | Role |
 |---------|------|
-| `apps/api` | Next.js — public catalog + recommendation API (`/v1/*`) |
+| `apps/api` | Next.js — public catalog + **stateless** recommendation API (`/v1/*`, API-key auth). Never reads wallets. |
 | `apps/web` | Next.js — marketing site |
-| `apps/mobile` | Expo Router — purchase recommender (calls `apps/api`) |
-| `packages/core` | Shared schema, ranking engine, seed datasets |
+| `apps/mobile` | Expo Router — loads wallet via Supabase Auth+RLS / guest storage; calls `apps/api` for ranking (with offline category fallback) |
+| `packages/core` | Shared schema + ranking engine (invoked server-side by `apps/api`) |
 | `docs/api` | OpenAPI 3.1 contract (implemented by `apps/api`) |
-| `supabase` | Auth, `user_cards`, catalog tables, `api_keys` |
+| `supabase` | Auth, `user_cards` (wallet), catalog tables, `api_keys` |
 
 ## Quick start
 
