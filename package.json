@@ -6,6 +6,7 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test",
+    "pipeline:run": "pnpm --filter @northtap/core pipeline:run",
     "dev:web": "pnpm --filter web dev",
     "dev:mobile": "pnpm --filter mobile start"
   },

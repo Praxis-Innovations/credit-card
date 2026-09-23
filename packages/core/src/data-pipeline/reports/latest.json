@@ -1,0 +1,863 @@
+{
+  "generatedAt": "2026-09-23T02:08:55.298Z",
+  "runId": "2026-09-23T02-07-59-187Z",
+  "productionCardCount": 42,
+  "stagingFactCount": 141,
+  "findings": [
+    {
+      "kind": "source_failure",
+      "severity": "review",
+      "issuer": "BMO",
+      "subject": "bmo-cards",
+      "summary": "Source fetch network_error: The operation was aborted due to timeout",
+      "stagingValue": "network_error",
+      "sourceUrls": [
+        "https://www.bmo.com/en-ca/main/personal/credit-cards/"
+      ],
+      "relatedFactIds": []
+    },
+    {
+      "kind": "source_failure",
+      "severity": "review",
+      "issuer": "BMO",
+      "subject": "bmo-air-miles",
+      "summary": "Source fetch network_error: The operation was aborted due to timeout",
+      "stagingValue": "network_error",
+      "sourceUrls": [
+        "https://www.bmo.com/en-ca/main/personal/credit-cards/air-miles-world-elite-mastercard/"
+      ],
+      "relatedFactIds": []
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "RBC",
+      "subject": "Avion Visa Infinite",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Avion Visa Infinite",
+      "stagingValue": "Avion Visa Infinite",
+      "sourceUrls": [
+        "https://www.rbcroyalbank.com/credit-cards/"
+      ],
+      "relatedFactIds": [
+        "feee68026eab3070"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "RBC",
+      "subject": "Avion Visa Infinite Privilege",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Avion Visa Infinite Privilege",
+      "stagingValue": "Avion Visa Infinite Privilege",
+      "sourceUrls": [
+        "https://www.rbcroyalbank.com/credit-cards/"
+      ],
+      "relatedFactIds": [
+        "33f7333639b4da78"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "RBC",
+      "subject": "Cash Back Mastercard",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Cash Back Mastercard",
+      "stagingValue": "Cash Back Mastercard",
+      "sourceUrls": [
+        "https://www.rbcroyalbank.com/credit-cards/"
+      ],
+      "relatedFactIds": [
+        "c0c7d29c6022d4fe"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "RBC",
+      "subject": "moi RBC Visa",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "moi RBC Visa",
+      "stagingValue": "moi RBC Visa",
+      "sourceUrls": [
+        "https://www.rbcroyalbank.com/credit-cards/"
+      ],
+      "relatedFactIds": [
+        "486ceb08ae3f5bcd"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "RBC",
+      "subject": "Ion+",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Ion+",
+      "stagingValue": "Ion+",
+      "sourceUrls": [
+        "https://www.rbcroyalbank.com/credit-cards/"
+      ],
+      "relatedFactIds": [
+        "d17c082d7dc97695"
+      ]
+    },
+    {
+      "kind": "point_currency_change_candidate",
+      "severity": "review",
+      "issuer": "RBC",
+      "subject": "Ion+",
+      "summary": "Point currency hint \"Moi\" differs from catalog \"cashback\"",
+      "productionValue": "cashback",
+      "stagingValue": "Moi",
+      "sourceUrls": [
+        "https://www.rbcroyalbank.com/credit-cards/"
+      ],
+      "relatedFactIds": [
+        "4886d9eef3f60a39"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "RBC",
+      "subject": "Avion Gold Visa",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Avion Gold Visa",
+      "stagingValue": "Avion Gold Visa",
+      "sourceUrls": [
+        "https://www.rbcroyalbank.com/credit-cards/"
+      ],
+      "relatedFactIds": [
+        "0dde81161477bb35"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "RBC",
+      "subject": "Ion",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Ion",
+      "stagingValue": "Avion Visa Infinite",
+      "sourceUrls": [
+        "https://www.rbcroyalbank.com/credit-cards/"
+      ],
+      "relatedFactIds": [
+        "feee68026eab3070"
+      ]
+    },
+    {
+      "kind": "point_currency_change_candidate",
+      "severity": "review",
+      "issuer": "RBC",
+      "subject": "Ion",
+      "summary": "Point currency hint \"RBC Avion\" differs from catalog \"cashback\"",
+      "productionValue": "cashback",
+      "stagingValue": "RBC Avion",
+      "sourceUrls": [
+        "https://www.rbcroyalbank.com/credit-cards/"
+      ],
+      "relatedFactIds": [
+        "a89bccb9b6e81f01"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "RBC",
+      "subject": "Cash Back Preferred World Elite Mastercard",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Cash Back Preferred World Elite Mastercard",
+      "stagingValue": "Cash Back Mastercard",
+      "sourceUrls": [
+        "https://www.rbcroyalbank.com/credit-cards/"
+      ],
+      "relatedFactIds": [
+        "c0c7d29c6022d4fe"
+      ]
+    },
+    {
+      "kind": "removed_card_candidate",
+      "severity": "info",
+      "issuer": "RBC",
+      "subject": "WestJet World Elite Mastercard",
+      "summary": "Catalog card was not detected on fetched listing text (may be JS-only, renamed, or still offered — verify before removing)",
+      "productionValue": "WestJet World Elite Mastercard",
+      "sourceUrls": [
+        "https://www.rbcroyalbank.com/credit-cards/",
+        "https://www.avionrewards.com/partnerships/moi-rewards/faq.html"
+      ],
+      "relatedFactIds": []
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "TD",
+      "subject": "Aeroplan Visa Infinite",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Aeroplan Visa Infinite",
+      "stagingValue": "Aeroplan Visa Infinite",
+      "sourceUrls": [
+        "https://www.td.com/ca/en/personal-banking/products/credit-cards"
+      ],
+      "relatedFactIds": [
+        "76772ed47571e31f"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "TD",
+      "subject": "Cash Back Visa Infinite",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Cash Back Visa Infinite",
+      "stagingValue": "Cash Back Visa Infinite",
+      "sourceUrls": [
+        "https://www.td.com/ca/en/personal-banking/products/credit-cards"
+      ],
+      "relatedFactIds": [
+        "fbede0287a5bdf4d"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "TD",
+      "subject": "First Class Travel Visa Infinite",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "First Class Travel Visa Infinite",
+      "stagingValue": "First Class Travel Visa Infinite",
+      "sourceUrls": [
+        "https://www.td.com/ca/en/personal-banking/products/credit-cards"
+      ],
+      "relatedFactIds": [
+        "1c518c5b04a44c4e"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "TD",
+      "subject": "Cash Back Visa",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Cash Back Visa",
+      "stagingValue": "Cash Back Visa Infinite",
+      "sourceUrls": [
+        "https://www.td.com/ca/en/personal-banking/products/credit-cards"
+      ],
+      "relatedFactIds": [
+        "fbede0287a5bdf4d"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "TD",
+      "subject": "Aeroplan Visa",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Aeroplan Visa",
+      "stagingValue": "Aeroplan Visa Infinite",
+      "sourceUrls": [
+        "https://www.td.com/ca/en/personal-banking/products/credit-cards"
+      ],
+      "relatedFactIds": [
+        "76772ed47571e31f"
+      ]
+    },
+    {
+      "kind": "removed_card_candidate",
+      "severity": "info",
+      "issuer": "TD",
+      "subject": "Aeroplan Visa Infinite Privilege",
+      "summary": "Catalog card was not detected on fetched listing text (may be JS-only, renamed, or still offered — verify before removing)",
+      "productionValue": "Aeroplan Visa Infinite Privilege",
+      "sourceUrls": [
+        "https://www.td.com/ca/en/personal-banking/products/credit-cards"
+      ],
+      "relatedFactIds": []
+    },
+    {
+      "kind": "removed_card_candidate",
+      "severity": "info",
+      "issuer": "TD",
+      "subject": "Rewards Visa",
+      "summary": "Catalog card was not detected on fetched listing text (may be JS-only, renamed, or still offered — verify before removing)",
+      "productionValue": "Rewards Visa",
+      "sourceUrls": [
+        "https://www.td.com/ca/en/personal-banking/products/credit-cards"
+      ],
+      "relatedFactIds": []
+    },
+    {
+      "kind": "removed_card_candidate",
+      "severity": "info",
+      "issuer": "TD",
+      "subject": "Rewards Visa Infinite",
+      "summary": "Catalog card was not detected on fetched listing text (may be JS-only, renamed, or still offered — verify before removing)",
+      "productionValue": "Rewards Visa Infinite",
+      "sourceUrls": [
+        "https://www.td.com/ca/en/personal-banking/products/credit-cards"
+      ],
+      "relatedFactIds": []
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "Scotiabank",
+      "subject": "Gold American Express",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Gold American Express",
+      "stagingValue": "Gold American Express",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/credit-cards.html"
+      ],
+      "relatedFactIds": [
+        "e4e2054aae3bfb40"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "Scotiabank",
+      "subject": "Passport Visa Infinite",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Passport Visa Infinite",
+      "stagingValue": "Passport Visa Infinite",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/credit-cards.html"
+      ],
+      "relatedFactIds": [
+        "73a674f47287e7a7"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "Scotiabank",
+      "subject": "Momentum Visa Infinite",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Momentum Visa Infinite",
+      "stagingValue": "Momentum Visa Infinite",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/credit-cards.html"
+      ],
+      "relatedFactIds": [
+        "0ab5c8754eb286cb"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "Scotiabank",
+      "subject": "Scene+ Visa",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Scene+ Visa",
+      "stagingValue": "Scene+ Visa",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/credit-cards.html"
+      ],
+      "relatedFactIds": [
+        "d192d1634acddf77"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "Scotiabank",
+      "subject": "Scene+ Visa Infinite",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Scene+ Visa Infinite",
+      "stagingValue": "Scene+ Visa",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/credit-cards.html"
+      ],
+      "relatedFactIds": [
+        "d192d1634acddf77"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "Scotiabank",
+      "subject": "Momentum Visa",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Momentum Visa",
+      "stagingValue": "Momentum Visa Infinite",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/credit-cards.html"
+      ],
+      "relatedFactIds": [
+        "0ab5c8754eb286cb"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "Scotiabank",
+      "subject": "Platinum American Express",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Platinum American Express",
+      "stagingValue": "Platinum American Express",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/credit-cards.html"
+      ],
+      "relatedFactIds": [
+        "8ca140205b925fda"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "CIBC",
+      "subject": "Aeroplan Visa Infinite",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Aeroplan Visa Infinite",
+      "stagingValue": "Aeroplan Visa Infinite",
+      "sourceUrls": [
+        "https://www.cibc.com/en/personal-banking/credit-cards.html"
+      ],
+      "relatedFactIds": [
+        "5d633e06811aafba"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "CIBC",
+      "subject": "Dividend Visa Infinite",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Dividend Visa Infinite",
+      "stagingValue": "Dividend Visa Infinite",
+      "sourceUrls": [
+        "https://www.cibc.com/en/personal-banking/credit-cards.html"
+      ],
+      "relatedFactIds": [
+        "438e9e9686f73e71"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "CIBC",
+      "subject": "Dividend Visa",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Dividend Visa",
+      "stagingValue": "Dividend Visa Infinite",
+      "sourceUrls": [
+        "https://www.cibc.com/en/personal-banking/credit-cards.html"
+      ],
+      "relatedFactIds": [
+        "438e9e9686f73e71"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "CIBC",
+      "subject": "Aventura Visa Infinite",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Aventura Visa Infinite",
+      "stagingValue": "Aventura Visa Infinite",
+      "sourceUrls": [
+        "https://www.cibc.com/en/personal-banking/credit-cards.html"
+      ],
+      "relatedFactIds": [
+        "d90edf1b2fc14433"
+      ]
+    },
+    {
+      "kind": "point_currency_change_candidate",
+      "severity": "review",
+      "issuer": "CIBC",
+      "subject": "Aventura Visa Infinite",
+      "summary": "Point currency hint \"Aeroplan\" differs from catalog \"CIBC Aventura\"",
+      "productionValue": "CIBC Aventura",
+      "stagingValue": "Aeroplan",
+      "sourceUrls": [
+        "https://www.cibc.com/en/personal-banking/credit-cards.html"
+      ],
+      "relatedFactIds": [
+        "03561680ba4f6b7f"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "CIBC",
+      "subject": "Costco Mastercard",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Costco Mastercard",
+      "stagingValue": "Costco Mastercard",
+      "sourceUrls": [
+        "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html"
+      ],
+      "relatedFactIds": [
+        "29527361593efac5"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "CIBC",
+      "subject": "Aeroplan Visa",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Aeroplan Visa",
+      "stagingValue": "Aeroplan Visa Infinite",
+      "sourceUrls": [
+        "https://www.cibc.com/en/personal-banking/credit-cards.html"
+      ],
+      "relatedFactIds": [
+        "5d633e06811aafba"
+      ]
+    },
+    {
+      "kind": "removed_card_candidate",
+      "severity": "info",
+      "issuer": "CIBC",
+      "subject": "Aventura Gold Visa",
+      "summary": "Catalog card was not detected on fetched listing text (may be JS-only, renamed, or still offered — verify before removing)",
+      "productionValue": "Aventura Gold Visa",
+      "sourceUrls": [
+        "https://www.cibc.com/en/personal-banking/credit-cards.html",
+        "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
+        "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html"
+      ],
+      "relatedFactIds": []
+    },
+    {
+      "kind": "removed_card_candidate",
+      "severity": "info",
+      "issuer": "CIBC",
+      "subject": "Dividend Visa Infinite Privilege",
+      "summary": "Catalog card was not detected on fetched listing text (may be JS-only, renamed, or still offered — verify before removing)",
+      "productionValue": "Dividend Visa Infinite Privilege",
+      "sourceUrls": [
+        "https://www.cibc.com/en/personal-banking/credit-cards.html",
+        "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
+        "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html"
+      ],
+      "relatedFactIds": []
+    },
+    {
+      "kind": "removed_card_candidate",
+      "severity": "info",
+      "issuer": "CIBC",
+      "subject": "Aventura Visa Infinite Privilege",
+      "summary": "Catalog card was not detected on fetched listing text (may be JS-only, renamed, or still offered — verify before removing)",
+      "productionValue": "Aventura Visa Infinite Privilege",
+      "sourceUrls": [
+        "https://www.cibc.com/en/personal-banking/credit-cards.html",
+        "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
+        "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html"
+      ],
+      "relatedFactIds": []
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "National Bank",
+      "subject": "World Elite Mastercard",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "World Elite Mastercard",
+      "stagingValue": "World Elite Mastercard",
+      "sourceUrls": [
+        "https://www.nbc.ca/en/personal/credit-cards.html"
+      ],
+      "relatedFactIds": [
+        "5b60e52c51d6d48d"
+      ]
+    },
+    {
+      "kind": "unchanged_signal",
+      "severity": "info",
+      "issuer": "National Bank",
+      "subject": "Allure World Elite Mastercard",
+      "summary": "Catalog card still mentioned on issuer pages",
+      "productionValue": "Allure World Elite Mastercard",
+      "stagingValue": "World Elite Mastercard",
+      "sourceUrls": [
+        "https://www.nbc.ca/en/personal/credit-cards.html"
+      ],
+      "relatedFactIds": [
+        "5b60e52c51d6d48d"
+      ]
+    },
+    {
+      "kind": "partnership_conflict",
+      "severity": "conflict",
+      "issuer": "Scotiabank",
+      "subject": "Shell:cents_per_litre",
+      "summary": "Staged benefit \"10¢/ L\" contradicts cited amounts on related partnerships [shell-scene-scotia-scene-cards, shell-go-tangerine-scotia-cashback]",
+      "productionValue": "3, 4, 1, 1, 3",
+      "stagingValue": "10",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.shell.ca/en_ca/drivers/loyalty-and-payment/partners/scotiabank.html",
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.tangerine.ca/en/about-us/press-releases/pr-2026-05-26"
+      ],
+      "relatedFactIds": [
+        "814808b3e07243b5"
+      ]
+    },
+    {
+      "kind": "partnership_conflict",
+      "severity": "conflict",
+      "issuer": "Scotiabank",
+      "subject": "Shell:cents_per_litre",
+      "summary": "Staged benefit \"7 cents per l\" contradicts cited amounts on related partnerships [shell-scene-scotia-scene-cards, shell-go-tangerine-scotia-cashback]",
+      "productionValue": "3, 4, 1, 1, 3",
+      "stagingValue": "7",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.shell.ca/en_ca/drivers/loyalty-and-payment/partners/scotiabank.html",
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.tangerine.ca/en/about-us/press-releases/pr-2026-05-26"
+      ],
+      "relatedFactIds": [
+        "80abf107a264b79b"
+      ]
+    },
+    {
+      "kind": "partnership_conflict",
+      "severity": "conflict",
+      "issuer": "Scotiabank",
+      "subject": "Shell:cents_per_litre",
+      "summary": "Staged benefit \"8 cents per l\" contradicts cited amounts on related partnerships [shell-scene-scotia-scene-cards, shell-go-tangerine-scotia-cashback]",
+      "productionValue": "3, 4, 1, 1, 3",
+      "stagingValue": "8",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.shell.ca/en_ca/drivers/loyalty-and-payment/partners/scotiabank.html",
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.tangerine.ca/en/about-us/press-releases/pr-2026-05-26"
+      ],
+      "relatedFactIds": [
+        "c4d8187a935b76a8"
+      ]
+    },
+    {
+      "kind": "partnership_conflict",
+      "severity": "conflict",
+      "issuer": "Scotiabank",
+      "subject": "Shell:cents_per_litre",
+      "summary": "Staged benefit \"2 cents per l\" contradicts cited amounts on related partnerships [shell-scene-scotia-scene-cards, shell-go-tangerine-scotia-cashback]",
+      "productionValue": "3, 4, 1, 1, 3",
+      "stagingValue": "2",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.shell.ca/en_ca/drivers/loyalty-and-payment/partners/scotiabank.html",
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.tangerine.ca/en/about-us/press-releases/pr-2026-05-26"
+      ],
+      "relatedFactIds": [
+        "b094fa11781e1e97"
+      ]
+    },
+    {
+      "kind": "partnership_conflict",
+      "severity": "conflict",
+      "issuer": "Scotiabank",
+      "subject": "Shell:cents_per_litre",
+      "summary": "Staged benefit \"5 cents per L\" contradicts cited amounts on related partnerships [shell-scene-scotia-scene-cards, shell-go-tangerine-scotia-cashback]",
+      "productionValue": "3, 4, 1, 1, 3",
+      "stagingValue": "5",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.shell.ca/en_ca/drivers/loyalty-and-payment/partners/scotiabank.html",
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.tangerine.ca/en/about-us/press-releases/pr-2026-05-26"
+      ],
+      "relatedFactIds": [
+        "5bb5a36819892417"
+      ]
+    },
+    {
+      "kind": "partnership_conflict",
+      "severity": "conflict",
+      "issuer": "Scotiabank",
+      "subject": "Shell:cents_per_litre",
+      "summary": "Staged benefit \"5 cents per l\" contradicts cited amounts on related partnerships [shell-scene-scotia-scene-cards, shell-go-tangerine-scotia-cashback]",
+      "productionValue": "3, 4, 1, 1, 3",
+      "stagingValue": "5",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.shell.ca/en_ca/drivers/loyalty-and-payment/partners/scotiabank.html",
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.tangerine.ca/en/about-us/press-releases/pr-2026-05-26"
+      ],
+      "relatedFactIds": [
+        "0614c13d630a0598"
+      ]
+    },
+    {
+      "kind": "partnership_conflict",
+      "severity": "conflict",
+      "issuer": "Scotiabank",
+      "subject": "Shell:cents_per_litre",
+      "summary": "Staged benefit \"2 cents per L\" contradicts cited amounts on related partnerships [shell-scene-scotia-scene-cards, shell-go-tangerine-scotia-cashback]",
+      "productionValue": "3, 4, 1, 1, 3",
+      "stagingValue": "2",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.shell.ca/en_ca/drivers/loyalty-and-payment/partners/scotiabank.html",
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.tangerine.ca/en/about-us/press-releases/pr-2026-05-26"
+      ],
+      "relatedFactIds": [
+        "93239dd6e7b34847"
+      ]
+    },
+    {
+      "kind": "partnership_conflict",
+      "severity": "conflict",
+      "issuer": "Scotiabank",
+      "subject": "Shell:cents_per_litre",
+      "summary": "Staged benefit \"10 cents per l\" contradicts cited amounts on related partnerships [shell-scene-scotia-scene-cards, shell-go-tangerine-scotia-cashback]",
+      "productionValue": "3, 4, 1, 1, 3",
+      "stagingValue": "10",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.shell.ca/en_ca/drivers/loyalty-and-payment/partners/scotiabank.html",
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+        "https://www.tangerine.ca/en/about-us/press-releases/pr-2026-05-26"
+      ],
+      "relatedFactIds": [
+        "45aaa541a0b20b33"
+      ]
+    },
+    {
+      "kind": "partnership_conflict",
+      "severity": "conflict",
+      "issuer": "CIBC",
+      "subject": "JOURNIE:cents_per_litre",
+      "summary": "Staged benefit \"10 cents per l\" contradicts cited amounts on related partnerships [journie-cibc-gas-discount]",
+      "productionValue": "3",
+      "stagingValue": "10",
+      "sourceUrls": [
+        "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
+        "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
+        "https://journie.ca/on-en/partners/cibc",
+        "https://journie.ca/pe-en/terms"
+      ],
+      "relatedFactIds": [
+        "4407d49723528ed5"
+      ]
+    },
+    {
+      "kind": "partnership_conflict",
+      "severity": "conflict",
+      "issuer": "CIBC",
+      "subject": "JOURNIE:cents_per_litre",
+      "summary": "Staged benefit \"7 cents per l\" contradicts cited amounts on related partnerships [journie-cibc-gas-discount]",
+      "productionValue": "3",
+      "stagingValue": "7",
+      "sourceUrls": [
+        "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
+        "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
+        "https://journie.ca/on-en/partners/cibc",
+        "https://journie.ca/pe-en/terms"
+      ],
+      "relatedFactIds": [
+        "c37207b0426c7e27"
+      ]
+    },
+    {
+      "kind": "partnership_conflict",
+      "severity": "conflict",
+      "issuer": "CIBC",
+      "subject": "JOURNIE:cents_per_litre",
+      "summary": "Staged benefit \"10¢/L\" contradicts cited amounts on related partnerships [journie-cibc-gas-discount]",
+      "productionValue": "3",
+      "stagingValue": "10",
+      "sourceUrls": [
+        "https://journie.ca/on-en/partners/cibc",
+        "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
+        "https://journie.ca/on-en/partners/cibc",
+        "https://journie.ca/pe-en/terms"
+      ],
+      "relatedFactIds": [
+        "ab2802ddbb7884ef"
+      ]
+    },
+    {
+      "kind": "partnership_conflict",
+      "severity": "conflict",
+      "issuer": "CIBC",
+      "subject": "JOURNIE:cents_per_litre",
+      "summary": "Staged benefit \"7¢/L\" contradicts cited amounts on related partnerships [journie-cibc-gas-discount]",
+      "productionValue": "3",
+      "stagingValue": "7",
+      "sourceUrls": [
+        "https://journie.ca/on-en/partners/cibc",
+        "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
+        "https://journie.ca/on-en/partners/cibc",
+        "https://journie.ca/pe-en/terms"
+      ],
+      "relatedFactIds": [
+        "e053d42efe84462c"
+      ]
+    },
+    {
+      "kind": "new_partnership_candidate",
+      "severity": "review",
+      "issuer": "Scotiabank",
+      "subject": "Shell ↔ Shell Go+",
+      "summary": "Partnership mention \"Shell Go+\" with benefit text is not clearly covered by partnerships.ts",
+      "stagingValue": "Shell Go+",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html"
+      ],
+      "relatedFactIds": [
+        "ae79f4543310085b"
+      ]
+    },
+    {
+      "kind": "new_partnership_candidate",
+      "severity": "review",
+      "issuer": "Scotiabank",
+      "subject": "Shell ↔ Scene+",
+      "summary": "Partnership mention \"Scene+\" with benefit text is not clearly covered by partnerships.ts",
+      "stagingValue": "Scene+",
+      "sourceUrls": [
+        "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html"
+      ],
+      "relatedFactIds": [
+        "fa3b2f5918fe2398"
+      ]
+    },
+    {
+      "kind": "new_partnership_candidate",
+      "severity": "review",
+      "issuer": "CIBC",
+      "subject": "JOURNIE ↔ Aeroplan",
+      "summary": "Partnership mention \"Aeroplan\" with benefit text is not clearly covered by partnerships.ts",
+      "stagingValue": "Aeroplan",
+      "sourceUrls": [
+        "https://www.cibc.com/en/special-offers/journie-gas-rewards.html"
+      ],
+      "relatedFactIds": [
+        "e8182a3b5e7f84bd"
+      ]
+    }
+  ],
+  "summary": {
+    "newCardCandidates": 0,
+    "removedCardCandidates": 7,
+    "feeChanges": 0,
+    "earnRateChanges": 0,
+    "newPartnershipCandidates": 3,
+    "partnershipConflicts": 12,
+    "sourceFailures": 2
+  }
+}

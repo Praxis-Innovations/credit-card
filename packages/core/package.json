@@ -12,10 +12,16 @@
     "build": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "pipeline:run": "tsx src/data-pipeline/run.ts"
   },
   "devDependencies": {
+    "tsx": "^4.23.15",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "robots-parser": "^3.0.1"
   }
 }

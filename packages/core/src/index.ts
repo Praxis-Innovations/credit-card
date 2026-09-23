@@ -43,3 +43,18 @@ export {
 export { DEFAULT_POINT_VALUATIONS, resolveValuations } from "./valuations";
 
 export { bestCard, effectiveEarnRate, recommendCards } from "./recommend";
+
+export {
+  BIG_SIX_ISSUERS,
+  BIG_SIX_SOURCES,
+  PIPELINE_VERSION,
+  diffStagingAgainstProduction,
+  formatDiffReportMarkdown,
+  runPipeline,
+} from "./data-pipeline";
+export type {
+  DiffFinding,
+  DiffReport,
+  StagingFact,
+  StagingSnapshot,
+} from "./data-pipeline";

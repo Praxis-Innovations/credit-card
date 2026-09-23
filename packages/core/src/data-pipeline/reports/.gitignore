@@ -1,0 +1,4 @@
+# Dated run dumps (latest.* is the review artifact)
+20*.md
+!latest.md
+!latest.json
