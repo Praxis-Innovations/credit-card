@@ -1,0 +1,25 @@
+{
+  "reviewer": "github:REPLACE_ME",
+  "decisions": [
+    {
+      "action": "reject",
+      "fingerprint": "REPLACE_WITH_FINDING_FINGERPRINT",
+      "reason": "Marketing combined ¢/L total; not a contradiction of cited component amounts"
+    },
+    {
+      "action": "promote",
+      "fingerprint": "OPTIONAL_FINDING_FINGERPRINT",
+      "table": "cards",
+      "id": "example-card-id",
+      "row": {
+        "name": "Example",
+        "issuer": "Scotiabank",
+        "annual_fee": 120,
+        "point_currency": "Scene+",
+        "reward_categories": [{ "category": "other", "earnRate": 1 }],
+        "network": "Visa",
+        "last_verified": "2026-09-23"
+      }
+    }
+  ]
+}

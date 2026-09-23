@@ -1,0 +1,60 @@
+name: Data pipeline promote
+
+# Human-gated promotion of approved findings into Supabase catalog tables.
+# Requires repo secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+# Never commit service-role keys.
+
+on:
+  workflow_dispatch:
+    inputs:
+      approvals_path:
+        description: "Path to approvals JSON in the repo"
+        required: true
+        default: "packages/core/src/data-pipeline/approvals.example.json"
+      dry_run:
+        description: "Skip Supabase writes (still updates local review-decisions)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Promote
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          ARGS=(--file "${{ inputs.approvals_path }}")
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS+=(--dry-run)
+          fi
+          pnpm --filter @northtap/core pipeline:promote -- "${ARGS[@]}"
+
+      - name: Commit local review decisions
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(data-pipeline): apply review decisions"
+          file_pattern: |
+            packages/core/src/data-pipeline/state/review-decisions.json
