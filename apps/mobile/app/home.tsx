@@ -1,7 +1,3 @@
-import {
-  CATEGORY_LABELS,
-  type Category,
-} from "@northtap/core";
 import type { User } from "@supabase/supabase-js";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -19,8 +15,16 @@ import { AuthPanel } from "../src/components/AuthPanel";
 import { CategoryPicker } from "../src/components/CategoryPicker";
 import { Results } from "../src/components/Results";
 import { Wallet } from "../src/components/Wallet";
-import type { RecommendationItem, RecommendationResponse } from "../src/lib/api-types";
-import { buildRecommendationResponse } from "../src/lib/recommend";
+import { fetchAllCards } from "../src/lib/api-client";
+import {
+  CATEGORY_LABELS,
+  type Category,
+  type CreditCard,
+  type RecommendationItem,
+  type RecommendationResponse,
+} from "../src/lib/api-types";
+import { checkNearbyMerchant } from "../src/lib/nearby";
+import { requestRecommendation } from "../src/lib/recommend";
 import { loadGuestWallet, saveGuestWallet } from "../src/lib/storage";
 import { getSupabaseClient } from "../src/lib/supabase";
 import { colors } from "../src/lib/theme";
@@ -35,6 +39,8 @@ export default function HomeScreen() {
   const [amount, setAmount] = useState("87.42");
   const [merchant, setMerchant] = useState("Loblaws");
   const [category, setCategory] = useState<Category>("groceries");
+  const [merchantQuery, setMerchantQuery] = useState<string | null>(null);
+  const [nearbyHint, setNearbyHint] = useState<string | null>(null);
   const [recommendations, setRecommendations] = useState<RecommendationItem[]>(
     [],
   );
@@ -43,7 +49,11 @@ export default function HomeScreen() {
   >(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [nearbyBusy, setNearbyBusy] = useState(false);
   const [walletBusy, setWalletBusy] = useState(false);
+  const [catalog, setCatalog] = useState<CreditCard[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
 
   const onUserChange = useCallback((next: User | null) => {
     setUser(next);
@@ -57,6 +67,34 @@ export default function HomeScreen() {
       if (!cancelled) {
         setOwnedIds(ids);
         setHydrated(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Card catalog from apps/api over HTTP.
+  useEffect(() => {
+    let cancelled = false;
+    setCatalogLoading(true);
+    void (async () => {
+      try {
+        const cards = await fetchAllCards();
+        if (!cancelled) {
+          setCatalog(cards);
+          setCatalogError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setCatalogError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load card catalog from API",
+          );
+        }
+      } finally {
+        if (!cancelled) setCatalogLoading(false);
       }
     })();
     return () => {
@@ -145,7 +183,11 @@ export default function HomeScreen() {
     }
   }
 
-  function runRecommend() {
+  async function runRecommend(overrides?: {
+    category?: Category;
+    merchant?: string;
+    merchantQuery?: string | null;
+  }) {
     setError(null);
     setBusy(true);
     setRecommendations([]);
@@ -163,10 +205,21 @@ export default function HomeScreen() {
       return;
     }
 
-    const result = buildRecommendationResponse({
+    const nextCategory = overrides?.category ?? category;
+    const nextMerchant =
+      overrides && "merchant" in overrides
+        ? overrides.merchant?.trim() || undefined
+        : merchant.trim() || undefined;
+    const nextQuery =
+      overrides && "merchantQuery" in overrides
+        ? overrides.merchantQuery
+        : merchantQuery;
+
+    const result = await requestRecommendation({
       amountCad,
-      category,
-      merchant: merchant.trim() || undefined,
+      category: nextCategory,
+      merchant: nextMerchant,
+      merchantQuery: nextQuery ?? undefined,
       ownedCardIds: ownedIds,
       limit: 10,
     });
@@ -179,7 +232,42 @@ export default function HomeScreen() {
 
     setRecommendations(result.recommendations);
     setLastPurchase(result.purchase);
+    if (result.stale) {
+      setNearbyHint(
+        "Offline — showing your last successful recommendation (may be stale).",
+      );
+    }
     setBusy(false);
+  }
+
+  async function runCheckNearby() {
+    setError(null);
+    setNearbyHint(null);
+    setNearbyBusy(true);
+
+    const result = await checkNearbyMerchant({ radiusMeters: 750 });
+
+    if (result.status === "found") {
+      const { place, merchantQuery: query } = result.hit;
+      setMerchant(query);
+      setMerchantQuery(query);
+      setNearbyHint(
+        `Nearby: ${query} (~${Math.round(place.distanceMeters)}m) — server will resolve partnerships.`,
+      );
+      setNearbyBusy(false);
+      runRecommend({
+        merchant: query,
+        merchantQuery: query,
+      });
+      return;
+    }
+
+    // Graceful fallback — keep the manual category picker flow.
+    setMerchantQuery(null);
+    setNearbyHint(
+      "No nearby place found — pick a category below and recommend as usual.",
+    );
+    setNearbyBusy(false);
   }
 
   const syncHint = user
@@ -212,9 +300,10 @@ export default function HomeScreen() {
             Which card for this purchase?
           </Text>
           <Text style={styles.lead}>
-            Enter an amount and merchant/category. We rank your wallet with
-            clear reasoning — powered by the shared NorthTap engine and
-            Supabase-backed ownership when you sign in.
+            Enter an amount and merchant/category, or tap Check nearby for an
+            on-demand location match. We rank your wallet with clear reasoning —
+            powered by the shared NorthTap engine and Supabase-backed ownership
+            when you sign in.
           </Text>
         </View>
 
@@ -229,6 +318,9 @@ export default function HomeScreen() {
         <View style={[styles.grid, wide && styles.gridWide]}>
           <View style={[styles.col, wide && styles.colWallet]}>
             <Wallet
+              cards={catalog}
+              cardsLoading={catalogLoading}
+              cardsError={catalogError}
               ownedIds={ownedIds}
               onToggle={toggleCard}
               onClear={clearWallet}
@@ -260,7 +352,11 @@ export default function HomeScreen() {
                   <TextInput
                     style={styles.input}
                     value={merchant}
-                    onChangeText={setMerchant}
+                    onChangeText={(text) => {
+                      setMerchant(text);
+                      setMerchantQuery(null);
+                      setNearbyHint(null);
+                    }}
                     placeholder="e.g. Loblaws, Cactus Club"
                     placeholderTextColor={colors.muted}
                     accessibilityLabel="Merchant name"
@@ -269,27 +365,67 @@ export default function HomeScreen() {
               </View>
 
               <Text style={[styles.label, { marginTop: 16 }]}>Category</Text>
-              <CategoryPicker value={category} onChange={setCategory} />
-
-              <Pressable
-                onPress={runRecommend}
-                disabled={busy || ownedIds.length === 0}
-                style={[
-                  styles.recommendBtn,
-                  (busy || ownedIds.length === 0) && styles.btnDisabled,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel="Recommend cards"
-                accessibilityState={{
-                  disabled: busy || ownedIds.length === 0,
+              <CategoryPicker
+                value={category}
+                onChange={(next) => {
+                  setCategory(next);
+                  setMerchantQuery(null);
+                  setNearbyHint(null);
                 }}
-              >
-                {busy ? (
-                  <ActivityIndicator color={colors.primaryFg} />
-                ) : (
-                  <Text style={styles.recommendBtnText}>Recommend cards</Text>
-                )}
-              </Pressable>
+              />
+
+              {nearbyHint ? (
+                <Text
+                  style={styles.nearbyHint}
+                  accessibilityLiveRegion="polite"
+                >
+                  {nearbyHint}
+                </Text>
+              ) : null}
+
+              <View style={styles.actionRow}>
+                <Pressable
+                  onPress={() => void runCheckNearby()}
+                  disabled={nearbyBusy || busy || ownedIds.length === 0}
+                  style={[
+                    styles.nearbyBtn,
+                    (nearbyBusy || busy || ownedIds.length === 0) &&
+                      styles.btnDisabled,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Check nearby merchants"
+                  accessibilityState={{
+                    disabled: nearbyBusy || busy || ownedIds.length === 0,
+                  }}
+                >
+                  {nearbyBusy ? (
+                    <ActivityIndicator color={colors.primary} />
+                  ) : (
+                    <Text style={styles.nearbyBtnText}>Check nearby</Text>
+                  )}
+                </Pressable>
+
+                <Pressable
+                  onPress={() => runRecommend()}
+                  disabled={busy || nearbyBusy || ownedIds.length === 0}
+                  style={[
+                    styles.recommendBtn,
+                    (busy || nearbyBusy || ownedIds.length === 0) &&
+                      styles.btnDisabled,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Recommend cards"
+                  accessibilityState={{
+                    disabled: busy || nearbyBusy || ownedIds.length === 0,
+                  }}
+                >
+                  {busy ? (
+                    <ActivityIndicator color={colors.primaryFg} />
+                  ) : (
+                    <Text style={styles.recommendBtnText}>Recommend cards</Text>
+                  )}
+                </Pressable>
+              </View>
             </View>
 
             <View style={styles.resultsHeader}>
@@ -445,9 +581,35 @@ const styles = StyleSheet.create({
     color: colors.foreground,
     backgroundColor: colors.bg,
   },
-  recommendBtn: {
+  nearbyHint: {
+    marginTop: 14,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.muted,
+  },
+  actionRow: {
     marginTop: 20,
-    alignSelf: "flex-start",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    alignItems: "center",
+  },
+  nearbyBtn: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    minWidth: 140,
+    alignItems: "center",
+  },
+  nearbyBtnText: {
+    color: colors.primary,
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  recommendBtn: {
     backgroundColor: colors.primary,
     borderRadius: 12,
     paddingHorizontal: 22,

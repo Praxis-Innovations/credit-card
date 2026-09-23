@@ -1,9 +1,10 @@
-import { useMemo, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Animated, Platform, StyleSheet, Text, View } from "react-native";
 import {
   buildOnboardingDemoRecommendation,
   formatDemoEarnLabel,
 } from "../../lib/onboarding-demo";
+import type { RecommendationResponse } from "../../lib/api-types";
 import { formatCad, formatCentsPerDollar } from "../../lib/format";
 import { colors } from "../../lib/theme";
 import { FadeIn } from "./FadeIn";
@@ -11,12 +12,27 @@ import { FadeIn } from "./FadeIn";
 const useNativeDriver = Platform.OS !== "web";
 
 export function DemoRecommendationCard() {
-  const demo = useMemo(() => buildOnboardingDemoRecommendation(), []);
-  const top = demo.recommendations[0];
-  const runnerUps = demo.recommendations.slice(1, 3);
+  const [demo, setDemo] = useState<RecommendationResponse | null>(null);
+  const [failed, setFailed] = useState(false);
   const reveal = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await buildOnboardingDemoRecommendation();
+        if (!cancelled) setDemo(result);
+      } catch {
+        if (!cancelled) setFailed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!demo?.recommendations[0]) return;
     Animated.spring(reveal, {
       toValue: 1,
       friction: 9,
@@ -24,12 +40,23 @@ export function DemoRecommendationCard() {
       delay: 180,
       useNativeDriver,
     }).start();
-  }, [reveal]);
+  }, [demo, reveal]);
 
-  if (!top) {
+  const top = demo?.recommendations[0];
+  const runnerUps = demo?.recommendations.slice(1, 3) ?? [];
+
+  if (failed || (demo && !top)) {
     return (
       <View style={styles.fallback}>
         <Text style={styles.fallbackText}>Unable to load demo ranking.</Text>
+      </View>
+    );
+  }
+
+  if (!top || !demo) {
+    return (
+      <View style={styles.fallback}>
+        <Text style={styles.fallbackText}>Loading sample ranking…</Text>
       </View>
     );
   }

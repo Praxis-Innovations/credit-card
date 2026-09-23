@@ -14,14 +14,26 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.northtap.app"
+      "bundleIdentifier": "com.northtap.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "NorthTap uses your location once, when you tap Check nearby, to match merchant card partnerships at shops and stations around you."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0B3D2E"
       },
-      "package": "com.northtap.app"
+      "package": "com.northtap.app",
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
     },
-    "plugins": ["expo-router"]
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow NorthTap to use your location to recommend the best card at nearby merchants."
+        }
+      ]
+    ]
   }
 }

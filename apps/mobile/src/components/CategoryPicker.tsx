@@ -1,4 +1,4 @@
-import { CATEGORIES, CATEGORY_LABELS, type Category } from "@northtap/core";
+import { CATEGORIES, CATEGORY_LABELS, type Category } from "../lib/api-types";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors } from "../lib/theme";
 

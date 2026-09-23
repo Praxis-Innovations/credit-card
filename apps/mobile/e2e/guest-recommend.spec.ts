@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { installNorthtapApiMock } from "./helpers/api-mock";
 
 test.describe("guest purchase → recommend flow (Expo web)", () => {
   test.beforeEach(async ({ page }) => {
+    await installNorthtapApiMock(page);
     await page.addInitScript(() => {
       localStorage.clear();
       localStorage.setItem("northtap.onboardingComplete", "1");
@@ -21,6 +23,10 @@ test.describe("guest purchase → recommend flow (Expo web)", () => {
       page.getByRole("heading", { name: /Sign in|Create account/i }),
     ).toBeVisible();
     await expect(page.getByText(/saved on this device/i)).toBeVisible();
+
+    await expect(page.getByLabel("Search cards")).toBeVisible({
+      timeout: 15_000,
+    });
 
     await page.getByLabel("Search cards").fill("cobalt");
     await page.getByRole("checkbox", { name: /American Express Cobalt/i }).click();
@@ -51,6 +57,9 @@ test.describe("guest purchase → recommend flow (Expo web)", () => {
     await page.getByLabel("Purchase amount in CAD").fill("40");
     await expect(
       page.getByRole("button", { name: "Recommend cards" }),
+    ).toBeDisabled();
+    await expect(
+      page.getByRole("button", { name: "Check nearby merchants" }),
     ).toBeDisabled();
   });
 });
