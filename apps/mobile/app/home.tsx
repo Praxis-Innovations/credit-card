@@ -1,6 +1,7 @@
 import {
   CATEGORY_LABELS,
   type Category,
+  type CreditCard,
 } from "@northtap/core";
 import type { User } from "@supabase/supabase-js";
 import { useCallback, useEffect, useState } from "react";
@@ -19,9 +20,10 @@ import { AuthPanel } from "../src/components/AuthPanel";
 import { CategoryPicker } from "../src/components/CategoryPicker";
 import { Results } from "../src/components/Results";
 import { Wallet } from "../src/components/Wallet";
+import { fetchAllCards } from "../src/lib/api-client";
 import type { RecommendationItem, RecommendationResponse } from "../src/lib/api-types";
 import { checkNearbyMerchant } from "../src/lib/nearby";
-import { buildRecommendationResponse } from "../src/lib/recommend";
+import { requestRecommendation } from "../src/lib/recommend";
 import { loadGuestWallet, saveGuestWallet } from "../src/lib/storage";
 import { getSupabaseClient } from "../src/lib/supabase";
 import { colors } from "../src/lib/theme";
@@ -48,6 +50,9 @@ export default function HomeScreen() {
   const [busy, setBusy] = useState(false);
   const [nearbyBusy, setNearbyBusy] = useState(false);
   const [walletBusy, setWalletBusy] = useState(false);
+  const [catalog, setCatalog] = useState<CreditCard[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
 
   const onUserChange = useCallback((next: User | null) => {
     setUser(next);
@@ -61,6 +66,34 @@ export default function HomeScreen() {
       if (!cancelled) {
         setOwnedIds(ids);
         setHydrated(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Card catalog from apps/api (not the static @northtap/core export).
+  useEffect(() => {
+    let cancelled = false;
+    setCatalogLoading(true);
+    void (async () => {
+      try {
+        const cards = await fetchAllCards();
+        if (!cancelled) {
+          setCatalog(cards);
+          setCatalogError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setCatalogError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load card catalog from API",
+          );
+        }
+      } finally {
+        if (!cancelled) setCatalogLoading(false);
       }
     })();
     return () => {
@@ -149,7 +182,7 @@ export default function HomeScreen() {
     }
   }
 
-  function runRecommend(overrides?: {
+  async function runRecommend(overrides?: {
     category?: Category;
     merchant?: string;
     merchantBrandId?: string | null;
@@ -181,7 +214,7 @@ export default function HomeScreen() {
         ? overrides.merchantBrandId
         : merchantBrandId;
 
-    const result = buildRecommendationResponse({
+    const result = await requestRecommendation({
       amountCad,
       category: nextCategory,
       merchant: nextMerchant,
@@ -281,6 +314,9 @@ export default function HomeScreen() {
         <View style={[styles.grid, wide && styles.gridWide]}>
           <View style={[styles.col, wide && styles.colWallet]}>
             <Wallet
+              cards={catalog}
+              cardsLoading={catalogLoading}
+              cardsError={catalogError}
               ownedIds={ownedIds}
               onToggle={toggleCard}
               onClear={clearWallet}

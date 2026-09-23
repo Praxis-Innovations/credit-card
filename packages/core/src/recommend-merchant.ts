@@ -1,11 +1,13 @@
-import { CARDS, getCardById } from "./cards";
+import { CARDS } from "./cards";
 import {
   getLoyaltyProgramById,
   getMerchantBrandById,
-  getPartnershipsForBrand,
+  LOYALTY_PROGRAMS,
+  MERCHANT_PARTNERSHIPS,
 } from "./partnerships";
 import { effectiveEarnRate, recommendCards } from "./recommend";
 import type {
+  LoyaltyProgram,
   MerchantBrand,
   MerchantPartnership,
   PartnershipBenefit,
@@ -20,6 +22,16 @@ import { resolveValuations } from "./valuations";
  */
 export const ASSUMED_CAD_PER_LITRE = 1.5;
 
+/**
+ * Optional override for merchant / loyalty / partnership lookups.
+ * When omitted, uses the built-in `@northtap/core` static catalogs.
+ */
+export interface PartnershipCatalog {
+  brands?: MerchantBrand[];
+  partnerships?: MerchantPartnership[];
+  loyaltyPrograms?: LoyaltyProgram[];
+}
+
 export interface MerchantRecommendation extends Recommendation {
   /** Catalog brand that drove partnership preference, when any. */
   merchantBrand?: MerchantBrand;
@@ -33,6 +45,36 @@ export interface MerchantRecommendation extends Recommendation {
 
 export interface RecommendForMerchantInput extends RecommendationInput {
   merchantBrandId: string;
+  /** Inject Supabase / API-backed catalogs instead of static seed data. */
+  catalog?: PartnershipCatalog;
+}
+
+function resolveBrand(
+  id: string,
+  catalog?: PartnershipCatalog,
+): MerchantBrand | undefined {
+  if (catalog?.brands) {
+    return catalog.brands.find((b) => b.id === id);
+  }
+  return getMerchantBrandById(id);
+}
+
+function resolvePartnershipsForBrand(
+  brandId: string,
+  catalog?: PartnershipCatalog,
+): MerchantPartnership[] {
+  const list = catalog?.partnerships ?? MERCHANT_PARTNERSHIPS;
+  return list.filter((p) => p.merchantBrandIds.includes(brandId));
+}
+
+function resolveLoyaltyProgram(
+  id: string,
+  catalog?: PartnershipCatalog,
+): LoyaltyProgram | undefined {
+  if (catalog?.loyaltyPrograms) {
+    return catalog.loyaltyPrograms.find((p) => p.id === id);
+  }
+  return getLoyaltyProgramById(id) ?? LOYALTY_PROGRAMS.find((p) => p.id === id);
 }
 
 function benefitAppliesToCard(
@@ -137,9 +179,10 @@ function buildPartnershipReason(
   cardName: string,
   partnership: MerchantPartnership,
   benefits: PartnershipBenefit[],
+  catalog?: PartnershipCatalog,
 ): string {
   const program = partnership.loyaltyProgramId
-    ? getLoyaltyProgramById(partnership.loyaltyProgramId)
+    ? resolveLoyaltyProgram(partnership.loyaltyProgramId, catalog)
     : undefined;
   const benefitText = summarizePartnershipBenefits(benefits);
 
@@ -184,6 +227,7 @@ function pickBestPartnership(
   brandId: string,
   cardId: string,
   valuations: Record<string, number>,
+  catalog?: PartnershipCatalog,
 ): {
   partnership: MerchantPartnership;
   cents: number;
@@ -195,7 +239,7 @@ function pickBestPartnership(
     benefits: PartnershipBenefit[];
   } | null = null;
 
-  for (const partnership of getPartnershipsForBrand(brandId)) {
+  for (const partnership of resolvePartnershipsForBrand(brandId, catalog)) {
     if (!partnership.cardIds.includes(cardId)) continue;
     const { cents, benefits } = partnershipValueForCard(
       partnership,
@@ -218,7 +262,8 @@ function pickBestPartnership(
 export function recommendCardsForMerchant(
   input: RecommendForMerchantInput,
 ): MerchantRecommendation[] {
-  const brand = getMerchantBrandById(input.merchantBrandId);
+  const catalog = input.catalog;
+  const brand = resolveBrand(input.merchantBrandId, catalog);
   if (!brand) {
     return recommendCards({ ...input, category: input.category }).map(
       (rec) => ({
@@ -261,7 +306,12 @@ export function recommendCardsForMerchant(
   const results: MerchantRecommendation[] = [];
 
   for (const base of byId.values()) {
-    const picked = pickBestPartnership(brand.id, base.card.id, valuations);
+    const picked = pickBestPartnership(
+      brand.id,
+      base.card.id,
+      valuations,
+      catalog,
+    );
     if (!picked) {
       results.push({
         ...base,
@@ -281,14 +331,21 @@ export function recommendCardsForMerchant(
       ? categoryCents + partnershipCents
       : Math.max(categoryCents, partnershipCents);
 
-    const card = getCardById(base.card.id) ?? base.card;
+    const card =
+      cards.find((c) => c.id === base.card.id) ?? base.card;
     results.push({
       card,
       earnRate: base.earnRate,
       pointValue: base.pointValue,
       centsPerDollar: effectiveCents,
       capExhausted: base.capExhausted,
-      reason: buildPartnershipReason(brand, card.name, partnership, benefits),
+      reason: buildPartnershipReason(
+        brand,
+        card.name,
+        partnership,
+        benefits,
+        catalog,
+      ),
       merchantBrand: brand,
       partnership,
       partnershipCentsPerDollar: partnershipCents,

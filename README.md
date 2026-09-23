@@ -4,40 +4,35 @@ Canadian credit card rewards optimizer — **tap the right card, every time.**
 
 Deterministic rules engine (not ML): for each card you own, compute
 `cents-back-per-dollar = earn_rate × point_value` for a spending category and
-rank descending.
+rank descending. Merchant partnerships can boost or replace category rates.
 
 ## Architecture
 
 | Package | Role |
 |---------|------|
-| `apps/web` | Next.js — marketing `/` (landing showcase) + functional app at `/app` |
-| `apps/mobile` | Expo Router app (iOS / Android / Web) — purchase recommender + wallet + auth |
-| `packages/core` | Shared card schema, CA card dataset, valuations, recommendation engine |
-| `docs/api` | OpenAPI contract for recommender + card catalog ([`docs/api/README.md`](./docs/api/README.md)) |
-| `supabase` | Auth + `user_cards` ownership (RLS) |
+| `apps/api` | Next.js — public catalog + recommendation API (`/v1/*`) |
+| `apps/web` | Next.js — marketing site |
+| `apps/mobile` | Expo Router — purchase recommender (calls `apps/api`) |
+| `packages/core` | Shared schema, ranking engine, seed datasets |
+| `docs/api` | OpenAPI 3.1 contract (implemented by `apps/api`) |
+| `supabase` | Auth, `user_cards`, catalog tables, `api_keys` |
 
 ## Quick start
 
 ```bash
 pnpm install
-pnpm --filter @northtap/core test   # recommendation engine unit tests
-pnpm --filter web test              # API wrapper unit tests
-pnpm --filter web e2e               # Playwright guest + signed-in flows (Next /app)
-pnpm --filter web dev               # http://localhost:3000 — marketing `/` + app `/app`
-pnpm --filter mobile start          # Expo (iOS / Android / Web)
-pnpm --filter mobile web            # Expo web (Metro)
-pnpm --filter mobile export:web     # Static web export → apps/mobile/dist
-pnpm --filter mobile test           # Recommend-wrapper unit tests
-pnpm --filter mobile e2e            # Playwright against Expo static web export
+pnpm --filter @northtap/core test
+pnpm --filter api test              # API route unit tests
+pnpm --filter api dev               # http://localhost:8787
+pnpm --filter web dev               # http://localhost:3000
+pnpm --filter mobile start          # Expo (set EXPO_PUBLIC_NORTHTAP_* from .env.example)
+pnpm --filter mobile test
 ```
 
-Functional purchase recommender (Next, still live): **http://localhost:3000/app** — amount + merchant/category → ranked cards with reasoning. Guest wallets persist in `localStorage`; with `NEXT_PUBLIC_SUPABASE_*` set, sign-in syncs to `user_cards`. Interim BFF mirrors the OpenAPI contract: `POST /api/v1/recommendations` (in-process `recommendCards` from `@northtap/core`).
+Root scripts: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm test`.
 
-Expo app (`apps/mobile`) is the forward path for the same flow on iOS / Android / Web — calls `recommendCards()` in-process, persists guest wallets in AsyncStorage, and syncs signed-in wallets to the same `user_cards` table via `EXPO_PUBLIC_SUPABASE_*`.
+Regenerate catalog SQL seed from `@northtap/core`:
 
-Root scripts: `pnpm dev` (turbo), `pnpm build`, `pnpm lint`, `pnpm test`.
-
-## Out of scope (marketing)
-
-No GPS, bank linking, or AI on the marketing site. Persistent "My Cards" belongs in
-authenticated clients (`/app` and `apps/mobile`).
+```bash
+pnpm --filter @northtap/core exec node --experimental-strip-types ../../scripts/generate-catalog-seed.ts
+```
