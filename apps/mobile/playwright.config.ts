@@ -31,8 +31,8 @@ export default defineConfig({
       EXPO_PUBLIC_SUPABASE_ANON_KEY:
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e2UyfQ.e2e-test-anon-key",
       EXPO_PUBLIC_NORTHTAP_API_URL: "http://127.0.0.1:8787",
-      EXPO_PUBLIC_NORTHTAP_API_KEY:
-        "nt_live_northtap_expo_internal_v1_7f3a9c2e8b1d4f06",
+      // E2E mock only checks that a key header is present — not a real secret.
+      EXPO_PUBLIC_NORTHTAP_API_KEY: "e2e-test-api-key",
     },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],

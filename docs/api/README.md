@@ -34,9 +34,10 @@ Public catalog responses only include rows with `status = verified`.
 
 ## Auth
 
-Every route except `GET /v1/health` requires an API key. Seed an internal key for
-the Expo app (hash in the catalog seed migration; plaintext in
-`apps/mobile/.env.example` / Vercel `EXPO_PUBLIC_NORTHTAP_API_KEY`).
+Every route except `GET /v1/health` requires an API key. The internal Expo key
+hash is seeded in the catalog migration; set the matching plaintext via Vercel
+`EXPO_PUBLIC_NORTHTAP_API_KEY` / local `.env.local` — never commit it (see
+`.env.example` templates for variable names only).
 
 ## How clients consume this
 

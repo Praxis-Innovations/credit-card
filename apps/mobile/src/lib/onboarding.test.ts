@@ -29,7 +29,7 @@ import {
   formatDemoEarnLabel,
 } from "./onboarding-demo";
 
-const API_KEY = "nt_live_northtap_expo_internal_v1_7f3a9c2e8b1d4f06";
+const API_KEY = "test-api-key-not-a-production-secret";
 
 describe("onboarding storage", () => {
   beforeEach(() => {
