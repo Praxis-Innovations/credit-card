@@ -43,30 +43,3 @@ export {
 export { DEFAULT_POINT_VALUATIONS, resolveValuations } from "./valuations";
 
 export { bestCard, effectiveEarnRate, recommendCards } from "./recommend";
-
-export {
-  BIG_SIX_ISSUERS,
-  BIG_SIX_SOURCES,
-  CATALOG_STATUSES,
-  PIPELINE_VERSION,
-  applyPromotions,
-  defaultScopeForDate,
-  diffStagingAgainstProduction,
-  formatDiffReportMarkdown,
-  formatSourceHealthMarkdown,
-  loadPromoteFile,
-  parseScope,
-  runPipeline,
-  runSourceHealth,
-  sourcesForScope,
-} from "./data-pipeline";
-export type {
-  CatalogStatus,
-  CatalogTable,
-  CorroborationResult,
-  CrawlScope,
-  DiffFinding,
-  DiffReport,
-  StagingFact,
-  StagingSnapshot,
-} from "./data-pipeline";

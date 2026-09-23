@@ -15,6 +15,11 @@ Raw crawler output is **never** written into production datasets
 | `reports/*.md` | Human-readable candidates (conflicts include corroboration) |
 | `state/review-decisions.json` | Rejected fingerprints so weekly diffs stop re-flagging |
 
+**Not on the public `@northtap/core` barrel.** The crawler is Node/CI-only
+(`node:url`, cheerio, etc.) and must not be pulled into `apps/web` or Expo.
+Import via `@northtap/core/data-pipeline` or run the `pipeline:*` scripts
+(`tsx src/data-pipeline/run.ts`, etc.).
+
 Promotion uses `pipeline:promote` → Supabase upsert with `status=verified`,
 `verified_at=now()`, `reviewed_by=<reviewer>`.
 
