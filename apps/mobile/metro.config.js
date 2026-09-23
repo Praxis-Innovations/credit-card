@@ -12,9 +12,4 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, "node_modules"),
 ];
 
-// Resolve workspace package source for Metro
-config.resolver.extraNodeModules = {
-  "@northtap/core": path.resolve(workspaceRoot, "packages/core"),
-};
-
 module.exports = config;

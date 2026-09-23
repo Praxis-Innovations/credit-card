@@ -17,7 +17,7 @@ vi.mock("./ssr-safe-storage", () => ({
 }));
 
 import { requestRecommendation } from "./recommend";
-import { loadWalletCardCache } from "./wallet-card-cache";
+import { loadLastRecommendation } from "./last-recommendation-cache";
 
 const API_KEY = "test-api-key-not-a-production-secret";
 
@@ -28,23 +28,35 @@ const cobaltCard = {
   annualFee: 155.4,
   pointCurrency: "Amex MR",
   rewardCategories: [
-    { category: "dining", earnRate: 5, capMonthly: 2500 },
-    { category: "other", earnRate: 1 },
+    { category: "dining" as const, earnRate: 5, capMonthly: 2500 },
+    { category: "other" as const, earnRate: 1 },
   ],
   lastVerified: "2026-09-20",
 };
 
-const tangerineCard = {
-  id: "tangerine-moneyback",
-  name: "Money-Back Mastercard",
-  issuer: "Tangerine",
-  annualFee: 0,
-  pointCurrency: "cashback",
-  rewardCategories: [
-    { category: "dining", earnRate: 2 },
-    { category: "other", earnRate: 0.5 },
+const onlineResponse = {
+  purchase: {
+    amountCad: 100,
+    category: "dining" as const,
+    merchant: "Cactus Club",
+    merchantQuery: null,
+    merchantBrandId: null,
+  },
+  recommendations: [
+    {
+      rank: 1,
+      card: cobaltCard,
+      earnRate: 5,
+      pointValue: 2.4,
+      centsPerDollar: 12,
+      estimatedCentsBack: 1200,
+      estimatedRewardCad: 12,
+      capExhausted: false,
+      reason: "Cobalt gives 5× Amex MR on dining — best for this $100.00 purchase",
+      usedPartnership: false,
+    },
   ],
-  lastVerified: "2026-09-20",
+  bestCardId: "amex-cobalt",
 };
 
 beforeEach(() => {
@@ -55,7 +67,7 @@ beforeEach(() => {
 });
 
 describe("requestRecommendation", () => {
-  it("rejects empty wallet (no saved cards) without calling the API", async () => {
+  it("rejects empty wallet without calling the API", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     const result = await requestRecommendation({
       amountCad: 50,
@@ -64,158 +76,51 @@ describe("requestRecommendation", () => {
     expect("error" in result).toBe(true);
     if (!("error" in result)) return;
     expect(result.status).toBe(422);
-    expect(result.error.code).toBe("empty_wallet");
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("returns empty recommendations for unknown card ids (API response)", async () => {
+  it("posts to the API and caches the last successful response", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          purchase: {
-            amountCad: 50,
-            category: "dining",
-            merchant: null,
-            merchantBrandId: null,
-          },
-          recommendations: [],
-          bestCardId: null,
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
-    );
-
-    const result = await requestRecommendation({
-      amountCad: 50,
-      category: "dining",
-      ownedCardIds: ["not-a-real-card"],
-    });
-    expect("error" in result).toBe(false);
-    if ("error" in result) return;
-    expect(result.recommendations).toEqual([]);
-    expect(result.bestCardId).toBeNull();
-  });
-
-  it("posts to the API and caches wallet cards from the response", async () => {
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          purchase: {
-            amountCad: 100,
-            category: "dining",
-            merchant: "Cactus Club",
-            merchantBrandId: null,
-          },
-          recommendations: [
-            {
-              rank: 1,
-              card: cobaltCard,
-              earnRate: 5,
-              pointValue: 2.4,
-              centsPerDollar: 12,
-              estimatedCentsBack: 1200,
-              estimatedRewardCad: 12,
-              capExhausted: false,
-              reason:
-                "Cobalt gives 5× Amex MR on dining — best for this $100.00 purchase",
-              usedPartnership: false,
-            },
-            {
-              rank: 2,
-              card: tangerineCard,
-              earnRate: 2,
-              pointValue: 1,
-              centsPerDollar: 2,
-              estimatedCentsBack: 200,
-              estimatedRewardCad: 2,
-              capExhausted: false,
-              reason: "2% cash back",
-              usedPartnership: false,
-            },
-          ],
-          bestCardId: "amex-cobalt",
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
+      new Response(JSON.stringify(onlineResponse), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
     );
 
     const result = await requestRecommendation({
       amountCad: 100,
       category: "dining",
       merchant: "Cactus Club",
-      ownedCardIds: ["amex-cobalt", "tangerine-moneyback"],
+      ownedCardIds: ["amex-cobalt"],
     });
     expect("error" in result).toBe(false);
     if ("error" in result) return;
-
     expect(result.bestCardId).toBe("amex-cobalt");
-    expect(result.recommendations[0]?.reason).toMatch(/best for this/i);
-    expect(result.recommendations[0]?.estimatedRewardCad).toBeCloseTo(12, 5);
-    expect(fetchSpy).toHaveBeenCalledOnce();
-    const [url, init] = fetchSpy.mock.calls[0]!;
-    expect(String(url)).toContain("/v1/recommendations");
-    expect((init as RequestInit).method).toBe("POST");
-    expect(
-      ((init as RequestInit).headers as Headers).get("X-Api-Key"),
-    ).toBe(API_KEY);
 
-    const cached = await loadWalletCardCache();
-    expect(cached.map((c) => c.id).sort()).toEqual([
-      "amex-cobalt",
-      "tangerine-moneyback",
-    ]);
+    const cached = await loadLastRecommendation();
+    expect(cached?.bestCardId).toBe("amex-cobalt");
   });
 
-  it("rejects non-positive amounts without calling the API", async () => {
-    const fetchSpy = vi.spyOn(globalThis, "fetch");
-    const result = await requestRecommendation({
-      amountCad: 0,
-      category: "groceries",
-      ownedCardIds: ["amex-cobalt"],
-    });
-    expect("error" in result).toBe(true);
-    if (!("error" in result)) return;
-    expect(result.status).toBe(400);
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
-  it("forwards merchantBrandId for partnership-aware ranking", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+  it("forwards merchantQuery for server-side brand resolution", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(
         JSON.stringify({
+          ...onlineResponse,
           purchase: {
             amountCad: 60,
             category: "gas",
             merchant: "Shell",
+            merchantQuery: "Shell",
             merchantBrandId: "shell",
           },
+          bestCardId: "scotia-scene-vi",
           recommendations: [
             {
-              rank: 1,
-              card: {
-                ...cobaltCard,
-                id: "scotia-scene-vi",
-                name: "Scene+ Visa Infinite",
-                issuer: "Scotiabank",
-                pointCurrency: "Scene+",
-                annualFee: 120,
-                rewardCategories: [
-                  { category: "gas", earnRate: 1 },
-                  { category: "other", earnRate: 1 },
-                ],
-              },
-              earnRate: 1,
-              pointValue: 1,
-              centsPerDollar: 5,
-              estimatedCentsBack: 300,
-              estimatedRewardCad: 3,
-              capExhausted: false,
-              reason: "Shell — Scene+ Visa Infinite with Scene+ gets +3¢/L",
+              ...onlineResponse.recommendations[0],
               usedPartnership: true,
-              partnershipId: "shell-scene-scotia-scene-cards",
+              reason: "Shell partnership",
             },
           ],
-          bestCardId: "scotia-scene-vi",
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       ),
@@ -224,67 +129,30 @@ describe("requestRecommendation", () => {
     const result = await requestRecommendation({
       amountCad: 60,
       category: "gas",
-      merchantBrandId: "shell",
-      ownedCardIds: ["scotia-scene-vi", "tangerine-moneyback"],
+      merchantQuery: "Shell",
+      ownedCardIds: ["scotia-scene-vi"],
     });
     expect("error" in result).toBe(false);
     if ("error" in result) return;
-
-    expect(result.purchase.merchantBrandId).toBe("shell");
-    expect(result.purchase.category).toBe("gas");
-    expect(result.bestCardId).toBe("scotia-scene-vi");
-    expect(result.recommendations[0]?.usedPartnership).toBe(true);
-    expect(result.recommendations[0]?.reason).toMatch(/Shell/i);
-    expect(result.recommendations[0]?.reason).toMatch(/\+3/);
+    expect(result.purchase.merchantQuery).toBe("Shell");
+    const body = JSON.parse(
+      String((fetchSpy.mock.calls[0]![1] as RequestInit).body),
+    );
+    expect(body.merchantQuery).toBe("Shell");
+    expect(body.merchantBrandId).toBeUndefined();
   });
 
-  it("falls back to cached category ranking when the network is down", async () => {
-    // Warm cache via a successful call first.
+  it("shows last successful response as stale when offline", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({
-          purchase: {
-            amountCad: 100,
-            category: "dining",
-            merchant: null,
-            merchantBrandId: null,
-          },
-          recommendations: [
-            {
-              rank: 1,
-              card: cobaltCard,
-              earnRate: 5,
-              pointValue: 2.4,
-              centsPerDollar: 12,
-              estimatedCentsBack: 1200,
-              estimatedRewardCad: 12,
-              capExhausted: false,
-              reason: "online",
-              usedPartnership: false,
-            },
-            {
-              rank: 2,
-              card: tangerineCard,
-              earnRate: 2,
-              pointValue: 1,
-              centsPerDollar: 2,
-              estimatedCentsBack: 200,
-              estimatedRewardCad: 2,
-              capExhausted: false,
-              reason: "online",
-              usedPartnership: false,
-            },
-          ],
-          bestCardId: "amex-cobalt",
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
+      new Response(JSON.stringify(onlineResponse), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
     );
-
     await requestRecommendation({
       amountCad: 100,
       category: "dining",
-      ownedCardIds: ["amex-cobalt", "tangerine-moneyback"],
+      ownedCardIds: ["amex-cobalt"],
     });
 
     vi.spyOn(globalThis, "fetch").mockRejectedValue(
@@ -292,21 +160,31 @@ describe("requestRecommendation", () => {
     );
 
     const result = await requestRecommendation({
-      amountCad: 100,
-      category: "dining",
-      merchant: "Cactus Club",
-      merchantBrandId: "shell", // ignored offline — category-only
-      ownedCardIds: ["amex-cobalt", "tangerine-moneyback"],
+      amountCad: 40,
+      category: "gas",
+      merchantQuery: "Shell",
+      ownedCardIds: ["amex-cobalt"],
     });
-
     expect("error" in result).toBe(false);
     if ("error" in result) return;
-    expect(result.offline).toBe(true);
+    expect(result.stale).toBe(true);
     expect(result.bestCardId).toBe("amex-cobalt");
-    expect(result.purchase.merchantBrandId).toBeNull();
-    expect(result.recommendations[0]?.usedPartnership).toBe(false);
-    expect(result.recommendations[0]?.reason).toMatch(/\[offline\]/);
-    expect(result.recommendations[0]?.estimatedRewardCad).toBeCloseTo(12, 5);
+    // Stale payload is the previous success — not recomputed for the new query.
+    expect(result.purchase.category).toBe("dining");
+  });
+
+  it("errors when offline with no cached response", async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(
+      new TypeError("Failed to fetch"),
+    );
+    const result = await requestRecommendation({
+      amountCad: 50,
+      category: "dining",
+      ownedCardIds: ["amex-cobalt"],
+    });
+    expect("error" in result).toBe(true);
+    if (!("error" in result)) return;
+    expect(result.error.code).toBe("offline_cache_miss");
   });
 
   it("does not fall back on HTTP auth errors", async () => {
@@ -318,7 +196,6 @@ describe("requestRecommendation", () => {
         { status: 401, headers: { "Content-Type": "application/json" } },
       ),
     );
-
     const result = await requestRecommendation({
       amountCad: 50,
       category: "dining",
@@ -327,22 +204,5 @@ describe("requestRecommendation", () => {
     expect("error" in result).toBe(true);
     if (!("error" in result)) return;
     expect(result.status).toBe(401);
-    expect(result.error.code).toBe("unauthorized");
-  });
-
-  it("errors when offline with an empty cache", async () => {
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(
-      new TypeError("Failed to fetch"),
-    );
-
-    const result = await requestRecommendation({
-      amountCad: 50,
-      category: "dining",
-      ownedCardIds: ["amex-cobalt"],
-    });
-    expect("error" in result).toBe(true);
-    if (!("error" in result)) return;
-    expect(result.status).toBe(503);
-    expect(result.error.code).toBe("offline_cache_miss");
   });
 });

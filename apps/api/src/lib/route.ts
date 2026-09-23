@@ -1,4 +1,4 @@
-import type { MerchantPartnership } from "@northtap/core";
+import type { MerchantPartnership } from "@/domain";
 import { ApiError } from "./errors";
 import { requireApiKey } from "./auth";
 import { fromApiError, jsonResponse, optionsResponse } from "./http";

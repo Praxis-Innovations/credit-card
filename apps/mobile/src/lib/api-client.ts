@@ -1,6 +1,6 @@
-import type { CreditCard } from "@northtap/core";
 import type {
   ApiErrorBody,
+  CreditCard,
   RecommendationRequest,
   RecommendationResponse,
 } from "./api-types";

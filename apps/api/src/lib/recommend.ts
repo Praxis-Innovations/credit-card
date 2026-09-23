@@ -3,16 +3,16 @@ import {
   CATEGORY_LABELS,
   ISSUERS,
   POINT_CURRENCIES,
+  matchMerchantBrand,
   recommendCards,
   recommendCardsForMerchant,
   type Category,
   type CreditCard,
   type PointCurrency,
   type SpendToDate,
-} from "@northtap/core";
+} from "@/domain";
 import { ApiError } from "./errors";
 import {
-  getMerchantBrand,
   listAllVerifiedBrands,
   listAllVerifiedCards,
   listAllVerifiedPartnerships,
@@ -29,7 +29,11 @@ export interface RecommendationRequestBody {
   amountCad: number;
   category: Category;
   merchant?: string;
-  merchantBrandId?: string;
+  /**
+   * Raw free-text brand/name from OSM or the user (e.g. "Shell").
+   * Resolved server-side against merchant_brands — clients never send brand ids.
+   */
+  merchantQuery?: string;
   ownedCardIds?: string[];
   spendToDate?: SpendToDate;
   valuations?: Partial<Record<PointCurrency, number>>;
@@ -55,6 +59,8 @@ export interface RecommendationResponse {
     amountCad: number;
     category: Category;
     merchant: string | null;
+    merchantQuery?: string | null;
+    /** Resolved catalog brand id when merchantQuery matched, else null. */
     merchantBrandId?: string | null;
   };
   recommendations: RecommendationItem[];
@@ -63,7 +69,8 @@ export interface RecommendationResponse {
 
 /**
  * Stateless recommendation: ranks caller-supplied `ownedCardIds` by invoking
- * `@northtap/core` server-side. Never loads `user_cards` or inspects identity.
+ * the API-owned domain engine. Never loads `user_cards` or inspects identity.
+ * Resolves optional `merchantQuery` against the merchant brand catalog.
  */
 export async function createRecommendation(
   input: RecommendationRequestBody,
@@ -72,7 +79,7 @@ export async function createRecommendation(
     amountCad,
     category,
     merchant,
-    merchantBrandId,
+    merchantQuery,
     ownedCardIds,
     spendToDate,
     valuations,
@@ -110,24 +117,26 @@ export async function createRecommendation(
   const cardById = new Map(cards.map((c) => [c.id, c]));
   const knownIds = ownedCardIds.filter((id) => cardById.has(id));
 
-  const brand = merchantBrandId
-    ? await getMerchantBrand(merchantBrandId)
+  const [brands, partnerships, loyaltyPrograms] = await Promise.all([
+    listAllVerifiedBrands(),
+    listAllVerifiedPartnerships(),
+    listLoyaltyPrograms(),
+  ]);
+
+  const queryText = merchantQuery?.trim() || undefined;
+  const brand = queryText
+    ? matchMerchantBrand(queryText, { tags: [queryText] }, brands)
     : null;
-  if (merchantBrandId && !brand) {
-    throw new ApiError(
-      400,
-      "bad_request",
-      `Unknown merchantBrandId: ${merchantBrandId}`,
-    );
-  }
 
   const effectiveCategory = brand?.category ?? category;
+  const displayMerchant =
+    merchant?.trim() || brand?.name || queryText || null;
+
   const emptyPurchase = {
     amountCad,
     category: effectiveCategory,
-    merchant: merchant?.trim()
-      ? merchant.trim()
-      : (brand?.name ?? null),
+    merchant: displayMerchant,
+    merchantQuery: queryText ?? null,
     merchantBrandId: brand?.id ?? null,
   } as const;
 
@@ -138,12 +147,6 @@ export async function createRecommendation(
       bestCardId: null,
     };
   }
-
-  const [brands, partnerships, loyaltyPrograms] = await Promise.all([
-    listAllVerifiedBrands(),
-    listAllVerifiedPartnerships(),
-    listLoyaltyPrograms(),
-  ]);
 
   const limit = Math.min(Math.max(input.limit ?? 10, 1), 50);
   const ranked = brand
@@ -169,12 +172,10 @@ export async function createRecommendation(
       }));
 
   const label = CATEGORY_LABELS[effectiveCategory].toLowerCase();
-  const where = merchant?.trim() || brand?.name || label;
-  const whereLabel = merchant?.trim()
-    ? `${merchant.trim()} (${label})`
-    : brand
-      ? `${brand.name} (${label})`
-      : label;
+  const where = displayMerchant || label;
+  const whereLabel = displayMerchant
+    ? `${displayMerchant} (${label})`
+    : label;
 
   const recommendations = ranked.slice(0, limit).map((rec, index) => {
     const estimatedCentsBack = amountCad * rec.centsPerDollar;

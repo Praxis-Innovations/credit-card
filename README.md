@@ -10,29 +10,29 @@ rank descending. Merchant partnerships can boost or replace category rates.
 
 | Package | Role |
 |---------|------|
-| `apps/api` | Next.js — public catalog + **stateless** recommendation API (`/v1/*`, API-key auth). Never reads wallets. |
-| `apps/web` | Next.js — marketing site |
-| `apps/mobile` | Expo Router — loads wallet via Supabase Auth+RLS / guest storage; calls `apps/api` for ranking (with offline category fallback) |
-| `packages/core` | Shared schema + ranking engine (invoked server-side by `apps/api`) |
+| `apps/api` | Next.js — standalone public catalog + recommendation API (`/v1/*`). Owns the domain engine under `src/domain`. Never reads wallets. |
+| `apps/web` | Next.js — marketing site (no domain package dependency) |
+| `apps/mobile` | Expo — HTTP client of `apps/api` for catalog + recommendations; wallet via Supabase Auth+RLS only |
 | `docs/api` | OpenAPI 3.1 contract (implemented by `apps/api`) |
 | `supabase` | Auth, `user_cards` (wallet), catalog tables, `api_keys` |
+
+`apps/mobile` and `apps/web` must not depend on the domain package — they speak HTTP (and hand-written wire types) only.
 
 ## Quick start
 
 ```bash
 pnpm install
-pnpm --filter @northtap/core test
-pnpm --filter api test              # API route unit tests
+pnpm --filter api test              # domain + route unit tests
 pnpm --filter api dev               # http://localhost:8787
 pnpm --filter web dev               # http://localhost:3000
-pnpm --filter mobile start          # Expo (set EXPO_PUBLIC_NORTHTAP_* from .env.example)
+pnpm --filter mobile start          # Expo (set EXPO_PUBLIC_NORTHTAP_* in .env.local)
 pnpm --filter mobile test
 ```
 
 Root scripts: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm test`.
 
-Regenerate catalog SQL seed from `@northtap/core`:
+Regenerate catalog SQL seed (requires `NORTHTAP_SEED_API_KEY` in the environment):
 
 ```bash
-pnpm --filter @northtap/core exec node --experimental-strip-types ../../scripts/generate-catalog-seed.ts
+pnpm seed:catalog
 ```

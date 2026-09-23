@@ -9,16 +9,16 @@ info:
 
     ## Alignment with the monorepo
 
-    - **Card & recommendation shapes** match `packages/core` (`CreditCard`,
+    - **Card & recommendation shapes** match `apps/api/src/domain` (`CreditCard`,
       `Recommendation`, `Category`, etc.). Implementers SHOULD treat that TypeScript
       module as the in-process source of truth and keep this OpenAPI file in sync.
     - Catalog tables (`cards`, `loyalty_programs`, `merchant_brands`,
-      `merchant_partnerships`) seed from `packages/core` and are served by
+      `merchant_partnerships`) seed from `apps/api/src/domain` and are served by
       `apps/api`. Only `status: verified` rows are public.
     - **Wallet ownership** (`profiles`, `user_cards`) is orthogonal — clients
       talk to Supabase directly; `apps/api` never reads `user_cards`.
     - `POST /recommendations` runs ranking **server-side** via
-      `@northtap/core` `recommendCards()` / `recommendCardsForMerchant()` —
+      the API domain engine (`apps/api/src/domain`) `recommendCards()` / `recommendCardsForMerchant()` —
       the client sends inputs and receives a ranked decision (not raw rates to
       rank locally, except as an offline fallback in Expo).
     - Ranking semantics: sort by `centsPerDollar` descending, then lower
@@ -74,11 +74,11 @@ paths:
       summary: Rank cards for a purchase
       description: |
         Stateless server-side ranking. The API invokes
-        `recommendCards()` / `recommendCardsForMerchant()` from `@northtap/core`
+        `recommendCards()` / `recommendCardsForMerchant()` from the API domain engine (`apps/api/src/domain`)
         and returns a ranked decision. It does **not** load the caller's wallet
         from Supabase — `ownedCardIds` are caller-supplied opaque catalog slugs.
 
-        **Engine input** (maps to `RecommendationInput` in `@northtap/core`):
+        **Engine input** (maps to `RecommendationInput` in the API domain engine (`apps/api/src/domain`)):
         `ownedCardIds`, `category`, optional `merchantBrandId`, optional
         `spendToDate`, optional `valuations`.
 
@@ -361,7 +361,7 @@ paths:
       operationId: getDefaultValuations
       summary: Default cents-CAD-per-point valuations
       description: |
-        Mirrors `DEFAULT_POINT_VALUATIONS` in `@northtap/core`. Clients may
+        Mirrors `DEFAULT_POINT_VALUATIONS` in the API domain engine (`apps/api/src/domain`). Clients may
         override per-request via `RecommendationRequest.valuations`.
       security:
         - ApiKeyAuth: []
@@ -778,7 +778,7 @@ components:
 
     Category:
       type: string
-      description: Normalized spend category (`packages/core` CATEGORIES)
+      description: Normalized spend category (`apps/api/src/domain` CATEGORIES)
       enum:
         - groceries
         - dining
@@ -793,7 +793,7 @@ components:
 
     Issuer:
       type: string
-      description: Card issuer (`packages/core` ISSUERS). Extensible — new issuers MAY appear before the enum is updated.
+      description: Card issuer (`apps/api/src/domain` ISSUERS). Extensible — new issuers MAY appear before the enum is updated.
       enum:
         - American Express
         - TD
@@ -814,7 +814,7 @@ components:
 
     PointCurrency:
       type: string
-      description: Reward currency (`packages/core` POINT_CURRENCIES)
+      description: Reward currency (`apps/api/src/domain` POINT_CURRENCIES)
       enum:
         - Aeroplan
         - Scene+
@@ -885,7 +885,7 @@ components:
         - rewardCategories
         - lastVerified
       additionalProperties: false
-      description: Catalog card — same shape as `CreditCard` in `@northtap/core`
+      description: Catalog card — same shape as `CreditCard` in the API domain engine (`apps/api/src/domain`)
       properties:
         id:
           $ref: "#/components/schemas/CardId"
@@ -1025,12 +1025,14 @@ components:
           maxLength: 200
           description: >
             Free-text merchant / store name for display.
-        merchantBrandId:
+        merchantQuery:
           type: string
+          maxLength: 200
           description: >
-            When set, ranking uses partnership-aware
-            `recommendCardsForMerchant()` for this catalog brand id.
-          examples: [shell, costco-gas]
+            Raw free-text brand or place name (e.g. OSM "Shell"). The server
+            resolves this against `merchant_brands` (exact/fuzzy) and may apply
+            partnership-aware ranking. Clients must not send catalog brand ids.
+          examples: [Shell, "Costco Gas", Loblaws]
         ownedCardIds:
           type: array
           minItems: 1
@@ -1073,7 +1075,7 @@ components:
       additionalProperties: false
       description: >
         One ranked result. Core fields mirror `Recommendation` in
-        `@northtap/core`; purchase-scaled estimates are API additions.
+        the API domain engine (`apps/api/src/domain`); purchase-scaled estimates are API additions.
       properties:
         rank:
           type: integer
@@ -1131,8 +1133,12 @@ components:
               $ref: "#/components/schemas/Category"
             merchant:
               type: [string, "null"]
+            merchantQuery:
+              type: [string, "null"]
+              description: Echo of the request merchantQuery when provided
             merchantBrandId:
               type: [string, "null"]
+              description: Resolved catalog brand id when merchantQuery matched
         recommendations:
           type: array
           items:
@@ -1344,7 +1350,7 @@ components:
           type: array
           items:
             type: string
-          description: Alias of brandIds (packages/core field name)
+          description: Alias of brandIds (apps/api/src/domain field name)
         loyaltyProgramId:
           type: [string, "null"]
         cardIds:

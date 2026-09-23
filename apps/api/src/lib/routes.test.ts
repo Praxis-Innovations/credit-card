@@ -278,7 +278,7 @@ describe("POST /v1/recommendations", () => {
     expect(body.recommendations[0]?.rank).toBe(1);
   });
 
-  it("uses partnership-aware ranking", async () => {
+  it("uses partnership-aware ranking via merchantQuery", async () => {
     const res = await postRecommendations(
       req("/v1/recommendations", {
         method: "POST",
@@ -289,7 +289,7 @@ describe("POST /v1/recommendations", () => {
         body: JSON.stringify({
           amountCad: 60,
           category: "gas",
-          merchantBrandId: "shell",
+          merchantQuery: "Shell",
           ownedCardIds: ["scotia-scene-vi", "tangerine-moneyback"],
         }),
       }),
@@ -297,8 +297,11 @@ describe("POST /v1/recommendations", () => {
     expect(res.status).toBe(200);
     const body = (await jsonOf(res)) as {
       bestCardId: string;
+      purchase: { merchantBrandId: string | null; merchantQuery: string };
       recommendations: Array<{ usedPartnership?: boolean }>;
     };
+    expect(body.purchase.merchantQuery).toBe("Shell");
+    expect(body.purchase.merchantBrandId).toBe("shell");
     expect(body.bestCardId).toBe("scotia-scene-vi");
     expect(body.recommendations[0]?.usedPartnership).toBe(true);
   });

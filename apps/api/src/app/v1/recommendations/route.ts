@@ -42,9 +42,9 @@ export async function POST(request: Request) {
       amountCad: amountCad as number,
       category,
       merchant: typeof raw.merchant === "string" ? raw.merchant : undefined,
-      merchantBrandId:
-        typeof raw.merchantBrandId === "string"
-          ? raw.merchantBrandId
+      merchantQuery:
+        typeof raw.merchantQuery === "string"
+          ? raw.merchantQuery
           : undefined,
       ownedCardIds: Array.isArray(raw.ownedCardIds)
         ? (raw.ownedCardIds as string[])

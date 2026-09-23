@@ -1,4 +1,4 @@
-import type { MerchantBrand } from "@northtap/core";
+import type { MerchantBrand } from "@/domain";
 
 export function serializeBrand(b: MerchantBrand) {
   return {
