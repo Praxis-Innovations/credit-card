@@ -7,6 +7,7 @@ import {
   parseLimitOffset,
 } from "@/lib/query";
 import { handleOptions, withAuth } from "@/lib/route";
+import { serializeCard } from "@/lib/serialize";
 
 export const runtime = "nodejs";
 
@@ -34,6 +35,9 @@ export async function GET(request: Request) {
       offset,
     });
 
-    return jsonResponse(result, { request });
+    return jsonResponse(
+      { data: result.data.map(serializeCard), meta: result.meta },
+      { request },
+    );
   });
 }

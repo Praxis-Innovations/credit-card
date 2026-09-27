@@ -42,6 +42,9 @@ Every route except `GET /v1/health` requires an API key. Set plaintext via Verce
 1. Load wallet ids via Supabase (`user_cards`) or guest AsyncStorage.
 2. `POST /v1/recommendations` with `amountCad`, `category`, `ownedCardIds`, and
    optional `merchantQuery` (e.g. OSM place name) for partnership-aware ranking.
-3. `GET /v1/cards` for picker UIs.
+3. `GET /v1/cards` for picker UIs. Cards carry `imageUrl` / `imageAlt`; brands
+   and programs carry `logoUrl` / `logoAlt`. These are null until a
+   rights-cleared asset exists, so render a neutral placeholder — see
+   [`docs/data/ASSETS.md`](../data/ASSETS.md).
 4. Offline: Expo caches the last successful recommendation response and shows it
    labeled stale when the network is down (no on-device re-ranking).

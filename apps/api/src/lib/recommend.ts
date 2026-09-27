@@ -7,7 +7,6 @@ import {
   recommendCards,
   recommendCardsForMerchant,
   type Category,
-  type CreditCard,
   type PointCurrency,
   type SpendToDate,
 } from "@/domain";
@@ -18,6 +17,12 @@ import {
   listAllVerifiedPartnerships,
   listLoyaltyPrograms,
 } from "./catalog";
+import {
+  serializeCard,
+  summarizeLogo,
+  type CardResponse,
+  type LogoSummary,
+} from "./serialize";
 
 const CATEGORY_SET = new Set<string>(CATEGORIES);
 
@@ -42,7 +47,7 @@ export interface RecommendationRequestBody {
 
 export interface RecommendationItem {
   rank: number;
-  card: CreditCard;
+  card: CardResponse;
   earnRate: number;
   pointValue: number;
   centsPerDollar: number;
@@ -52,6 +57,10 @@ export interface RecommendationItem {
   reason: string;
   usedPartnership?: boolean;
   partnershipId?: string;
+  /** Brand resolved from merchantQuery, else null. */
+  merchantBrand: LogoSummary | null;
+  /** Loyalty program of the partnership that drove this item, else null. */
+  loyaltyProgram: LogoSummary | null;
 }
 
 export interface RecommendationResponse {
@@ -62,6 +71,7 @@ export interface RecommendationResponse {
     merchantQuery?: string | null;
     /** Resolved catalog brand id when merchantQuery matched, else null. */
     merchantBrandId?: string | null;
+    merchantBrand: LogoSummary | null;
   };
   recommendations: RecommendationItem[];
   bestCardId: string | null;
@@ -131,6 +141,8 @@ export async function createRecommendation(
   const effectiveCategory = brand?.category ?? category;
   const displayMerchant =
     merchant?.trim() || brand?.name || queryText || null;
+  const brandSummary = brand ? summarizeLogo(brand) : null;
+  const programById = new Map(loyaltyPrograms.map((p) => [p.id, p]));
 
   const emptyPurchase = {
     amountCad,
@@ -138,6 +150,7 @@ export async function createRecommendation(
     merchant: displayMerchant,
     merchantQuery: queryText ?? null,
     merchantBrandId: brand?.id ?? null,
+    merchantBrand: brandSummary,
   } as const;
 
   if (knownIds.length === 0) {
@@ -199,9 +212,15 @@ export async function createRecommendation(
         : `${rec.reason} — ~$${estimatedRewardCad.toFixed(2)} back on this $${amountCad.toFixed(2)} purchase`;
     }
 
+    const partnership =
+      usedPartnership && "partnership" in rec ? rec.partnership : undefined;
+    const program = partnership?.loyaltyProgramId
+      ? programById.get(partnership.loyaltyProgramId)
+      : undefined;
+
     return {
       rank: index + 1,
-      card: rec.card,
+      card: serializeCard(rec.card),
       earnRate: rec.earnRate,
       pointValue: rec.pointValue,
       centsPerDollar: rec.centsPerDollar,
@@ -210,10 +229,9 @@ export async function createRecommendation(
       capExhausted: rec.capExhausted,
       reason,
       usedPartnership,
-      partnershipId:
-        usedPartnership && "partnership" in rec
-          ? rec.partnership?.id
-          : undefined,
+      partnershipId: partnership?.id,
+      merchantBrand: brandSummary,
+      loyaltyProgram: program ? summarizeLogo(program) : null,
     };
   });
 

@@ -45,6 +45,13 @@ export interface WelcomeOffer {
   estimatedValueCad?: number;
 }
 
+/*
+ * Image fields: null means "no rights-cleared asset" — render a neutral
+ * placeholder (card-shaped tile for cards, initial-letter tile for brands /
+ * programs). See docs/data/ASSETS.md. Optional because responses cached
+ * before these fields existed won't carry them.
+ */
+
 /** Credit card as returned by GET /v1/cards and recommendation payloads. */
 export interface CreditCard {
   id: string;
@@ -57,6 +64,41 @@ export interface CreditCard {
   welcomeOffer?: WelcomeOffer;
   network?: "Visa" | "Mastercard" | "Amex";
   tier?: string;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+}
+
+/** Brand / loyalty program reference nested in partnerships and recommendations. */
+export interface LogoSummary {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+  logoAlt: string | null;
+}
+
+/** GET /v1/merchant-brands(/:id) */
+export interface MerchantBrand {
+  id: string;
+  name: string;
+  category: Category;
+  operator: string | null;
+  notes: string | null;
+  sourceUrl: string;
+  lastVerified: string;
+  logoUrl?: string | null;
+  logoAlt?: string | null;
+}
+
+/** GET /v1/loyalty-programs(/:id) */
+export interface LoyaltyProgram {
+  id: string;
+  name: string;
+  description: string | null;
+  pointCurrency: PointCurrency | null;
+  sourceUrl: string;
+  lastVerified: string;
+  logoUrl?: string | null;
+  logoAlt?: string | null;
 }
 
 export interface SpendToDate {
@@ -88,6 +130,10 @@ export interface RecommendationItem {
   reason: string;
   usedPartnership?: boolean;
   partnershipId?: string;
+  /** Brand resolved from merchantQuery. */
+  merchantBrand?: LogoSummary | null;
+  /** Loyalty program of the partnership that drove this item. */
+  loyaltyProgram?: LogoSummary | null;
 }
 
 export interface RecommendationResponse {
@@ -97,6 +143,7 @@ export interface RecommendationResponse {
     merchant: string | null;
     merchantQuery?: string | null;
     merchantBrandId?: string | null;
+    merchantBrand?: LogoSummary | null;
   };
   recommendations: RecommendationItem[];
   bestCardId: string | null;

@@ -21,7 +21,10 @@ create table public.user_cards (
 
 create type public.catalog_status as enum ('pending', 'verified', 'stale', 'rejected');
 create type public.api_key_tier as enum ('internal', 'standard', 'elevated');
+create type public.asset_rights_status as enum ('licensed', 'issuer_provided', 'placeholder', 'unknown');
 
+-- *_url may only be non-null with rights licensed/issuer_provided, alt text and a source URL
+-- (see *_provenance_check constraints and docs/data/ASSETS.md).
 create table public.cards (
   id text primary key,
   name text not null,
@@ -35,7 +38,13 @@ create table public.cards (
   last_verified date not null,
   captured_at timestamptz not null default now(),
   verified_at timestamptz,
-  status public.catalog_status not null default 'pending'
+  status public.catalog_status not null default 'pending',
+  image_url text,
+  image_alt text,
+  image_source_url text,
+  image_rights_status public.asset_rights_status not null default 'placeholder',
+  image_updated_at timestamptz,
+  image_updated_by text
 );
 
 create table public.loyalty_programs (
@@ -47,7 +56,13 @@ create table public.loyalty_programs (
   last_verified date not null,
   captured_at timestamptz not null default now(),
   verified_at timestamptz,
-  status public.catalog_status not null default 'pending'
+  status public.catalog_status not null default 'pending',
+  logo_url text,
+  logo_alt text,
+  logo_source_url text,
+  logo_rights_status public.asset_rights_status not null default 'placeholder',
+  logo_updated_at timestamptz,
+  logo_updated_by text
 );
 
 create table public.merchant_brands (
@@ -60,7 +75,13 @@ create table public.merchant_brands (
   last_verified date not null,
   captured_at timestamptz not null default now(),
   verified_at timestamptz,
-  status public.catalog_status not null default 'pending'
+  status public.catalog_status not null default 'pending',
+  logo_url text,
+  logo_alt text,
+  logo_source_url text,
+  logo_rights_status public.asset_rights_status not null default 'placeholder',
+  logo_updated_at timestamptz,
+  logo_updated_by text
 );
 
 create table public.merchant_partnerships (
@@ -94,3 +115,4 @@ create table public.api_keys (
 
 -- RLS: profiles/user_cards = own rows; catalog = select verified for anon/authenticated;
 -- api_keys = no client policies (service role only).
+-- Storage bucket brand-assets: public read; writes service role only.

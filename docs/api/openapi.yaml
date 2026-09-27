@@ -37,6 +37,16 @@ info:
     - Catalog admin write routes are intentionally unimplemented — crawler
       promotion into `cards` / partnerships tables is a separate workstream.
 
+    ## Catalog images
+
+    Cards expose `imageUrl` / `imageAlt`; merchant brands and loyalty programs
+    expose `logoUrl` / `logoAlt` (also nested in partnerships and
+    recommendations as `LogoSummary`). URLs point at the public Supabase
+    Storage bucket `brand-assets` and are **null until a rights-cleared asset
+    is uploaded** — which is the default for every row. When a URL is null,
+    clients MUST render a neutral placeholder: a card-shaped tile for cards and
+    an initial-letter tile for brands / programs. See `docs/data/ASSETS.md`.
+
     ## Versioning
 
     All paths are under `/v1`. Breaking changes require a new major path prefix.
@@ -884,8 +894,13 @@ components:
         - pointCurrency
         - rewardCategories
         - lastVerified
+        - imageUrl
+        - imageAlt
       additionalProperties: false
-      description: Catalog card — same shape as `CreditCard` in the API domain engine (`apps/api/src/domain`)
+      description: >
+        Catalog card — same shape as `CreditCard` in the API domain engine
+        (`apps/api/src/domain`), with the domain `image` asset flattened to
+        `imageUrl` / `imageAlt`.
       properties:
         id:
           $ref: "#/components/schemas/CardId"
@@ -920,6 +935,40 @@ components:
           maxLength: 40
           description: Optional marketing tier label (e.g. Premium)
           examples: [Premium, "Ultra Premium"]
+        imageUrl:
+          $ref: "#/components/schemas/AssetUrl"
+        imageAlt:
+          $ref: "#/components/schemas/AssetAlt"
+
+    AssetUrl:
+      type: [string, "null"]
+      format: uri
+      readOnly: true
+      description: >
+        Public image URL in the `brand-assets` Storage bucket. Null until a
+        rights-cleared (licensed / issuer-provided) asset is uploaded; clients
+        then render a neutral placeholder (card shape or initial-letter tile).
+        Set only by the `assets:upload` admin script.
+
+    AssetAlt:
+      type: [string, "null"]
+      readOnly: true
+      description: Accessible description of the image, when one has been recorded.
+
+    LogoSummary:
+      type: object
+      required: [id, name, logoUrl, logoAlt]
+      additionalProperties: false
+      description: Compact brand / loyalty program reference for rows that show a logo.
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        logoUrl:
+          $ref: "#/components/schemas/AssetUrl"
+        logoAlt:
+          $ref: "#/components/schemas/AssetAlt"
 
     CreditCardWrite:
       allOf:
@@ -1072,6 +1121,8 @@ components:
         - estimatedRewardCad
         - capExhausted
         - reason
+        - merchantBrand
+        - loyaltyProgram
       additionalProperties: false
       description: >
         One ranked result. Core fields mirror `Recommendation` in
@@ -1116,6 +1167,18 @@ components:
         partnershipId:
           type: string
           description: Partnership id when usedPartnership is true
+        merchantBrand:
+          description: Brand resolved from `merchantQuery`, else null
+          oneOf:
+            - $ref: "#/components/schemas/LogoSummary"
+            - type: "null"
+        loyaltyProgram:
+          description: >
+            Loyalty program of the partnership that drove this item (e.g.
+            Scene+ at Shell), else null — including direct (no-program) deals.
+          oneOf:
+            - $ref: "#/components/schemas/LogoSummary"
+            - type: "null"
 
     RecommendationResponse:
       type: object
@@ -1139,6 +1202,11 @@ components:
             merchantBrandId:
               type: [string, "null"]
               description: Resolved catalog brand id when merchantQuery matched
+            merchantBrand:
+              description: Resolved brand with logo (e.g. the "You're at Shell" row), else null
+              oneOf:
+                - $ref: "#/components/schemas/LogoSummary"
+                - type: "null"
         recommendations:
           type: array
           items:
@@ -1227,7 +1295,7 @@ components:
 
     LoyaltyProgram:
       type: object
-      required: [id, name, sourceUrl, lastVerified]
+      required: [id, name, sourceUrl, lastVerified, logoUrl, logoAlt]
       properties:
         id:
           type: string
@@ -1245,6 +1313,10 @@ components:
         lastVerified:
           type: string
           format: date
+        logoUrl:
+          $ref: "#/components/schemas/AssetUrl"
+        logoAlt:
+          $ref: "#/components/schemas/AssetAlt"
 
     LoyaltyProgramListResponse:
       type: object
@@ -1257,7 +1329,7 @@ components:
 
     MerchantBrand:
       type: object
-      required: [id, name, category, sourceUrl, lastVerified]
+      required: [id, name, category, sourceUrl, lastVerified, logoUrl, logoAlt]
       properties:
         id:
           type: string
@@ -1275,6 +1347,10 @@ components:
         lastVerified:
           type: string
           format: date
+        logoUrl:
+          $ref: "#/components/schemas/AssetUrl"
+        logoAlt:
+          $ref: "#/components/schemas/AssetAlt"
 
     MerchantBrandListResponse:
       type: object
@@ -1332,6 +1408,8 @@ components:
       required:
         - id
         - brandIds
+        - brands
+        - loyaltyProgram
         - cardIds
         - affiliation
         - requirements
@@ -1351,8 +1429,18 @@ components:
           items:
             type: string
           description: Alias of brandIds (apps/api/src/domain field name)
+        brands:
+          type: array
+          description: Verified brands for brandIds (same order; unknown ids skipped), with logos
+          items:
+            $ref: "#/components/schemas/LogoSummary"
         loyaltyProgramId:
           type: [string, "null"]
+        loyaltyProgram:
+          description: The loyalty program with its logo, or null for direct deals
+          oneOf:
+            - $ref: "#/components/schemas/LogoSummary"
+            - type: "null"
         cardIds:
           type: array
           items:

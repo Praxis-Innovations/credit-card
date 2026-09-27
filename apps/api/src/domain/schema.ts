@@ -89,6 +89,35 @@ export interface WelcomeOffer {
   estimatedValueCad?: number;
 }
 
+/**
+ * Basis for displaying a catalog image. Only `licensed` and `issuer_provided`
+ * assets are ever served; see docs/data/ASSETS.md.
+ */
+export const ASSET_RIGHTS_STATUSES = [
+  "licensed",
+  "issuer_provided",
+  "placeholder",
+  "unknown",
+] as const;
+
+export type AssetRightsStatus = (typeof ASSET_RIGHTS_STATUSES)[number];
+
+export const SERVABLE_ASSET_RIGHTS: readonly AssetRightsStatus[] = [
+  "licensed",
+  "issuer_provided",
+];
+
+/** Card art or logo metadata attached to a catalog row. */
+export interface CatalogAsset {
+  url: string | null;
+  alt: string | null;
+  /** Where the asset / permission came from (press kit, licence, partner portal). */
+  sourceUrl: string | null;
+  rightsStatus: AssetRightsStatus;
+  /** ISO timestamp of the last asset change. */
+  updatedAt: string | null;
+}
+
 export interface CreditCard {
   id: string;
   issuer: Issuer;
@@ -102,6 +131,8 @@ export interface CreditCard {
   network?: "Visa" | "Mastercard" | "Amex";
   /** Optional marketing tier label shown in UI. */
   tier?: string;
+  /** Card art. Absent in the static catalog (no assets ship with the repo). */
+  image?: CatalogAsset;
 }
 
 export interface PointValuations {
@@ -221,6 +252,7 @@ export interface MerchantBrand {
   notes?: string;
   sourceUrl: string;
   lastVerified: string;
+  logo?: CatalogAsset;
 }
 
 /**
@@ -235,6 +267,7 @@ export interface LoyaltyProgram {
   description?: string;
   sourceUrl: string;
   lastVerified: string;
+  logo?: CatalogAsset;
 }
 
 /**

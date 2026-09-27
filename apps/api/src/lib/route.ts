@@ -1,4 +1,3 @@
-import type { MerchantPartnership } from "@/domain";
 import { ApiError } from "./errors";
 import { requireApiKey } from "./auth";
 import { fromApiError, jsonResponse, optionsResponse } from "./http";
@@ -37,27 +36,4 @@ export async function withAuth(
       { status: 500, request },
     );
   }
-}
-
-/** Serialize partnership for public JSON (camelCase, brandIds alias). */
-export function serializePartnership(
-  p: MerchantPartnership & { status?: string },
-) {
-  return {
-    id: p.id,
-    brandIds: p.merchantBrandIds,
-    merchantBrandIds: p.merchantBrandIds,
-    loyaltyProgramId: p.loyaltyProgramId,
-    cardIds: p.cardIds,
-    affiliation: p.affiliation,
-    requirements: p.requirements,
-    benefits: p.benefits,
-    stacksWithCardCategoryRewards: p.stacksWithCardCategoryRewards,
-    notes: p.notes ?? null,
-    sourceUrls: p.sourceUrls,
-    /** Primary source for convenience (first cited URL). */
-    sourceUrl: p.sourceUrls[0] ?? null,
-    lastVerified: p.lastVerified,
-    status: p.status ?? "verified",
-  };
 }

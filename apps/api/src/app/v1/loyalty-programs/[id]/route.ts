@@ -1,6 +1,7 @@
 import { getLoyaltyProgram } from "@/lib/catalog";
 import { errorResponse, jsonResponse } from "@/lib/http";
 import { handleOptions, withAuth } from "@/lib/route";
+import { serializeLoyaltyProgram } from "@/lib/serialize";
 
 export const runtime = "nodejs";
 
@@ -23,16 +24,6 @@ export async function GET(
         { request },
       );
     }
-    return jsonResponse(
-      {
-        id: program.id,
-        name: program.name,
-        description: program.description ?? null,
-        pointCurrency: program.pointCurrency ?? null,
-        sourceUrl: program.sourceUrl,
-        lastVerified: program.lastVerified,
-      },
-      { request },
-    );
+    return jsonResponse(serializeLoyaltyProgram(program), { request });
   });
 }
