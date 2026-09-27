@@ -50,4 +50,22 @@ describe("buildRecommendationResponse", () => {
     if (!("error" in result)) return;
     expect(result.status).toBe(400);
   });
+
+  it("uses partnership reasons when merchantBrandId is set", () => {
+    const result = buildRecommendationResponse({
+      amountCad: 60,
+      category: "gas",
+      merchantBrandId: "shell",
+      ownedCardIds: ["scotia-scene-vi", "tangerine-moneyback"],
+    });
+    expect("error" in result).toBe(false);
+    if ("error" in result) return;
+
+    expect(result.purchase.merchantBrandId).toBe("shell");
+    expect(result.purchase.category).toBe("gas");
+    expect(result.bestCardId).toBe("scotia-scene-vi");
+    expect(result.recommendations[0]?.usedPartnership).toBe(true);
+    expect(result.recommendations[0]?.reason).toMatch(/Shell/i);
+    expect(result.recommendations[0]?.reason).toMatch(/\+3/);
+  });
 });
