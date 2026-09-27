@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { DM_Sans, JetBrains_Mono, Syne } from "next/font/google";
+import { DM_Sans, Syne } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
@@ -12,19 +12,14 @@ const dmSans = DM_Sans({
 
 const syne = Syne({
   subsets: ["latin"],
+  weight: ["500", "600"],
   variable: "--font-syne",
   display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jb-mono",
-  display: "swap",
-});
-
-const siteTitle = "NorthTap - Tap the right card, every time.";
+const siteTitle = "NorthTap - The right card for every purchase.";
 const siteDescription =
-  "NorthTap is the Canadian rewards coach for purchase-specific credit card picks. See which card in your wallet earns the most before you tap.";
+  "NorthTap looks at where you're shopping and tells you which card in your wallet earns the most. Free for Canadian cardholders, no account needed.";
 
 export const metadata: Metadata = {
   title: siteTitle,
@@ -53,7 +48,7 @@ export default function RootLayout({
     <html
       lang="en-CA"
       suppressHydrationWarning
-      className={`${dmSans.variable} ${syne.variable} ${jetbrainsMono.variable}`}
+      className={`${dmSans.variable} ${syne.variable}`}
     >
       <body className="font-sans">
         <ThemeProvider
@@ -62,7 +57,6 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="grain-overlay" aria-hidden />
           {children}
         </ThemeProvider>
       </body>
