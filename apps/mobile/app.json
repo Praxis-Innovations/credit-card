@@ -4,13 +4,18 @@
     "slug": "northtap",
     "version": "0.1.0",
     "orientation": "portrait",
+    "icon": "./assets/brand/icon.png",
+    "primaryColor": "#0c5c56",
     "scheme": "northtap",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "platforms": ["ios", "android", "web"],
     "web": {
       "bundler": "metro",
-      "output": "single"
+      "output": "single",
+      "favicon": "./assets/brand/favicon.png",
+      "themeColor": "#0c5c56",
+      "backgroundColor": "#0c5c56"
     },
     "ios": {
       "supportsTablet": true,
@@ -21,7 +26,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0B3D2E"
+        "foregroundImage": "./assets/brand/adaptive-icon.png",
+        "backgroundColor": "#0c5c56"
       },
       "package": "com.northtap.app",
       "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
@@ -32,6 +38,16 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Allow NorthTap to use your location to recommend the best card at nearby merchants."
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/brand/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0c5c56"
         }
       ]
     ]
