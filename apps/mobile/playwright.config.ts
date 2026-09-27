@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = 8081;
+// Not 8081: that's the Expo dev server, whose real env must never be reused here.
+const PORT = 8082;
 const baseURL = `http://127.0.0.1:${PORT}`;
 
 /**
