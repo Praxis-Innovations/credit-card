@@ -65,12 +65,15 @@ In Dashboard → **Authentication → URL Configuration → Redirect URLs** (or
 `additional_redirect_urls` under `[auth]` in `config.toml`), allow every place the app
 returns to:
 
-| Where | Redirect URL |
-| --- | --- |
-| Expo web, local | `http://localhost:8081/result` |
-| Expo web, production | `https://<your-web-domain>/result` |
-| iOS / Android build | `northtap://auth/callback` |
-| Expo Go (dev) | `exp://<lan-ip>:8081/--/auth/callback` (printed by `Linking.createURL`; wildcards like `exp://**` work) |
+| Where | App sends `redirectTo` | Allow-list entry (dev project) |
+| --- | --- | --- |
+| Expo web, local | `http://localhost:8081/result` | `http://localhost:8081/**` |
+| Expo web, production | `https://northtap-app.vercel.app/result` | `https://northtap-app.vercel.app/**` |
+| iOS / Android dev or store build | `northtap://auth/callback` | `northtap://**` |
+| Expo Go | `exp://<lan-ip>:8081/--/auth/callback` | not allowed in dev; use a dev build |
+
+Use `localhost`, not `127.0.0.1`, for local web: the allow list matches the host exactly.
+If `redirectTo` isn't allowed, Supabase silently sends the user to the Site URL instead.
 
 On web, Supabase returns tokens in the URL hash and the client reads them on load
 (implicit flow). On native, the app uses PKCE: the in-app browser returns
