@@ -12,7 +12,7 @@ rank descending.
 |---------|------|
 | `apps/web` | Next.js — marketing `/` (landing showcase) + functional app at `/app` |
 | `apps/mobile` | Expo Router app (iOS / Android / Web) — purchase recommender + wallet + auth |
-| `packages/core` | Shared card schema, CA card dataset, valuations, recommendation engine |
+| `packages/core` | Shared card schema, CA card dataset, merchant partnerships, valuations, recommendation engine. Big Six data-pipeline lives under `packages/core/src/data-pipeline` (CI/CLI only — not on the public `@northtap/core` barrel) |
 | `docs/api` | OpenAPI contract for recommender + card catalog ([`docs/api/README.md`](./docs/api/README.md)) |
 | `supabase` | Auth + `user_cards` ownership (RLS) |
 

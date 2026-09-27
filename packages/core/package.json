@@ -6,16 +6,26 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./data-pipeline": "./src/data-pipeline/index.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "pipeline:run": "tsx src/data-pipeline/run.ts",
+    "pipeline:source-health": "tsx src/data-pipeline/run-source-health.ts",
+    "pipeline:promote": "tsx src/data-pipeline/promote.ts"
   },
   "devDependencies": {
+    "tsx": "^4.23.15",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
+    "cheerio": "^1.2.0",
+    "robots-parser": "^3.0.1"
   }
 }
