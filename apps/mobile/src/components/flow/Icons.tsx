@@ -1,4 +1,4 @@
-import Svg, { Circle, Path, Rect } from "react-native-svg";
+import Svg, { Circle, Path } from "react-native-svg";
 import { colors } from "../../lib/theme";
 
 type IconProps = { size?: number; color?: string };
@@ -113,19 +113,6 @@ export function GoogleIcon({ size = 20 }: IconProps) {
         fill="#34A853"
         d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
       />
-    </Svg>
-  );
-}
-
-/** NorthTap mark (card + N + chip), from the design header. */
-export function NorthTapMark({ width = 34, height = 24 }: { width?: number; height?: number }) {
-  return (
-    <Svg width={width} height={height} viewBox="12 24 76 54">
-      <Rect x={13} y={25} width={74} height={52} rx={11} fill={colors.primary} />
-      <Path d="M35 39 L35 57 L26 63 Z" fill="#ffffff" />
-      <Path d="M35 39 L44 63 L35 57 Z" fill={colors.mint} />
-      <Rect x={62} y={39} width={12} height={9} rx={2} fill="#ffffff" />
-      <Rect x={62} y={59.6} width={12} height={3.4} rx={1.7} fill="#ffffff" />
     </Svg>
   );
 }

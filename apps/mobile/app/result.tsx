@@ -10,9 +10,9 @@ import {
   Text,
   View,
 } from "react-native";
+import { NorthTapLogo } from "../src/components/brand/NorthTapLogo";
 import { ErrorNote, InlineAction, LinkButton } from "../src/components/flow/Buttons";
 import { CardArt } from "../src/components/flow/CardArt";
-import { HeaderLockup } from "../src/components/flow/HeaderLockup";
 import { InfoIcon } from "../src/components/flow/Icons";
 import { SaveWalletSheet } from "../src/components/flow/SaveWalletSheet";
 import { Screen } from "../src/components/flow/Screen";
@@ -269,7 +269,7 @@ export default function ResultScreen() {
     <Screen
       header={
         <View style={styles.header}>
-          <HeaderLockup />
+          <NorthTapLogo size={20} accessibilityRole="image" />
           <InlineAction
             label="New search"
             onPress={() => router.dismissTo("/store")}
