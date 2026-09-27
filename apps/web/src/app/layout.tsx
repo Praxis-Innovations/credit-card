@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { DM_Sans, Syne } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { BRAND_TEAL } from "@/lib/brand";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -33,10 +34,14 @@ export const metadata: Metadata = {
     type: "website",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: siteTitle,
     description: siteDescription,
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: BRAND_TEAL,
 };
 
 export default function RootLayout({

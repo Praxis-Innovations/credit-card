@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand-logo";
 import { OpenAppLink } from "@/components/open-app-link";
 import { CONTAINER } from "@/lib/styles";
 
@@ -9,9 +10,9 @@ export function SiteHeader() {
     >
       <Link
         href="/"
-        className="font-display text-xl font-semibold text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent lg:text-[22px]"
+        className="flex rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
       >
-        NorthTap
+        <BrandLogo />
       </Link>
       <OpenAppLink />
     </header>
