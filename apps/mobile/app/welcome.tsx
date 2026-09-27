@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { NorthTapLogo } from "../src/components/brand/NorthTapLogo";
 import { PrimaryButton } from "../src/components/flow/Buttons";
-import { HeaderLockup } from "../src/components/flow/HeaderLockup";
 import { ContactlessIcon } from "../src/components/flow/Icons";
 import { Screen } from "../src/components/flow/Screen";
 import { colors, fonts, PHONE_COLUMN } from "../src/lib/theme";
@@ -49,7 +49,7 @@ export default function WelcomeScreen() {
     <Screen
       header={
         <View style={styles.header}>
-          <HeaderLockup />
+          <NorthTapLogo size={20} accessibilityRole="image" />
         </View>
       }
       footer={
