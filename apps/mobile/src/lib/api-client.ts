@@ -17,6 +17,18 @@ function apiBaseUrl(): string {
   return base.replace(/\/$/, "");
 }
 
+/**
+ * Card art / logo URL from the API, ready for <Image>. Absolute URLs pass
+ * through; paths like "/assets/cards/x.png" are served by the API itself.
+ */
+export function resolveAssetUrl(url: string | null | undefined): string | null {
+  const trimmed = url?.trim();
+  if (!trimmed) return null;
+  if (/^(https?:|data:|blob:)/i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith("//")) return `https:${trimmed}`;
+  return `${apiBaseUrl()}${trimmed.startsWith("/") ? "" : "/"}${trimmed}`;
+}
+
 function apiKey(): string {
   const key = process.env.EXPO_PUBLIC_NORTHTAP_API_KEY?.trim();
   if (!key) {

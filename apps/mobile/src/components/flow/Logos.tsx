@@ -1,6 +1,18 @@
+import { useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
+import { resolveAssetUrl } from "../../lib/api-client";
 import { initials } from "../../lib/programs";
 import { colors, fonts } from "../../lib/theme";
+
+/** Resolved logo URL, or null once it has failed to load (show the letter fallback). */
+function useLogoSource(url: string | null | undefined) {
+  const uri = resolveAssetUrl(url);
+  const [failed, setFailed] = useState<string | null>(null);
+  return {
+    uri: uri && failed !== uri ? uri : null,
+    onError: () => setFailed(uri),
+  };
+}
 
 interface StoreLogoProps {
   name: string;
@@ -12,10 +24,12 @@ interface StoreLogoProps {
 /** Store logo tile: the API logo, or a dashed initial-letter fallback. */
 export function StoreLogo({ name, logoUrl, logoAlt, size = 48 }: StoreLogoProps) {
   const radius = Math.round(size / 4);
-  if (logoUrl) {
+  const logo = useLogoSource(logoUrl);
+  if (logo.uri) {
     return (
       <Image
-        source={{ uri: logoUrl }}
+        source={{ uri: logo.uri }}
+        onError={logo.onError}
         accessibilityLabel={logoAlt || name}
         accessibilityRole="image"
         resizeMode="contain"
@@ -50,10 +64,12 @@ export function ProgramLogo({
   logoUrl: string | null;
   logoAlt?: string | null;
 }) {
-  if (logoUrl) {
+  const logo = useLogoSource(logoUrl);
+  if (logo.uri) {
     return (
       <Image
-        source={{ uri: logoUrl }}
+        source={{ uri: logo.uri }}
+        onError={logo.onError}
         accessibilityLabel={logoAlt || name}
         resizeMode="contain"
         style={styles.programImage}

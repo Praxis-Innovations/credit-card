@@ -17,6 +17,7 @@ import { InfoIcon } from "../src/components/flow/Icons";
 import { SaveWalletSheet } from "../src/components/flow/SaveWalletSheet";
 import { Screen } from "../src/components/flow/Screen";
 import { StoreSummary } from "../src/components/flow/StoreSummary";
+import { resolveAssetUrl } from "../src/lib/api-client";
 import {
   CATEGORY_LABELS,
   type LoyaltyProgram,
@@ -72,10 +73,11 @@ function BreakdownLogo({
 }) {
   if (!currency) return null;
   const program = programForCurrency(currency, programs);
-  if (!program.logoUrl) return null;
+  const uri = resolveAssetUrl(program.logoUrl);
+  if (!uri) return null;
   return (
     <Image
-      source={{ uri: program.logoUrl }}
+      source={{ uri }}
       accessibilityLabel={program.logoAlt ?? program.name}
       resizeMode="contain"
       style={styles.breakdownLogo}
