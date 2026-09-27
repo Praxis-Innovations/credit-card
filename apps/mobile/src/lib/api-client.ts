@@ -1,6 +1,11 @@
 import type {
   ApiErrorBody,
+  Category,
+  CategoryInfo,
   CreditCard,
+  LoyaltyProgram,
+  MerchantBrand,
+  Partnership,
   RecommendationRequest,
   RecommendationResponse,
 } from "./api-types";
@@ -93,6 +98,37 @@ export async function fetchAllCards(): Promise<CreditCard[]> {
     if (offset >= page.meta.total || page.data.length === 0) break;
   }
   return all;
+}
+
+export async function fetchCategories(): Promise<CategoryInfo[]> {
+  const res = await apiFetch<{ categories: CategoryInfo[] }>("/v1/categories");
+  return res.categories;
+}
+
+export async function fetchMerchantBrands(options?: {
+  category?: Category;
+  q?: string;
+  limit?: number;
+}): Promise<MerchantBrand[]> {
+  const params = new URLSearchParams();
+  params.set("limit", String(options?.limit ?? 200));
+  if (options?.category) params.set("category", options.category);
+  if (options?.q) params.set("q", options.q);
+  const res = await apiFetch<{ data: MerchantBrand[] }>(
+    `/v1/merchant-brands?${params.toString()}`,
+  );
+  return res.data;
+}
+
+export async function fetchLoyaltyPrograms(): Promise<LoyaltyProgram[]> {
+  const res = await apiFetch<{ data: LoyaltyProgram[] }>(
+    "/v1/loyalty-programs",
+  );
+  return res.data;
+}
+
+export async function fetchPartnership(id: string): Promise<Partnership> {
+  return apiFetch<Partnership>(`/v1/partnerships/${encodeURIComponent(id)}`);
 }
 
 export async function fetchRecommendation(

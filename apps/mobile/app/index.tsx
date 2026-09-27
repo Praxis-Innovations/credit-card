@@ -3,29 +3,27 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { loadOnboardingComplete } from "../src/lib/onboarding";
 import { colors } from "../src/lib/theme";
+import { useFlow } from "../src/state/flow";
 
 /**
- * First-launch gate: onboarding once, then straight to the recommender.
+ * First launch → intro. Returning users with a wallet go straight to
+ * "Where are you shopping?".
  */
 export default function IndexGate() {
-  const [ready, setReady] = useState(false);
-  const [complete, setComplete] = useState(false);
+  const { hydrated, walletIds } = useFlow();
+  const [complete, setComplete] = useState<boolean | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
-      const done = await loadOnboardingComplete();
-      if (!cancelled) {
-        setComplete(done);
-        setReady(true);
-      }
-    })();
+    void loadOnboardingComplete().then((done) => {
+      if (!cancelled) setComplete(done);
+    });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  if (!ready) {
+  if (complete === null || !hydrated) {
     return (
       <View style={styles.boot} accessibilityLabel="Loading">
         <ActivityIndicator color={colors.primary} size="large" />
@@ -33,11 +31,10 @@ export default function IndexGate() {
     );
   }
 
-  if (!complete) {
-    return <Redirect href="/welcome" />;
+  if (complete && walletIds.length > 0) {
+    return <Redirect href="/store" />;
   }
-
-  return <Redirect href="/home" />;
+  return <Redirect href="/welcome" />;
 }
 
 const styles = StyleSheet.create({

@@ -21,7 +21,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.northtap.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "NorthTap uses your location once, when you tap Check nearby, to match merchant card partnerships at shops and stations around you."
+        "NSLocationWhenInUseUsageDescription": "NorthTap uses your location only while the app is open, to find the store you're at and use that store's card partnerships. It is never sent to NorthTap's servers."
       }
     },
     "android": {
@@ -37,7 +37,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow NorthTap to use your location to recommend the best card at nearby merchants."
+          "locationWhenInUsePermission": "NorthTap uses your location only while the app is open, to find the store you're at and use that store's card partnerships. It is never sent to NorthTap's servers."
         }
       ],
       "expo-font",
