@@ -1,57 +1,88 @@
-const STEPS = [
+import type { ReactNode } from "react";
+import { CONTAINER } from "@/lib/styles";
+
+const STEPS: { title: string; body: string; icon: ReactNode }[] = [
   {
-    title: "Build your wallet",
-    body: "Add the Canadian cards you already carry. NorthTap ranks from what you own, not a generic top-ten list.",
+    title: "Add your cards",
+    body: "Choose the cards you already carry. No bank linking.",
+    icon: (
+      <>
+        <rect x="9" y="6" width="22" height="15" rx="3" />
+        <rect
+          x="5"
+          y="13"
+          width="22"
+          height="15"
+          rx="3"
+          className="fill-background"
+        />
+        <path d="M5 18.5h22" />
+      </>
+    ),
   },
   {
-    title: "Name the purchase",
-    body: "Groceries, dining, gas, travel, foreign spend, and more. The category you are about to tap is what matters.",
+    title: "Open it when you pay",
+    body: "NorthTap finds the store you're at, or you pick a category.",
+    icon: (
+      <>
+        <path d="M18 31s-9-7.8-9-14.8a9 9 0 0 1 18 0C27 23.2 18 31 18 31z" />
+        <circle cx="18" cy="16" r="3.2" />
+      </>
+    ),
   },
   {
-    title: "See the winner",
-    body: "A deterministic cents-back-per-dollar ranking shows which card earns the most for that purchase, with a clear why.",
+    title: "Use the best card",
+    body: "See which card earns the most, and why.",
+    icon: (
+      <>
+        <rect x="4" y="9" width="24" height="16" rx="3" />
+        <path d="M4 14.5h24" />
+        <circle cx="27" cy="25" r="6" className="fill-background" />
+        <path d="M24.5 25l1.8 1.8 3.4-3.6" />
+      </>
+    ),
   },
-] as const;
+];
 
 export function HowItWorks() {
   return (
-    <section
-      id="how-it-works"
-      className="scroll-mt-24 border-b border-border py-16 sm:py-20"
-    >
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="grid gap-12 lg:grid-cols-[1fr_1.15fr] lg:gap-16">
-          <div>
-            <h2 className="max-w-md font-display text-3xl tracking-tight text-foreground sm:text-4xl">
-              Purchase-specific picks, not yearly averages.
-            </h2>
-            <p className="mt-4 max-w-[48ch] text-base leading-relaxed text-muted-foreground sm:text-lg">
-              NorthTap answers one question at the terminal: which card in your
-              wallet should you tap for this spend?
-            </p>
-          </div>
-
-          <ol className="space-y-0 border-t border-border">
-            {STEPS.map((step, index) => (
-              <li
-                key={step.title}
-                className="grid grid-cols-[auto_1fr] gap-x-5 border-b border-border py-7"
+    <section id="how" aria-labelledby="how-heading" className={CONTAINER}>
+      <div className="border-t border-divider py-14 md:py-20 lg:py-28">
+        <h2 id="how-heading" className="sr-only">
+          How NorthTap works
+        </h2>
+        <ol className="flex flex-col gap-9 md:grid md:grid-cols-3 md:gap-10 lg:gap-16">
+          {STEPS.map((step, index) => (
+            <li key={step.title} className="flex flex-col gap-2 md:gap-3">
+              <svg
+                width="36"
+                height="36"
+                viewBox="0 0 36 36"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-accent"
+                aria-hidden="true"
               >
-                <p className="font-mono-nums pt-1 text-sm font-semibold text-primary">
-                  {String(index + 1).padStart(2, "0")}
-                </p>
-                <div>
-                  <h3 className="font-display text-xl tracking-tight text-foreground">
-                    {step.title}
-                  </h3>
-                  <p className="mt-2 max-w-[48ch] text-sm leading-relaxed text-muted-foreground sm:text-base">
-                    {step.body}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
+                {step.icon}
+              </svg>
+              <span
+                className="text-[13px] text-muted md:text-sm"
+                aria-hidden="true"
+              >
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <h3 className="font-display text-xl font-semibold text-foreground lg:text-[22px]">
+                {step.title}
+              </h3>
+              <p className="text-base leading-[1.6] text-body md:text-[17px]">
+                {step.body}
+              </p>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   );

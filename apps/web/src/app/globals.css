@@ -5,72 +5,61 @@
 @theme {
   --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-syne), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-jb-mono), ui-monospace, monospace;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
+  --color-body: var(--body);
   --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
+  --color-divider: var(--divider);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
   --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-border: var(--border);
-  --color-ring: var(--ring);
+  --color-accent-hover: var(--accent-hover);
+  --color-surface: var(--surface);
+  --color-surface-divider: var(--surface-divider);
 }
 
 :root {
-  /* Cold zinc + single teal accent - fintech without indigo/lime slop */
-  --background: #f4f5f4;
+  --background: #fbfbfa;
   --foreground: #141816;
-  --card: #fcfcfb;
-  --card-foreground: #141816;
+  --body: #4a524e;
+  --muted: #5c6661;
+  --divider: #e3e8e5;
   --primary: #0c5c56;
-  --primary-foreground: #f2faf8;
-  --secondary: #e2ebe8;
-  --secondary-foreground: #0c5c56;
-  --muted: #e8ecea;
-  --muted-foreground: #4a524e;
+  --primary-hover: #08403c;
+  --primary-foreground: #ffffff;
+  /* Links and line icons */
   --accent: #0c5c56;
-  --accent-foreground: #f2faf8;
-  --border: #cfd8d4;
-  --ring: #0c5c56;
-  --highlight: #7ee8d8;
-  --surface-tint: rgba(12, 92, 86, 0.06);
-  --result-top: #0c5c56;
-  --result-top-fg: #f2faf8;
+  --accent-hover: #08403c;
+  --surface: #ffffff;
+  --surface-divider: #eef1ef;
+  --surface-shadow: rgba(20, 24, 22, 0.35);
+  --card-teal: #0c5c56;
+  --card-pale: #e3ebe7;
+  --card-pale-border: #d4dfda;
+  --card-chip: #d7c89b;
 }
 
 .dark {
-  --background: #0c100f;
-  --foreground: #e6eeeb;
-  --card: #141a18;
-  --card-foreground: #e6eeeb;
-  --primary: #4fd1c5;
-  --primary-foreground: #0c100f;
-  --secondary: #1c2623;
-  --secondary-foreground: #b7d4ce;
-  --muted: #171e1c;
-  --muted-foreground: #8fa39c;
-  --accent: #4fd1c5;
-  --accent-foreground: #0c100f;
-  --border: #2a3531;
-  --ring: #4fd1c5;
-  --highlight: #7ee8d8;
-  --surface-tint: rgba(79, 209, 197, 0.08);
-  --result-top: #134e4a;
-  --result-top-fg: #ecfdf8;
+  --background: #0f1312;
+  --foreground: #e9eeec;
+  --body: #b9c3bf;
+  --muted: #9aa6a1;
+  --divider: #27302d;
+  --primary: #11756d;
+  --primary-hover: #0c5c56;
+  --primary-foreground: #ffffff;
+  --accent: #6fd3c7;
+  --accent-hover: #a3e6de;
+  --surface: #171d1b;
+  --surface-divider: #242d2a;
+  --surface-shadow: rgba(0, 0, 0, 0.7);
+  --card-pale: #1e2926;
+  --card-pale-border: #2b3834;
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
   html {
     scroll-behavior: smooth;
   }
@@ -79,47 +68,167 @@
     @apply bg-background text-foreground antialiased;
     /* Resolve next/font vars directly - Tailwind @theme --font-sans was not picking them up */
     font-family: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
-    background-color: var(--background);
-    background-image:
-      radial-gradient(ellipse 70% 40% at 0% -5%, var(--surface-tint), transparent 55%),
-      linear-gradient(180deg, var(--background) 0%, var(--background) 100%);
   }
 
   .font-display {
     font-family: var(--font-syne), ui-sans-serif, system-ui, sans-serif;
-    font-optical-sizing: auto;
-  }
-
-  .font-mono-nums {
-    font-family: var(--font-jb-mono), ui-monospace, monospace;
-    font-variant-numeric: tabular-nums;
   }
 }
 
-@layer utilities {
-  .text-highlight {
-    color: var(--highlight);
+/*
+ * Hero card illustration. Geometry is authored in design pixels (342px wide
+ * on mobile, 640px from md up) and scaled by --u so it shrinks on narrow
+ * phones instead of overflowing. The parent must be an inline-size container.
+ */
+@layer components {
+  .hero-art {
+    --u: calc(100cqw / 342);
+    position: relative;
+    width: 100%;
+    aspect-ratio: 342 / 300;
   }
 
-  .bg-highlight {
-    background-color: var(--highlight);
+  .hero-art__card {
+    position: absolute;
+    box-sizing: border-box;
+    width: calc(var(--u) * 230);
+    height: calc(var(--u) * 145);
+    border-radius: calc(var(--u) * 12);
+    border: 1px solid;
   }
 
-  .surface-panel {
-    @apply border border-border bg-card;
-    border-radius: 0.75rem;
+  .hero-art__back {
+    left: calc(var(--u) * 6);
+    top: calc(var(--u) * 36);
+    background: var(--card-pale);
+    border-color: var(--card-pale-border);
+    transform: rotate(-8deg);
   }
 
-  .grain-overlay {
-    pointer-events: none;
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    opacity: 0.035;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  .hero-art__front {
+    left: calc(var(--u) * 30);
+    top: calc(var(--u) * 18);
+    background: var(--card-teal);
+    border-color: var(--card-teal);
+    transform: rotate(-3deg);
   }
 
-  .dark .grain-overlay {
-    opacity: 0.05;
+  .hero-art__chip {
+    position: absolute;
+    left: calc(var(--u) * 18);
+    top: calc(var(--u) * 38);
+    width: calc(var(--u) * 30);
+    height: calc(var(--u) * 22);
+    border-radius: calc(var(--u) * 4);
+    background: var(--card-chip);
+  }
+
+  .hero-art__contactless {
+    position: absolute;
+    right: calc(var(--u) * 16);
+    top: calc(var(--u) * 16);
+    width: calc(var(--u) * 16);
+    height: calc(var(--u) * 16);
+  }
+
+  .hero-art__number {
+    position: absolute;
+    left: calc(var(--u) * 18);
+    bottom: calc(var(--u) * 16);
+    font-size: calc(var(--u) * 11);
+    line-height: 1;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .hero-art__circles {
+    position: absolute;
+    right: calc(var(--u) * 16);
+    bottom: calc(var(--u) * 15);
+    display: flex;
+  }
+
+  .hero-art__circles > span {
+    width: calc(var(--u) * 18);
+    height: calc(var(--u) * 18);
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.35);
+  }
+
+  .hero-art__circles > span + span {
+    margin-left: calc(var(--u) * -7);
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .hero-art__rec {
+    position: absolute;
+    left: calc(var(--u) * 92);
+    top: calc(var(--u) * 118);
+    width: calc(var(--u) * 250);
+    box-shadow: 0 18px 40px -24px var(--surface-shadow);
+  }
+
+  @media (min-width: 48rem) {
+    .hero-art {
+      --u: calc(100cqw / 640);
+      aspect-ratio: 640 / 360;
+    }
+
+    .hero-art__card {
+      width: calc(var(--u) * 340);
+      height: calc(var(--u) * 214);
+      border-radius: calc(var(--u) * 18);
+    }
+
+    .hero-art__back {
+      left: calc(var(--u) * 70);
+      top: calc(var(--u) * 56);
+    }
+
+    .hero-art__front {
+      left: calc(var(--u) * 120);
+      top: calc(var(--u) * 30);
+    }
+
+    .hero-art__chip {
+      left: calc(var(--u) * 26);
+      top: calc(var(--u) * 56);
+      width: calc(var(--u) * 44);
+      height: calc(var(--u) * 32);
+      border-radius: calc(var(--u) * 6);
+    }
+
+    .hero-art__contactless {
+      right: calc(var(--u) * 24);
+      top: calc(var(--u) * 24);
+      width: calc(var(--u) * 24);
+      height: calc(var(--u) * 24);
+    }
+
+    .hero-art__number {
+      left: calc(var(--u) * 26);
+      bottom: calc(var(--u) * 24);
+      font-size: calc(var(--u) * 16);
+    }
+
+    .hero-art__circles {
+      right: calc(var(--u) * 24);
+      bottom: calc(var(--u) * 22);
+    }
+
+    .hero-art__circles > span {
+      width: calc(var(--u) * 26);
+      height: calc(var(--u) * 26);
+    }
+
+    .hero-art__circles > span + span {
+      margin-left: calc(var(--u) * -10);
+    }
+
+    .hero-art__rec {
+      left: calc(var(--u) * 330);
+      top: calc(var(--u) * 150);
+      width: calc(var(--u) * 310);
+    }
   }
 }
