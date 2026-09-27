@@ -106,6 +106,8 @@ export interface SpendToDate {
   annual?: Partial<Record<Category, number>>;
 }
 
+export type FuelGrade = "regular" | "premium";
+
 export interface RecommendationRequest {
   amountCad: number;
   category: Category;
@@ -115,7 +117,40 @@ export interface RecommendationRequest {
   ownedCardIds?: string[];
   spendToDate?: SpendToDate;
   valuations?: Partial<Record<PointCurrency, number>>;
+  /** Grade being pumped; premium unlocks grade-scoped benefits. Server default: regular. */
+  fuelGrade?: FuelGrade;
   limit?: number;
+}
+
+export type ValueBreakdownKind =
+  | "card_earn"
+  | "cents_per_litre_instant"
+  | "cents_per_litre_rewards"
+  | "points_per_litre"
+  | "points_per_dollar"
+  | "cashback_percent";
+
+/** One dollar line of a recommendation; lines sum exactly to estimatedRewardCad. */
+export interface ValueBreakdownItem {
+  label: string;
+  kind: ValueBreakdownKind;
+  /** Whole-cent CAD amount. */
+  amountCad: number;
+  partnershipId?: string;
+  points?: number;
+  pointCurrency?: PointCurrency;
+  centsPerPoint?: number;
+  promotional?: boolean;
+  /** Present when promotional; null if no end date is published. */
+  promotionalEnds?: string | null;
+}
+
+export interface ValueAssumptions {
+  /** Assumed pump price; null when no per-litre benefit applied. */
+  cadPerLitre: number | null;
+  litres: number | null;
+  /** Cents CAD per point for each currency valued in the breakdown. */
+  pointValuations: Partial<Record<PointCurrency, number>>;
 }
 
 export interface RecommendationItem {
@@ -134,6 +169,9 @@ export interface RecommendationItem {
   merchantBrand?: LogoSummary | null;
   /** Loyalty program of the partnership that drove this item. */
   loyaltyProgram?: LogoSummary | null;
+  /** Always sent by current API; optional for cached responses from older builds. */
+  valueBreakdown?: ValueBreakdownItem[];
+  assumptions?: ValueAssumptions;
 }
 
 export interface RecommendationResponse {
@@ -144,6 +182,7 @@ export interface RecommendationResponse {
     merchantQuery?: string | null;
     merchantBrandId?: string | null;
     merchantBrand?: LogoSummary | null;
+    fuelGrade?: FuelGrade | null;
   };
   recommendations: RecommendationItem[];
   bestCardId: string | null;

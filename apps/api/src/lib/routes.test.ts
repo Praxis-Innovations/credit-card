@@ -297,13 +297,143 @@ describe("POST /v1/recommendations", () => {
     expect(res.status).toBe(200);
     const body = (await jsonOf(res)) as {
       bestCardId: string;
-      purchase: { merchantBrandId: string | null; merchantQuery: string };
+      purchase: {
+        merchantBrandId: string | null;
+        merchantQuery: string;
+        fuelGrade: string | null;
+      };
       recommendations: Array<{ usedPartnership?: boolean }>;
     };
     expect(body.purchase.merchantQuery).toBe("Shell");
     expect(body.purchase.merchantBrandId).toBe("shell");
-    expect(body.bestCardId).toBe("scotia-scene-vi");
-    expect(body.recommendations[0]?.usedPartnership).toBe(true);
+    expect(body.purchase.fuelGrade).toBe("regular");
+    // Regular fuel: 2% cash back + 3¢/L beats 1× Scene+ + 3¢/L + 1 Scene+/L.
+    expect(body.bestCardId).toBe("tangerine-moneyback");
+    expect(body.recommendations.every((r) => r.usedPartnership)).toBe(true);
+  });
+
+  describe("fuel grade + value breakdown", () => {
+    type BreakdownItem = {
+      label: string;
+      kind: string;
+      amountCad: number;
+      promotional?: boolean;
+      promotionalEnds?: string | null;
+    };
+    type Body = {
+      bestCardId: string;
+      purchase: { fuelGrade: string | null };
+      recommendations: Array<{
+        card: { id: string };
+        estimatedRewardCad: number;
+        valueBreakdown: BreakdownItem[];
+        assumptions: {
+          cadPerLitre: number | null;
+          litres: number | null;
+          pointValuations: Record<string, number>;
+        };
+      }>;
+    };
+
+    async function recommend(extra: Record<string, unknown>) {
+      const res = await postRecommendations(
+        req("/v1/recommendations", {
+          method: "POST",
+          headers: { ...authHeaders(), "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amountCad: 100,
+            category: "gas",
+            merchantQuery: "Shell",
+            ownedCardIds: ["scotia-gold-amex", "triangle-we"],
+            ...extra,
+          }),
+        }),
+      );
+      return { status: res.status, body: (await jsonOf(res)) as Body };
+    }
+
+    const summary = (body: Body) =>
+      body.recommendations.map((r) => [r.card.id, r.estimatedRewardCad]);
+    const toCents = (cad: number) => Math.round(cad * 100);
+
+    it("defaults to regular: Triangle World Elite beats Gold Amex at Shell", async () => {
+      const { status, body } = await recommend({});
+      expect(status).toBe(200);
+      expect(body.purchase.fuelGrade).toBe("regular");
+      expect(summary(body)).toEqual([
+        ["triangle-we", 4],
+        ["scotia-gold-amex", 3.67],
+      ]);
+      const gold = body.recommendations[1]!;
+      expect(gold.valueBreakdown.map((i) => [i.kind, i.amountCad])).toEqual([
+        ["card_earn", 1],
+        ["cents_per_litre_instant", 2],
+        ["points_per_litre", 0.67],
+      ]);
+      expect(gold.assumptions).toEqual({
+        cadPerLitre: 1.5,
+        litres: 66.67,
+        pointValuations: { "Scene+": 1 },
+      });
+    });
+
+    it("premium unlocks V-Power benefits and flips the ranking", async () => {
+      const { body } = await recommend({ fuelGrade: "premium" });
+      expect(body.purchase.fuelGrade).toBe("premium");
+      expect(summary(body)).toEqual([
+        ["scotia-gold-amex", 7],
+        ["triangle-we", 4],
+      ]);
+      const promo = body.recommendations[0]!.valueBreakdown.filter(
+        (i) => i.promotional,
+      );
+      expect(promo).toEqual([
+        expect.objectContaining({
+          kind: "cents_per_litre_instant",
+          amountCad: 2.67,
+          promotionalEnds: "2027-06-01",
+        }),
+      ]);
+    });
+
+    it("breakdown sums exactly to estimatedRewardCad", async () => {
+      for (const fuelGrade of ["regular", "premium"]) {
+        for (const amountCad of [100, 47.29, 13.37]) {
+          const { body } = await recommend({ fuelGrade, amountCad });
+          for (const rec of body.recommendations) {
+            expect(rec.valueBreakdown.length).toBeGreaterThan(0);
+            expect(
+              rec.valueBreakdown.reduce((s, i) => s + toCents(i.amountCad), 0),
+            ).toBe(toCents(rec.estimatedRewardCad));
+          }
+        }
+      }
+    });
+
+    it("leaves non-fuel merchants unaffected", async () => {
+      const base = {
+        amountCad: 80,
+        category: "groceries",
+        merchantQuery: "Loblaws",
+        ownedCardIds: ["pc-financial-we", "scotia-gold-amex", "amex-cobalt"],
+      };
+      const regular = await recommend(base);
+      const premium = await recommend({ ...base, fuelGrade: "premium" });
+      expect(regular.status).toBe(200);
+      expect(regular.body.purchase.fuelGrade).toBeNull();
+      expect(premium.body).toEqual(regular.body);
+      for (const rec of regular.body.recommendations) {
+        expect(rec.assumptions.cadPerLitre).toBeNull();
+        expect(
+          rec.valueBreakdown.reduce((s, i) => s + toCents(i.amountCad), 0),
+        ).toBe(toCents(rec.estimatedRewardCad));
+      }
+    });
+
+    it("rejects an unknown fuelGrade", async () => {
+      const { status } = await recommend({ fuelGrade: "diesel" });
+      expect(status).toBe(400);
+    });
   });
 
   it("returns 422 for empty wallet", async () => {

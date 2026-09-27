@@ -95,6 +95,17 @@ paths:
         **Purchase fields** (`amountCad`, optional `merchant`) do not change
         ranking order (rank is per-dollar) but are used to compute
         `estimatedRewardCad` / `estimatedCentsBack` for the response.
+
+        **Fuel grade**: partnership benefits scoped to a grade (e.g. Shell
+        V-Power's extra 4¢/L and extra Scene+ pt/L, Triangle's premium tier)
+        only count when `fuelGrade` matches. Omitted = `regular`.
+
+        **Value breakdown**: each item carries `valueBreakdown`, dollar lines
+        (card earn plus each applied partnership benefit) rounded to whole
+        cents that sum exactly to `estimatedRewardCad`, and `assumptions`
+        (pump price, litres, point valuations) used to produce them.
+        Per-litre benefits are converted at an assumed pump price
+        (`assumptions.cadPerLitre`), not a live price.
       security:
         - ApiKeyAuth: []
       requestBody:
@@ -123,6 +134,14 @@ paths:
                   spendToDate:
                     monthly:
                       groceries: 2500
+              premiumAtShell:
+                summary: Premium (V-Power) fill-up at Shell
+                value:
+                  amountCad: 100
+                  category: gas
+                  merchantQuery: Shell
+                  fuelGrade: premium
+                  ownedCardIds: [scotia-gold-amex, triangle-we]
       responses:
         "200":
           description: Ranked recommendations (best first)
@@ -1102,6 +1121,8 @@ components:
           description: >
             Optional overrides for cents CAD per point, keyed by PointCurrency.
             Unspecified currencies use defaults from GET /valuations.
+        fuelGrade:
+          $ref: "#/components/schemas/FuelGrade"
         limit:
           type: integer
           minimum: 1
@@ -1123,6 +1144,8 @@ components:
         - reason
         - merchantBrand
         - loyaltyProgram
+        - valueBreakdown
+        - assumptions
       additionalProperties: false
       description: >
         One ranked result. Core fields mirror `Recommendation` in
@@ -1153,7 +1176,9 @@ components:
         estimatedRewardCad:
           type: number
           minimum: 0
-          description: estimatedCentsBack / 100
+          description: >
+            estimatedCentsBack / 100, rounded to the nearest cent. Equals the
+            sum of `valueBreakdown[].amountCad`.
         capExhausted:
           type: boolean
           description: True when a spend cap forced fallback to base/`other` rate
@@ -1179,6 +1204,96 @@ components:
           oneOf:
             - $ref: "#/components/schemas/LogoSummary"
             - type: "null"
+        valueBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValueBreakdownItem"
+          description: >
+            Dollar lines behind estimatedRewardCad (card category earn plus
+            each applied partnership benefit). Amounts are whole cents and sum
+            exactly to estimatedRewardCad. When a partnership does not stack
+            with card rewards, only the winning side is listed.
+        assumptions:
+          $ref: "#/components/schemas/ValueAssumptions"
+
+    FuelGrade:
+      type: string
+      enum: [regular, premium]
+      default: regular
+      description: >
+        Grade being pumped. Partnership benefits scoped to a grade (e.g.
+        Shell V-Power, Triangle premium tier) only apply when this matches.
+        Ignored for non-fuel purchases.
+
+    ValueBreakdownItem:
+      type: object
+      required: [label, kind, amountCad]
+      additionalProperties: false
+      properties:
+        label:
+          type: string
+          description: Human-readable line (e.g. "Instant 3¢/L off all fuel grades")
+          examples: ["1× Scene+ on gas", "Instant 3¢/L off all fuel grades"]
+        kind:
+          type: string
+          enum:
+            - card_earn
+            - cents_per_litre_instant
+            - cents_per_litre_rewards
+            - points_per_litre
+            - points_per_dollar
+            - cashback_percent
+          description: >
+            `card_earn` is the card's own category earn; other values are the
+            partnership benefit kind.
+        amountCad:
+          type: number
+          minimum: 0
+          description: CAD value of this line, rounded to whole cents
+        partnershipId:
+          type: string
+          description: Source partnership for partnership lines
+        points:
+          type: number
+          minimum: 0
+          description: Points earned on this purchase (point-denominated lines only)
+        pointCurrency:
+          type: string
+          description: Currency of `points`, valued at `centsPerPoint`
+        centsPerPoint:
+          type: number
+          minimum: 0
+          description: Valuation used for this line (cents CAD per point)
+        promotional:
+          type: boolean
+          description: True for limited-time promotional benefits
+        promotionalEnds:
+          type: [string, "null"]
+          format: date
+          description: >
+            Published end date of a promotional benefit; present whenever
+            `promotional` is true (null if the issuer has not published one).
+
+    ValueAssumptions:
+      type: object
+      required: [cadPerLitre, litres, pointValuations]
+      additionalProperties: false
+      properties:
+        cadPerLitre:
+          type: [number, "null"]
+          description: >
+            Assumed pump price (CAD/L) used to value per-litre benefits; null
+            when no per-litre benefit applied.
+          examples: [1.5]
+        litres:
+          type: [number, "null"]
+          description: amountCad ÷ cadPerLitre (2 dp); null when no per-litre benefit applied
+        pointValuations:
+          type: object
+          additionalProperties:
+            type: number
+            minimum: 0
+          description: Cents CAD per point for each point currency valued in valueBreakdown
 
     RecommendationResponse:
       type: object
@@ -1207,6 +1322,11 @@ components:
               oneOf:
                 - $ref: "#/components/schemas/LogoSummary"
                 - type: "null"
+            fuelGrade:
+              oneOf:
+                - $ref: "#/components/schemas/FuelGrade"
+                - type: "null"
+              description: Fuel grade applied for gas purchases; null otherwise
         recommendations:
           type: array
           items:
@@ -1389,6 +1509,12 @@ components:
           type: string
         appliesTo:
           type: string
+          description: >
+            Qualifier when the rate is not universal. `|`-separated card ids
+            restrict the benefit to those cards; fuel-grade scopes
+            (`regular_fuel`, `premium_fuel`, `premium_fuel_pc_mastercard`,
+            `shell_vpower`) restrict it to the matching
+            `RecommendationRequest.fuelGrade`.
         capLitresMonthly:
           type: number
         capLitresPerFill:

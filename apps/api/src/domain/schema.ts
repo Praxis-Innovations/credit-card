@@ -168,6 +168,24 @@ export interface Recommendation {
   /** True when a spend cap has been fully exhausted for this category. */
   capExhausted: boolean;
   reason: string;
+  /** Contributors to `centsPerDollar`; their `centsPerDollar` values sum to it. */
+  valueComponents: ValueComponent[];
+}
+
+export type ValueComponentKind = "card_earn" | PartnershipBenefitKind;
+
+/** One contributor to a recommendation's cents-back-per-dollar score. */
+export interface ValueComponent {
+  label: string;
+  kind: ValueComponentKind;
+  centsPerDollar: number;
+  /** Card earn rate (points or cashback % per $) for `card_earn`. */
+  earnRate?: number;
+  /** Source partnership / benefit for partnership components. */
+  partnershipId?: string;
+  benefit?: PartnershipBenefit;
+  /** Point currency and ¢/pt used to value point-denominated components. */
+  valuation?: { currency: PointCurrency; centsPerPoint: number };
 }
 
 // ── Merchant / loyalty partnerships ─────────────────────────────────
@@ -205,6 +223,11 @@ export const PARTNERSHIP_BENEFIT_KINDS = [
 
 export type PartnershipBenefitKind =
   (typeof PARTNERSHIP_BENEFIT_KINDS)[number];
+
+/** Fuel grade being purchased; gates grade-scoped partnership benefits. */
+export const FUEL_GRADES = ["regular", "premium"] as const;
+
+export type FuelGrade = (typeof FUEL_GRADES)[number];
 
 /**
  * A cited benefit within a merchant↔loyalty↔card partnership.

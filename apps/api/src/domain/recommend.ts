@@ -6,6 +6,7 @@ import type {
   RecommendationInput,
   RewardCategory,
   SpendToDate,
+  ValueComponent,
 } from "./schema";
 import { CATEGORY_LABELS } from "./schema";
 import { resolveValuations } from "./valuations";
@@ -81,6 +82,35 @@ function buildReason(
   return `${earnRate}× ${card.pointCurrency} (${pointValue}¢/pt) on ${label.toLowerCase()}`;
 }
 
+/** The card's own category earn as a single value component. */
+export function cardEarnComponent(
+  card: CreditCard,
+  category: Category,
+  earnRate: number,
+  pointValue: number,
+  capExhausted: boolean,
+): ValueComponent {
+  const label = CATEGORY_LABELS[category].toLowerCase();
+  const earn =
+    card.pointCurrency === "cashback"
+      ? `${earnRate}% cash back`
+      : `${earnRate}× ${card.pointCurrency}`;
+  return {
+    label: `${earn} on ${label}${capExhausted ? " (bonus cap reached)" : ""}`,
+    kind: "card_earn",
+    centsPerDollar: earnRate * pointValue,
+    earnRate,
+    ...(card.pointCurrency === "cashback"
+      ? {}
+      : {
+          valuation: {
+            currency: card.pointCurrency,
+            centsPerPoint: pointValue,
+          },
+        }),
+  };
+}
+
 /**
  * Rank owned cards by cents-back-per-dollar for a spending category.
  * Pure function — no I/O. Cap exhaustion is optional via spendToDate.
@@ -124,6 +154,9 @@ export function recommendCards(input: RecommendationInput): Recommendation[] {
         centsPerDollar,
         capExhausted,
       ),
+      valueComponents: [
+        cardEarnComponent(card, category, earnRate, pointValue, capExhausted),
+      ],
     });
   }
 
