@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthPanel } from "../src/components/AuthPanel";
+import { NorthTapLogo } from "../src/components/brand/NorthTapLogo";
 import { CategoryPicker } from "../src/components/CategoryPicker";
 import { Results } from "../src/components/Results";
 import { Wallet } from "../src/components/Wallet";
@@ -285,7 +286,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.brand}>NorthTap</Text>
+          <NorthTapLogo size={24} />
           <Text style={styles.headerSub}>Purchase recommender</Text>
         </View>
       </View>
@@ -463,18 +464,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
   },
-  brand: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: colors.foreground,
-  },
   headerSub: {
     fontSize: 11,
     fontWeight: "600",
     letterSpacing: 1.4,
     textTransform: "uppercase",
     color: colors.muted,
-    marginTop: 2,
+    marginTop: 4,
   },
   scroll: {
     paddingHorizontal: 20,

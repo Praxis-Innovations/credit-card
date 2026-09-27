@@ -51,6 +51,7 @@ test.describe("signed-in purchase → recommend flow (Expo web)", () => {
     page,
   }) => {
     await skipOnboarding(page);
+    await installNorthtapApiMock(page);
     await installSupabaseMock(page, { initialCardIds: [] });
     await page.goto("/");
 
