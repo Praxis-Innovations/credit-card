@@ -1,14 +1,21 @@
 import {
+  ASSUMED_CAD_PER_LITRE,
   CATEGORIES,
   CATEGORY_LABELS,
+  DEFAULT_FUEL_GRADE,
+  FUEL_GRADES,
   ISSUERS,
   POINT_CURRENCIES,
+  buildValueBreakdown,
   matchMerchantBrand,
   recommendCards,
   recommendCardsForMerchant,
   type Category,
+  type FuelGrade,
   type PointCurrency,
   type SpendToDate,
+  type ValueAssumptions,
+  type ValueBreakdownItem,
 } from "@/domain";
 import { ApiError } from "./errors";
 import {
@@ -30,6 +37,12 @@ export function isCategory(value: unknown): value is Category {
   return typeof value === "string" && CATEGORY_SET.has(value);
 }
 
+const FUEL_GRADE_SET = new Set<string>(FUEL_GRADES);
+
+export function isFuelGrade(value: unknown): value is FuelGrade {
+  return typeof value === "string" && FUEL_GRADE_SET.has(value);
+}
+
 export interface RecommendationRequestBody {
   amountCad: number;
   category: Category;
@@ -42,6 +55,8 @@ export interface RecommendationRequestBody {
   ownedCardIds?: string[];
   spendToDate?: SpendToDate;
   valuations?: Partial<Record<PointCurrency, number>>;
+  /** Grade being pumped; premium unlocks grade-scoped benefits (e.g. Shell V-Power). */
+  fuelGrade?: FuelGrade;
   limit?: number;
 }
 
@@ -61,6 +76,9 @@ export interface RecommendationItem {
   merchantBrand: LogoSummary | null;
   /** Loyalty program of the partnership that drove this item, else null. */
   loyaltyProgram: LogoSummary | null;
+  /** Dollar lines that sum exactly to estimatedRewardCad. */
+  valueBreakdown: ValueBreakdownItem[];
+  assumptions: ValueAssumptions;
 }
 
 export interface RecommendationResponse {
@@ -72,6 +90,8 @@ export interface RecommendationResponse {
     /** Resolved catalog brand id when merchantQuery matched, else null. */
     merchantBrandId?: string | null;
     merchantBrand: LogoSummary | null;
+    /** Fuel grade applied for gas purchases, else null. */
+    fuelGrade?: FuelGrade | null;
   };
   recommendations: RecommendationItem[];
   bestCardId: string | null;
@@ -94,6 +114,15 @@ export async function createRecommendation(
     spendToDate,
     valuations,
   } = input;
+
+  if (input.fuelGrade !== undefined && !isFuelGrade(input.fuelGrade)) {
+    throw new ApiError(
+      400,
+      "bad_request",
+      `fuelGrade must be one of: ${FUEL_GRADES.join(", ")}`,
+    );
+  }
+  const fuelGrade = input.fuelGrade ?? DEFAULT_FUEL_GRADE;
 
   if (
     typeof amountCad !== "number" ||
@@ -151,6 +180,7 @@ export async function createRecommendation(
     merchantQuery: queryText ?? null,
     merchantBrandId: brand?.id ?? null,
     merchantBrand: brandSummary,
+    fuelGrade: effectiveCategory === "gas" ? fuelGrade : null,
   } as const;
 
   if (knownIds.length === 0) {
@@ -167,6 +197,7 @@ export async function createRecommendation(
         ownedCardIds: knownIds,
         category: brand.category,
         merchantBrandId: brand.id,
+        fuelGrade,
         spendToDate,
         valuations,
         cards,
@@ -192,7 +223,12 @@ export async function createRecommendation(
 
   const recommendations = ranked.slice(0, limit).map((rec, index) => {
     const estimatedCentsBack = amountCad * rec.centsPerDollar;
-    const estimatedRewardCad = estimatedCentsBack / 100;
+    const breakdown = buildValueBreakdown(
+      rec.valueComponents,
+      amountCad,
+      ASSUMED_CAD_PER_LITRE,
+    );
+    const estimatedRewardCad = breakdown.totalCad;
     const isTop = index === 0;
     const usedPartnership =
       "usedPartnership" in rec && rec.usedPartnership === true;
@@ -232,6 +268,8 @@ export async function createRecommendation(
       partnershipId: partnership?.id,
       merchantBrand: brandSummary,
       loyaltyProgram: program ? summarizeLogo(program) : null,
+      valueBreakdown: breakdown.items,
+      assumptions: breakdown.assumptions,
     };
   });
 

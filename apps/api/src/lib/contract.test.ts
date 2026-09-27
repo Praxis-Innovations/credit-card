@@ -111,10 +111,13 @@ async function ok<T = Row>(res: Response): Promise<T> {
   return (await res.json()) as T;
 }
 
+// Premium so the Scene+ card (and its program logo) ranks first; on regular,
+// Tangerine's 2% + 3¢/L beats it.
 const SHELL_AT_PUMP = {
   amountCad: 60,
   category: "gas",
   merchantQuery: "Shell",
+  fuelGrade: "premium",
   ownedCardIds: ["scotia-scene-vi", "tangerine-moneyback"],
 };
 

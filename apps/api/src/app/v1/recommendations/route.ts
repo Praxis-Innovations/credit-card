@@ -57,6 +57,10 @@ export async function POST(request: Request) {
         raw.valuations && typeof raw.valuations === "object"
           ? (raw.valuations as RecommendationRequestBody["valuations"])
           : undefined,
+      fuelGrade:
+        raw.fuelGrade === undefined || raw.fuelGrade === null
+          ? undefined
+          : (raw.fuelGrade as RecommendationRequestBody["fuelGrade"]),
       limit: typeof raw.limit === "number" ? raw.limit : undefined,
     };
 

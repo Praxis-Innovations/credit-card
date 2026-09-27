@@ -4,6 +4,7 @@ export type {
   CatalogAsset,
   Category,
   CreditCard,
+  FuelGrade,
   Issuer,
   LoyaltyProgram,
   MerchantBrand,
@@ -16,6 +17,8 @@ export type {
   RecommendationInput,
   RewardCategory,
   SpendToDate,
+  ValueComponent,
+  ValueComponentKind,
   WelcomeOffer,
 } from "./schema";
 
@@ -24,6 +27,7 @@ export {
   CARD_AFFILIATIONS,
   CATEGORIES,
   CATEGORY_LABELS,
+  FUEL_GRADES,
   ISSUERS,
   PARTNERSHIP_BENEFIT_KINDS,
   POINT_CURRENCIES,
@@ -55,6 +59,10 @@ export {
   ASSUMED_CAD_PER_LITRE,
   bestCardForMerchant,
   benefitToCentsPerDollar,
+  benefitValuation,
+  DEFAULT_FUEL_GRADE,
+  FUEL_GRADE_SCOPES,
+  isBenefitApplicable,
   recommendCardsForMerchant,
   summarizePartnershipBenefits,
   type MerchantRecommendation,
@@ -62,6 +70,19 @@ export {
   type RecommendForMerchantInput,
 } from "./recommend-merchant";
 
+export {
+  allocateCents,
+  buildValueBreakdown,
+  type ValueAssumptions,
+  type ValueBreakdown,
+  type ValueBreakdownItem,
+} from "./value-breakdown";
+
 export { DEFAULT_POINT_VALUATIONS, resolveValuations } from "./valuations";
 
-export { bestCard, effectiveEarnRate, recommendCards } from "./recommend";
+export {
+  bestCard,
+  cardEarnComponent,
+  effectiveEarnRate,
+  recommendCards,
+} from "./recommend";

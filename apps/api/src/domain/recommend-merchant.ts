@@ -5,14 +5,21 @@ import {
   LOYALTY_PROGRAMS,
   MERCHANT_PARTNERSHIPS,
 } from "./partnerships";
-import { effectiveEarnRate, recommendCards } from "./recommend";
+import {
+  cardEarnComponent,
+  effectiveEarnRate,
+  recommendCards,
+} from "./recommend";
 import type {
+  FuelGrade,
   LoyaltyProgram,
   MerchantBrand,
   MerchantPartnership,
   PartnershipBenefit,
+  PointCurrency,
   Recommendation,
   RecommendationInput,
+  ValueComponent,
 } from "./schema";
 import { resolveValuations } from "./valuations";
 
@@ -21,6 +28,20 @@ import { resolveValuations } from "./valuations";
  * approximate ¢/$ comparable to category earn rates. Not a live price feed.
  */
 export const ASSUMED_CAD_PER_LITRE = 1.5;
+
+export const DEFAULT_FUEL_GRADE: FuelGrade = "regular";
+
+/**
+ * `appliesTo` scopes that restrict a benefit to one fuel grade. Scopes not
+ * listed here (e.g. `all_fuel`) apply to every grade. Keep in sync with
+ * grade-specific benefits in the partnership catalog.
+ */
+export const FUEL_GRADE_SCOPES: Readonly<Record<string, FuelGrade>> = {
+  regular_fuel: "regular",
+  premium_fuel: "premium",
+  premium_fuel_pc_mastercard: "premium",
+  shell_vpower: "premium",
+};
 
 /**
  * Optional override for merchant / loyalty / partnership lookups.
@@ -45,6 +66,8 @@ export interface MerchantRecommendation extends Recommendation {
 
 export interface RecommendForMerchantInput extends RecommendationInput {
   merchantBrandId: string;
+  /** Grade being pumped; grade-scoped benefits only apply to a match. Defaults to regular. */
+  fuelGrade?: FuelGrade;
   /** Inject Supabase / API-backed catalogs instead of static seed data. */
   catalog?: PartnershipCatalog;
 }
@@ -77,16 +100,56 @@ function resolveLoyaltyProgram(
   return getLoyaltyProgramById(id) ?? LOYALTY_PROGRAMS.find((p) => p.id === id);
 }
 
-function benefitAppliesToCard(
+/**
+ * Whether a benefit applies to this card and fuel grade. `appliesTo` parts
+ * naming partnership card ids restrict the card; parts listed in
+ * {@link FUEL_GRADE_SCOPES} restrict the grade. Other scopes always apply.
+ */
+export function isBenefitApplicable(
   benefit: PartnershipBenefit,
   cardId: string,
   partnershipCardIds: string[],
+  fuelGrade: FuelGrade = DEFAULT_FUEL_GRADE,
 ): boolean {
   if (!benefit.appliesTo) return true;
   const parts = benefit.appliesTo.split("|").map((p) => p.trim());
   const mentionsCard = parts.some((p) => partnershipCardIds.includes(p));
-  if (mentionsCard) return parts.includes(cardId);
+  if (mentionsCard && !parts.includes(cardId)) return false;
+  const grades = parts.flatMap((p) => {
+    const grade = FUEL_GRADE_SCOPES[p];
+    return grade ? [grade] : [];
+  });
+  if (grades.length > 0 && !grades.includes(fuelGrade)) return false;
   return true;
+}
+
+/**
+ * Point currency and ¢/pt used to value a point-denominated benefit, or
+ * undefined for benefits already denominated in cents / percent.
+ */
+export function benefitValuation(
+  benefit: PartnershipBenefit,
+  valuations: Record<string, number>,
+): { currency: PointCurrency; centsPerPoint: number } | undefined {
+  let fallback: PointCurrency;
+  switch (benefit.kind) {
+    case "points_per_litre":
+      fallback = "Scene+";
+      break;
+    case "points_per_dollar":
+      fallback = "cashback";
+      break;
+    default:
+      return undefined;
+  }
+  const own = benefit.pointCurrency;
+  if (own && valuations[own] !== undefined) {
+    return { currency: own, centsPerPoint: valuations[own] };
+  }
+  return {
+    currency: valuations[fallback] !== undefined ? fallback : (own ?? fallback),
+    centsPerPoint: valuations[fallback] ?? 0,
+  };
 }
 
 /**
@@ -99,30 +162,37 @@ export function benefitToCentsPerDollar(
 ): number {
   const litresPerDollar =
     assumedCadPerLitre > 0 ? 1 / assumedCadPerLitre : 0;
+  const pv = benefitValuation(benefit, valuations)?.centsPerPoint ?? 0;
 
   switch (benefit.kind) {
     case "cents_per_litre_instant":
     case "cents_per_litre_rewards":
       return benefit.amount * litresPerDollar;
-    case "points_per_litre": {
-      const pv =
-        valuations[benefit.pointCurrency ?? ""] ??
-        valuations["Scene+"] ??
-        0;
+    case "points_per_litre":
       return benefit.amount * pv * litresPerDollar;
-    }
-    case "points_per_dollar": {
-      const pv =
-        valuations[benefit.pointCurrency ?? ""] ??
-        valuations.cashback ??
-        0;
+    case "points_per_dollar":
       return benefit.amount * pv;
-    }
     case "cashback_percent":
       return benefit.amount;
     default:
       return 0;
   }
+}
+
+function benefitComponent(
+  partnership: MerchantPartnership,
+  benefit: PartnershipBenefit,
+  valuations: Record<string, number>,
+): ValueComponent {
+  const valuation = benefitValuation(benefit, valuations);
+  return {
+    label: benefit.summary,
+    kind: benefit.kind,
+    centsPerDollar: benefitToCentsPerDollar(benefit, valuations),
+    partnershipId: partnership.id,
+    benefit,
+    ...(valuation ? { valuation } : {}),
+  };
 }
 
 function formatBenefitShort(benefit: PartnershipBenefit): string {
@@ -201,54 +271,54 @@ function buildPartnershipReason(
 function applicableBenefits(
   partnership: MerchantPartnership,
   cardId: string,
+  fuelGrade: FuelGrade,
 ): PartnershipBenefit[] {
   return partnership.benefits.filter((b) =>
-    benefitAppliesToCard(b, cardId, partnership.cardIds),
+    isBenefitApplicable(b, cardId, partnership.cardIds, fuelGrade),
   );
+}
+
+interface PartnershipValue {
+  partnership: MerchantPartnership;
+  cents: number;
+  benefits: PartnershipBenefit[];
+  components: ValueComponent[];
 }
 
 function partnershipValueForCard(
   partnership: MerchantPartnership,
   cardId: string,
   valuations: Record<string, number>,
-): { cents: number; benefits: PartnershipBenefit[] } {
-  const benefits = applicableBenefits(partnership, cardId);
-  // Sum all applicable benefits (including limited-time ¢/L tiers such as
-  // Shell V-Power) so merchant-specific deals compete fairly with generic
-  // category earn rates when ranking at a matched brand.
-  const cents = benefits.reduce(
-    (sum, b) => sum + benefitToCentsPerDollar(b, valuations),
-    0,
+  fuelGrade: FuelGrade,
+): PartnershipValue {
+  const benefits = applicableBenefits(partnership, cardId, fuelGrade);
+  const components = benefits.map((b) =>
+    benefitComponent(partnership, b, valuations),
   );
-  return { cents, benefits };
+  const cents = components.reduce((sum, c) => sum + c.centsPerDollar, 0);
+  return { partnership, cents, benefits, components };
 }
 
 function pickBestPartnership(
   brandId: string,
   cardId: string,
   valuations: Record<string, number>,
+  fuelGrade: FuelGrade,
   catalog?: PartnershipCatalog,
-): {
-  partnership: MerchantPartnership;
-  cents: number;
-  benefits: PartnershipBenefit[];
-} | null {
-  let best: {
-    partnership: MerchantPartnership;
-    cents: number;
-    benefits: PartnershipBenefit[];
-  } | null = null;
+): PartnershipValue | null {
+  let best: PartnershipValue | null = null;
 
   for (const partnership of resolvePartnershipsForBrand(brandId, catalog)) {
     if (!partnership.cardIds.includes(cardId)) continue;
-    const { cents, benefits } = partnershipValueForCard(
+    const value = partnershipValueForCard(
       partnership,
       cardId,
       valuations,
+      fuelGrade,
     );
-    if (benefits.length === 0) continue;
-    if (!best || cents > best.cents) {
-      best = { partnership, cents, benefits };
+    if (value.benefits.length === 0) continue;
+    if (!best || value.cents > best.cents) {
+      best = value;
     }
   }
   return best;
@@ -275,6 +345,7 @@ export function recommendCardsForMerchant(
   }
 
   const valuations = resolveValuations(input.valuations);
+  const fuelGrade = input.fuelGrade ?? DEFAULT_FUEL_GRADE;
   const baseline = recommendCards({
     ...input,
     category: brand.category,
@@ -300,6 +371,15 @@ export function recommendCardsForMerchant(
       centsPerDollar: earnRate * pointValue,
       capExhausted,
       reason: "",
+      valueComponents: [
+        cardEarnComponent(
+          card,
+          brand.category,
+          earnRate,
+          pointValue,
+          capExhausted,
+        ),
+      ],
     });
   }
 
@@ -310,6 +390,7 @@ export function recommendCardsForMerchant(
       brand.id,
       base.card.id,
       valuations,
+      fuelGrade,
       catalog,
     );
     if (!picked) {
@@ -325,11 +406,25 @@ export function recommendCardsForMerchant(
       continue;
     }
 
-    const { partnership, cents: partnershipCents, benefits } = picked;
+    const {
+      partnership,
+      cents: partnershipCents,
+      benefits,
+      components: partnershipComponents,
+    } = picked;
     const categoryCents = base.centsPerDollar;
-    const effectiveCents = partnership.stacksWithCardCategoryRewards
-      ? categoryCents + partnershipCents
-      : Math.max(categoryCents, partnershipCents);
+    let effectiveCents: number;
+    let valueComponents: ValueComponent[];
+    if (partnership.stacksWithCardCategoryRewards) {
+      effectiveCents = categoryCents + partnershipCents;
+      valueComponents = [...base.valueComponents, ...partnershipComponents];
+    } else if (partnershipCents > categoryCents) {
+      effectiveCents = partnershipCents;
+      valueComponents = partnershipComponents;
+    } else {
+      effectiveCents = categoryCents;
+      valueComponents = base.valueComponents;
+    }
 
     const card =
       cards.find((c) => c.id === base.card.id) ?? base.card;
@@ -346,6 +441,7 @@ export function recommendCardsForMerchant(
         benefits,
         catalog,
       ),
+      valueComponents,
       merchantBrand: brand,
       partnership,
       partnershipCentsPerDollar: partnershipCents,
