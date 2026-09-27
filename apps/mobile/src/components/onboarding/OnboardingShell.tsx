@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "../../lib/theme";
+import { NorthTapLogo } from "../brand/NorthTapLogo";
 import { FadeIn } from "./FadeIn";
 
 interface OnboardingShellProps {
@@ -20,9 +21,7 @@ export function OnboardingShell({
   return (
     <SafeAreaView style={styles.safe} edges={["top", "left", "right", "bottom"]}>
       <View style={styles.top}>
-        <Text style={styles.brand} accessibilityRole="header">
-          NorthTap
-        </Text>
+        <NorthTapLogo size={22} accessibilityRole="header" />
         <View
           style={styles.dots}
           accessibilityRole="progressbar"
@@ -123,12 +122,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 8,
     paddingBottom: 12,
-  },
-  brand: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: colors.foreground,
-    letterSpacing: -0.3,
   },
   dots: {
     flexDirection: "row",

@@ -13,3 +13,16 @@ export const colors = {
   dangerBg: "#FEF2F2",
   dangerBorder: "#FECACA",
 } as const;
+
+/** Approved logo colours; keep in sync with assets/brand/*.svg. */
+export const brand = {
+  teal: "#0c5c56",
+  paleTeal: "#bfe0da",
+  /** Shaded needle half on the reverse (white-card) mark. */
+  needleShade: "#5e9a93",
+  ink: "#141816",
+  white: "#ffffff",
+} as const;
+
+/** Key registered with expo-font in app/_layout.tsx. */
+export const WORDMARK_FONT = "Syne_600SemiBold";
