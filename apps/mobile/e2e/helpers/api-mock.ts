@@ -15,8 +15,8 @@ export const E2E_CARDS = [
       { category: "gas", earnRate: 1 },
       { category: "other", earnRate: 1 },
     ],
-    imageUrl: null,
-    imageAlt: null,
+    imageUrl: "http://127.0.0.1:8787/assets/cards/scotia-gold-amex.png",
+    imageAlt: "Scotiabank Gold American Express card",
   },
   {
     id: "triangle-we",
@@ -45,7 +45,8 @@ export const E2E_CARDS = [
       { category: "gas", earnRate: 3 },
       { category: "other", earnRate: 1 },
     ],
-    imageUrl: null,
+    // Relative path (served by the API) that 404s: exercises the fallback.
+    imageUrl: "/assets/cards/cibc-costco-mc-missing.png",
     imageAlt: null,
   },
   {
@@ -228,9 +229,17 @@ function recommend(body: RecommendationBody) {
   };
 }
 
+/** 1×1 PNG; the card frame, not the file, sets the 1.586:1 shape. */
+const CARD_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+  "base64",
+);
+
 export interface ApiMock {
   /** Every request that reached the NorthTap API mock. */
   requests: Request[];
+  /** Card image paths the app requested. */
+  imageRequests: string[];
   recommendationBodies: RecommendationBody[];
   /** When true, API calls fail like a dropped connection. */
   offline: boolean;
@@ -238,7 +247,20 @@ export interface ApiMock {
 
 /** Intercept the NorthTap API so Expo web E2E runs without apps/api. */
 export async function installNorthtapApiMock(page: Page): Promise<ApiMock> {
-  const mock: ApiMock = { requests: [], recommendationBodies: [], offline: false };
+  const mock: ApiMock = {
+    requests: [],
+    imageRequests: [],
+    recommendationBodies: [],
+    offline: false,
+  };
+
+  await page.route("**/assets/cards/**", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.port !== "8787") return route.fallback();
+    mock.imageRequests.push(url.pathname);
+    if (url.pathname.endsWith("-missing.png")) return route.fulfill({ status: 404, body: "" });
+    return route.fulfill({ status: 200, contentType: "image/png", body: CARD_PNG });
+  });
 
   await page.route("**/v1/**", async (route) => {
     const req = route.request();

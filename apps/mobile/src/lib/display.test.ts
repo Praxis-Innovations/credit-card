@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseAmount } from "./amount";
+import { resolveAssetUrl } from "./api-client";
 import type { CreditCard, LoyaltyProgram, RecommendationItem } from "./api-types";
 import { COMMON_CARD_IDS, pickCommonCards, searchCards } from "./common-cards";
 import { initials, programForCard } from "./programs";
@@ -80,6 +81,22 @@ describe("common cards", () => {
     expect(searchCards(catalog, "scene", program).map((c) => c.id)).toEqual(["scotia-gold-amex"]);
     expect(searchCards(catalog, "scotia cobalt", program)).toEqual([]);
     expect(searchCards(catalog, "   ", program)).toEqual([]);
+  });
+});
+
+describe("resolveAssetUrl", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("passes absolute URLs through and resolves API paths", () => {
+    vi.stubEnv("EXPO_PUBLIC_NORTHTAP_API_URL", "https://api.northtap.test/");
+    expect(resolveAssetUrl("https://cdn.test/a.png")).toBe("https://cdn.test/a.png");
+    expect(resolveAssetUrl("//cdn.test/a.png")).toBe("https://cdn.test/a.png");
+    expect(resolveAssetUrl("/assets/cards/x.png")).toBe("https://api.northtap.test/assets/cards/x.png");
+    expect(resolveAssetUrl("assets/cards/x.png")).toBe("https://api.northtap.test/assets/cards/x.png");
+    expect(resolveAssetUrl("  ")).toBeNull();
+    expect(resolveAssetUrl(null)).toBeNull();
   });
 });
 
