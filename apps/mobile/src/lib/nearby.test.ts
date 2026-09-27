@@ -28,7 +28,7 @@ describe("checkNearbyMerchant", () => {
     vi.clearAllMocks();
   });
 
-  it("returns matched brand when a nearby place maps to MERCHANT_BRANDS", async () => {
+  it("returns the nearest named place as merchantQuery (no catalog match)", async () => {
     mockedLocation.mockResolvedValue({
       ok: true,
       point: { latitude: 43.65, longitude: -79.38 },
@@ -56,10 +56,11 @@ describe("checkNearbyMerchant", () => {
     ]);
 
     const result = await checkNearbyMerchant();
-    expect(result.status).toBe("matched");
-    if (result.status !== "matched") return;
-    expect(result.match.brand.id).toBe("shell");
-    expect(result.match.place.name).toBe("Shell");
+    expect(result.status).toBe("found");
+    if (result.status !== "found") return;
+    // Nearest first in provider order — Independent Cafe at 20m.
+    expect(result.hit.merchantQuery).toBe("Independent Cafe");
+    expect(result.hit.place.distanceMeters).toBe(20);
   });
 
   it("falls back when location permission is denied", async () => {
@@ -77,26 +78,16 @@ describe("checkNearbyMerchant", () => {
     });
   });
 
-  it("falls back when no catalog brand matches nearby places", async () => {
+  it("falls back when no places are nearby", async () => {
     mockedLocation.mockResolvedValue({
       ok: true,
       point: { latitude: 43.65, longitude: -79.38 },
     });
-    stubPlaces([
-      {
-        id: "node/9",
-        name: "Blue Bottle Coffee",
-        latitude: 43.65,
-        longitude: -79.38,
-        distanceMeters: 10,
-        brandHints: ["Blue Bottle Coffee"],
-        rawTags: {},
-      },
-    ]);
+    stubPlaces([]);
 
     const result = await checkNearbyMerchant();
     expect(result.status).toBe("fallback");
     if (result.status !== "fallback") return;
-    expect(result.reason).toBe("no_brand_match");
+    expect(result.reason).toBe("no_places");
   });
 });

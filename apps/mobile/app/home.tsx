@@ -1,7 +1,3 @@
-import {
-  CATEGORY_LABELS,
-  type Category,
-} from "@northtap/core";
 import type { User } from "@supabase/supabase-js";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -19,9 +15,16 @@ import { AuthPanel } from "../src/components/AuthPanel";
 import { CategoryPicker } from "../src/components/CategoryPicker";
 import { Results } from "../src/components/Results";
 import { Wallet } from "../src/components/Wallet";
-import type { RecommendationItem, RecommendationResponse } from "../src/lib/api-types";
+import { fetchAllCards } from "../src/lib/api-client";
+import {
+  CATEGORY_LABELS,
+  type Category,
+  type CreditCard,
+  type RecommendationItem,
+  type RecommendationResponse,
+} from "../src/lib/api-types";
 import { checkNearbyMerchant } from "../src/lib/nearby";
-import { buildRecommendationResponse } from "../src/lib/recommend";
+import { requestRecommendation } from "../src/lib/recommend";
 import { loadGuestWallet, saveGuestWallet } from "../src/lib/storage";
 import { getSupabaseClient } from "../src/lib/supabase";
 import { colors } from "../src/lib/theme";
@@ -36,7 +39,7 @@ export default function HomeScreen() {
   const [amount, setAmount] = useState("87.42");
   const [merchant, setMerchant] = useState("Loblaws");
   const [category, setCategory] = useState<Category>("groceries");
-  const [merchantBrandId, setMerchantBrandId] = useState<string | null>(null);
+  const [merchantQuery, setMerchantQuery] = useState<string | null>(null);
   const [nearbyHint, setNearbyHint] = useState<string | null>(null);
   const [recommendations, setRecommendations] = useState<RecommendationItem[]>(
     [],
@@ -48,6 +51,9 @@ export default function HomeScreen() {
   const [busy, setBusy] = useState(false);
   const [nearbyBusy, setNearbyBusy] = useState(false);
   const [walletBusy, setWalletBusy] = useState(false);
+  const [catalog, setCatalog] = useState<CreditCard[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
 
   const onUserChange = useCallback((next: User | null) => {
     setUser(next);
@@ -61,6 +67,34 @@ export default function HomeScreen() {
       if (!cancelled) {
         setOwnedIds(ids);
         setHydrated(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Card catalog from apps/api over HTTP.
+  useEffect(() => {
+    let cancelled = false;
+    setCatalogLoading(true);
+    void (async () => {
+      try {
+        const cards = await fetchAllCards();
+        if (!cancelled) {
+          setCatalog(cards);
+          setCatalogError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setCatalogError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load card catalog from API",
+          );
+        }
+      } finally {
+        if (!cancelled) setCatalogLoading(false);
       }
     })();
     return () => {
@@ -149,10 +183,10 @@ export default function HomeScreen() {
     }
   }
 
-  function runRecommend(overrides?: {
+  async function runRecommend(overrides?: {
     category?: Category;
     merchant?: string;
-    merchantBrandId?: string | null;
+    merchantQuery?: string | null;
   }) {
     setError(null);
     setBusy(true);
@@ -176,16 +210,16 @@ export default function HomeScreen() {
       overrides && "merchant" in overrides
         ? overrides.merchant?.trim() || undefined
         : merchant.trim() || undefined;
-    const nextBrandId =
-      overrides && "merchantBrandId" in overrides
-        ? overrides.merchantBrandId
-        : merchantBrandId;
+    const nextQuery =
+      overrides && "merchantQuery" in overrides
+        ? overrides.merchantQuery
+        : merchantQuery;
 
-    const result = buildRecommendationResponse({
+    const result = await requestRecommendation({
       amountCad,
       category: nextCategory,
       merchant: nextMerchant,
-      merchantBrandId: nextBrandId ?? undefined,
+      merchantQuery: nextQuery ?? undefined,
       ownedCardIds: ownedIds,
       limit: 10,
     });
@@ -198,6 +232,11 @@ export default function HomeScreen() {
 
     setRecommendations(result.recommendations);
     setLastPurchase(result.purchase);
+    if (result.stale) {
+      setNearbyHint(
+        "Offline — showing your last successful recommendation (may be stale).",
+      );
+    }
     setBusy(false);
   }
 
@@ -208,27 +247,25 @@ export default function HomeScreen() {
 
     const result = await checkNearbyMerchant({ radiusMeters: 750 });
 
-    if (result.status === "matched") {
-      const { brand, place } = result.match;
-      setMerchant(brand.name);
-      setCategory(brand.category);
-      setMerchantBrandId(brand.id);
+    if (result.status === "found") {
+      const { place, merchantQuery: query } = result.hit;
+      setMerchant(query);
+      setMerchantQuery(query);
       setNearbyHint(
-        `Nearby: ${brand.name} (~${Math.round(place.distanceMeters)}m) — ranking with merchant partnerships.`,
+        `Nearby: ${query} (~${Math.round(place.distanceMeters)}m) — server will resolve partnerships.`,
       );
       setNearbyBusy(false);
       runRecommend({
-        category: brand.category,
-        merchant: brand.name,
-        merchantBrandId: brand.id,
+        merchant: query,
+        merchantQuery: query,
       });
       return;
     }
 
     // Graceful fallback — keep the manual category picker flow.
-    setMerchantBrandId(null);
+    setMerchantQuery(null);
     setNearbyHint(
-      "No matched merchant nearby — pick a category below and recommend as usual.",
+      "No nearby place found — pick a category below and recommend as usual.",
     );
     setNearbyBusy(false);
   }
@@ -281,6 +318,9 @@ export default function HomeScreen() {
         <View style={[styles.grid, wide && styles.gridWide]}>
           <View style={[styles.col, wide && styles.colWallet]}>
             <Wallet
+              cards={catalog}
+              cardsLoading={catalogLoading}
+              cardsError={catalogError}
               ownedIds={ownedIds}
               onToggle={toggleCard}
               onClear={clearWallet}
@@ -314,7 +354,7 @@ export default function HomeScreen() {
                     value={merchant}
                     onChangeText={(text) => {
                       setMerchant(text);
-                      setMerchantBrandId(null);
+                      setMerchantQuery(null);
                       setNearbyHint(null);
                     }}
                     placeholder="e.g. Loblaws, Cactus Club"
@@ -329,7 +369,7 @@ export default function HomeScreen() {
                 value={category}
                 onChange={(next) => {
                   setCategory(next);
-                  setMerchantBrandId(null);
+                  setMerchantQuery(null);
                   setNearbyHint(null);
                 }}
               />

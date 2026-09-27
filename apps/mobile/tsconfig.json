@@ -12,11 +12,6 @@
       ".native",
       ""
     ],
-    "paths": {
-      "@northtap/core": [
-        "../../packages/core/src/index.ts"
-      ]
-    },
     "types": [
       "react"
     ]

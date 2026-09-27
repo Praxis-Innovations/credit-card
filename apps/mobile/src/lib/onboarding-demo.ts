@@ -1,5 +1,5 @@
 import type { RecommendationResponse } from "./api-types";
-import { buildRecommendationResponse } from "./recommend";
+import { requestRecommendation } from "./recommend";
 
 /** Sample wallet used only in the first-run demo — not written to storage. */
 export const DEMO_WALLET_IDS = [
@@ -14,11 +14,10 @@ export const DEMO_PURCHASE = {
 };
 
 /**
- * Live in-process recommendation for the onboarding “aha” moment.
- * Uses the same engine as the main app — not a static mock.
+ * Live recommendation for the onboarding “aha” moment via apps/api.
  */
-export function buildOnboardingDemoRecommendation(): RecommendationResponse {
-  const result = buildRecommendationResponse({
+export async function buildOnboardingDemoRecommendation(): Promise<RecommendationResponse> {
+  const result = await requestRecommendation({
     amountCad: DEMO_PURCHASE.amountCad,
     category: DEMO_PURCHASE.category,
     merchant: DEMO_PURCHASE.merchant,

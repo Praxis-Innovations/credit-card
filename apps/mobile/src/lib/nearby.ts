@@ -1,18 +1,14 @@
-import {
-  matchMerchantBrand,
-  type MerchantBrand,
-  type PlaceMatchContext,
-} from "@northtap/core";
 import { getForegroundPosition } from "./location";
 import { getPlacesProvider, type NearbyPlace } from "./places";
 
-export type NearbyMerchantMatch = {
-  brand: MerchantBrand;
+export type NearbyPlaceHit = {
   place: NearbyPlace;
+  /** Raw name / brand string to send as merchantQuery to the API. */
+  merchantQuery: string;
 };
 
 export type CheckNearbyResult =
-  | { status: "matched"; match: NearbyMerchantMatch }
+  | { status: "found"; hit: NearbyPlaceHit }
   | {
       status: "fallback";
       reason:
@@ -20,22 +16,14 @@ export type CheckNearbyResult =
         | "unavailable"
         | "services_disabled"
         | "no_places"
-        | "no_brand_match"
         | "lookup_failed";
       message: string;
     };
 
-function placeContext(place: NearbyPlace): PlaceMatchContext {
-  return {
-    placeType: place.placeType,
-    tags: place.brandHints,
-  };
-}
-
 /**
- * On-demand nearby merchant check: foreground location → places provider →
- * brand match against {@link MERCHANT_BRANDS}. Callers treat non-matched
- * results as a graceful fallback to the manual category picker.
+ * On-demand nearby place check: foreground location → places provider →
+ * nearest POI. Does **not** match against the NorthTap merchant catalog —
+ * the API resolves `merchantQuery` server-side.
  */
 export async function checkNearbyMerchant(options?: {
   radiusMeters?: number;
@@ -64,27 +52,24 @@ export async function checkNearbyMerchant(options?: {
       };
     }
 
-    for (const place of places) {
-      const brand = matchMerchantBrand(place.name, placeContext(place));
-      if (brand) {
-        return { status: "matched", match: { brand, place } };
-      }
-      // Also try brand tag alone when name is a franchisee string.
-      for (const hint of place.brandHints) {
-        const fromHint = matchMerchantBrand(hint, placeContext(place));
-        if (fromHint) {
-          return {
-            status: "matched",
-            match: { brand: fromHint, place },
-          };
-        }
-      }
+    // Provider returns places sorted by distance — take the nearest with a name.
+    const place =
+      places.find((p) => p.name.trim().length > 0) ?? places[0]!;
+    const merchantQuery =
+      place.brandHints.find((h) => h.trim().length > 0)?.trim() ||
+      place.name.trim();
+
+    if (!merchantQuery) {
+      return {
+        status: "fallback",
+        reason: "no_places",
+        message: "No shops or stations found nearby.",
+      };
     }
 
     return {
-      status: "fallback",
-      reason: "no_brand_match",
-      message: "No known NorthTap merchant brands nearby.",
+      status: "found",
+      hit: { place, merchantQuery },
     };
   } catch {
     return {

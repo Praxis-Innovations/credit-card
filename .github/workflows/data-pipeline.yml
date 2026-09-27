@@ -62,7 +62,7 @@ jobs:
           fi
 
       - name: Test pipeline unit tests
-        run: pnpm --filter @northtap/core test -- src/data-pipeline
+        run: pnpm --filter api test -- src/data-pipeline
 
       - name: Run pipeline
         env:
@@ -70,17 +70,17 @@ jobs:
           # Optional: load remote rejected fingerprints / future health hooks
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: pnpm --filter @northtap/core pipeline:run
+        run: pnpm --filter api pipeline:run
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: big-six-pipeline-${{ github.run_id }}
           path: |
-            packages/core/src/data-pipeline/staging/latest.json
-            packages/core/src/data-pipeline/reports/latest.md
-            packages/core/src/data-pipeline/reports/latest.json
-            packages/core/src/data-pipeline/state/review-decisions.json
+            apps/api/src/data-pipeline/staging/latest.json
+            apps/api/src/data-pipeline/reports/latest.md
+            apps/api/src/data-pipeline/reports/latest.json
+            apps/api/src/data-pipeline/state/review-decisions.json
 
       - name: Commit staging + report to data-pipeline/staging
         uses: stefanzweifel/git-auto-commit-action@v5
@@ -89,16 +89,16 @@ jobs:
           branch: data-pipeline/staging
           create_branch: true
           file_pattern: |
-            packages/core/src/data-pipeline/staging/**
-            packages/core/src/data-pipeline/reports/**
-            packages/core/src/data-pipeline/state/**
+            apps/api/src/data-pipeline/staging/**
+            apps/api/src/data-pipeline/reports/**
+            apps/api/src/data-pipeline/state/**
 
       - name: Upsert review issue
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const reportPath = 'packages/core/src/data-pipeline/reports/latest.md';
+            const reportPath = 'apps/api/src/data-pipeline/reports/latest.md';
             const body = fs.readFileSync(reportPath, 'utf8');
             const title = 'Data pipeline review: Big Six';
             const header = [

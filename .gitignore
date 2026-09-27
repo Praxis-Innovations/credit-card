@@ -30,8 +30,11 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
-# Env
+# Env — ignore real secrets; keep committed *.env.example templates
 .env
+.env.*
+!.env.example
+!**/.env.example
 .env.local
 .env.development
 .env.development.local
@@ -63,4 +66,3 @@ apps/mobile/playwright-report
 apps/mobile/blob-report
 apps/mobile/playwright/.cache
 .vercel
-.env*

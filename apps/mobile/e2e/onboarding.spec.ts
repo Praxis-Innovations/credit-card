@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { installNorthtapApiMock } from "./helpers/api-mock";
 
 const ONBOARDING_KEY = "northtap.onboardingComplete";
 
@@ -6,6 +7,7 @@ test.describe("first-run onboarding (Expo web)", () => {
   test("walks welcome → demo → guest home, then skips on return", async ({
     page,
   }) => {
+    await installNorthtapApiMock(page);
     // Clear storage once per tab — addInitScript runs on every navigation.
     await page.addInitScript(() => {
       if (!sessionStorage.getItem("northtap.e2eOnboardingSeeded")) {

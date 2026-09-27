@@ -6,11 +6,13 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "pipeline:run": "pnpm --filter @northtap/core pipeline:run",
-    "pipeline:source-health": "pnpm --filter @northtap/core pipeline:source-health",
-    "pipeline:promote": "pnpm --filter @northtap/core pipeline:promote",
+    "pipeline:run": "pnpm --filter api pipeline:run",
+    "pipeline:source-health": "pnpm --filter api pipeline:source-health",
+    "pipeline:promote": "pnpm --filter api pipeline:promote",
     "dev:web": "pnpm --filter web dev",
-    "dev:mobile": "pnpm --filter mobile start"
+    "dev:mobile": "pnpm --filter mobile start",
+    "dev:api": "pnpm --filter api dev",
+    "seed:catalog": "node --experimental-strip-types scripts/generate-catalog-seed.ts"
   },
   "devDependencies": {
     "turbo": "^2.5.4",

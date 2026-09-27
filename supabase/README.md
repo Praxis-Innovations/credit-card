@@ -51,7 +51,7 @@ No live credentials are required for this repo today — migrations are the sour
 
 RLS is enabled on both tables: authenticated users may only select/insert/update/delete their own rows (`auth.uid()`).
 
-Card catalog data lives in the frontend `packages/core` dataset — there is no `cards` table and no FK on `card_id`.
+Card catalog data lives in the frontend `apps/api/src/domain` dataset — there is no `cards` table and no FK on `card_id`.
 
 Optional snapshot for humans: [`schema.sql`](./schema.sql).
 

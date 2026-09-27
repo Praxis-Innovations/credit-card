@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { installNorthtapApiMock } from "./helpers/api-mock";
 import { installSupabaseMock } from "./helpers/supabase-mock";
 
 async function skipOnboarding(page: import("@playwright/test").Page) {
@@ -10,6 +11,7 @@ async function skipOnboarding(page: import("@playwright/test").Page) {
 test.describe("signed-in purchase → recommend flow (Expo web)", () => {
   test("loads synced wallet and ranks a dining purchase", async ({ page }) => {
     await skipOnboarding(page);
+    await installNorthtapApiMock(page);
     await installSupabaseMock(page, {
       initialCardIds: ["amex-cobalt", "tangerine-moneyback"],
     });
