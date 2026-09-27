@@ -1,5 +1,7 @@
 export type {
+  AssetRightsStatus,
   CardAffiliation,
+  CatalogAsset,
   Category,
   CreditCard,
   Issuer,
@@ -18,12 +20,14 @@ export type {
 } from "./schema";
 
 export {
+  ASSET_RIGHTS_STATUSES,
   CARD_AFFILIATIONS,
   CATEGORIES,
   CATEGORY_LABELS,
   ISSUERS,
   PARTNERSHIP_BENEFIT_KINDS,
   POINT_CURRENCIES,
+  SERVABLE_ASSET_RIGHTS,
 } from "./schema";
 
 export { CARDS, getCardById, getCardsByIssuer, groupCardsByIssuer } from "./cards";

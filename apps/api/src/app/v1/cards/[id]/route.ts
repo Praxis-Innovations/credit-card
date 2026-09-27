@@ -1,6 +1,7 @@
 import { getCard } from "@/lib/catalog";
 import { errorResponse, jsonResponse } from "@/lib/http";
 import { handleOptions, withAuth } from "@/lib/route";
+import { serializeCard } from "@/lib/serialize";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,6 @@ export async function GET(
         request,
       });
     }
-    return jsonResponse(card, { request });
+    return jsonResponse(serializeCard(card), { request });
   });
 }

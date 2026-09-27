@@ -1,6 +1,11 @@
-import { getMerchantBrand, listPartnerships } from "@/lib/catalog";
+import {
+  getMerchantBrand,
+  listPartnerships,
+  loadPartnershipRefs,
+} from "@/lib/catalog";
 import { errorResponse, jsonResponse } from "@/lib/http";
-import { handleOptions, serializePartnership, withAuth } from "@/lib/route";
+import { handleOptions, withAuth } from "@/lib/route";
+import { serializePartnership } from "@/lib/serialize";
 
 export const runtime = "nodejs";
 
@@ -23,15 +28,18 @@ export async function GET(
         { request },
       );
     }
-    const result = await listPartnerships({
-      brandId: id,
-      limit: 200,
-      offset: 0,
-    });
+    const [result, refs] = await Promise.all([
+      listPartnerships({
+        brandId: id,
+        limit: 200,
+        offset: 0,
+      }),
+      loadPartnershipRefs(),
+    ]);
     return jsonResponse(
       {
         brandId: id,
-        data: result.data.map(serializePartnership),
+        data: result.data.map((p) => serializePartnership(p, refs)),
         meta: result.meta,
       },
       { request },

@@ -1,6 +1,7 @@
-import { getPartnership } from "@/lib/catalog";
+import { getPartnership, loadPartnershipRefs } from "@/lib/catalog";
 import { errorResponse, jsonResponse } from "@/lib/http";
-import { handleOptions, serializePartnership, withAuth } from "@/lib/route";
+import { handleOptions, withAuth } from "@/lib/route";
+import { serializePartnership } from "@/lib/serialize";
 
 export const runtime = "nodejs";
 
@@ -23,6 +24,7 @@ export async function GET(
         { request },
       );
     }
-    return jsonResponse(serializePartnership(partnership), { request });
+    const refs = await loadPartnershipRefs();
+    return jsonResponse(serializePartnership(partnership, refs), { request });
   });
 }

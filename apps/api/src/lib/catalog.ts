@@ -1,9 +1,12 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
+  ASSET_RIGHTS_STATUSES,
   CARDS,
   LOYALTY_PROGRAMS,
   MERCHANT_BRANDS,
   MERCHANT_PARTNERSHIPS,
+  type AssetRightsStatus,
+  type CatalogAsset,
   type Category,
   type CreditCard,
   type LoyaltyProgram,
@@ -36,7 +39,35 @@ function getClient(): SupabaseClient | null {
   return supabase;
 }
 
-function mapCard(row: Record<string, unknown>): CreditCard {
+const RIGHTS_SET = new Set<string>(ASSET_RIGHTS_STATUSES);
+
+function nullableString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() !== "" ? value : null;
+}
+
+/** Maps `<prefix>_url`, `_alt`, `_source_url`, `_rights_status`, `_updated_at`. */
+export function mapAsset(
+  row: Record<string, unknown>,
+  prefix: "image" | "logo",
+): CatalogAsset {
+  const rights = row[`${prefix}_rights_status`];
+  const updatedAt = row[`${prefix}_updated_at`];
+  return {
+    url: nullableString(row[`${prefix}_url`]),
+    alt: nullableString(row[`${prefix}_alt`]),
+    sourceUrl: nullableString(row[`${prefix}_source_url`]),
+    rightsStatus:
+      typeof rights === "string" && RIGHTS_SET.has(rights)
+        ? (rights as AssetRightsStatus)
+        : rights == null
+          ? "placeholder"
+          : "unknown",
+    updatedAt:
+      updatedAt == null ? null : new Date(String(updatedAt)).toISOString(),
+  };
+}
+
+export function mapCard(row: Record<string, unknown>): CreditCard {
   return {
     id: row.id as string,
     name: row.name as string,
@@ -48,10 +79,11 @@ function mapCard(row: Record<string, unknown>): CreditCard {
     welcomeOffer: (row.welcome_offer as CreditCard["welcomeOffer"]) ?? undefined,
     network: (row.network as CreditCard["network"]) ?? undefined,
     tier: (row.tier as string | null) ?? undefined,
+    image: mapAsset(row, "image"),
   };
 }
 
-function mapBrand(row: Record<string, unknown>): MerchantBrand {
+export function mapBrand(row: Record<string, unknown>): MerchantBrand {
   return {
     id: row.id as string,
     name: row.name as string,
@@ -60,10 +92,11 @@ function mapBrand(row: Record<string, unknown>): MerchantBrand {
     notes: (row.notes as string | null) ?? undefined,
     sourceUrl: row.source_url as string,
     lastVerified: String(row.last_verified).slice(0, 10),
+    logo: mapAsset(row, "logo"),
   };
 }
 
-function mapProgram(row: Record<string, unknown>): LoyaltyProgram {
+export function mapProgram(row: Record<string, unknown>): LoyaltyProgram {
   return {
     id: row.id as string,
     name: row.name as string,
@@ -72,6 +105,7 @@ function mapProgram(row: Record<string, unknown>): LoyaltyProgram {
       (row.point_currency as LoyaltyProgram["pointCurrency"]) ?? undefined,
     sourceUrl: row.source_url as string,
     lastVerified: String(row.last_verified).slice(0, 10),
+    logo: mapAsset(row, "logo"),
   };
 }
 
@@ -318,6 +352,23 @@ export async function listAllVerifiedPartnerships(): Promise<
 > {
   if (getCatalogSource() === "static") return [...MERCHANT_PARTNERSHIPS];
   return loadPartnershipsFromDb(false);
+}
+
+/** Verified brands + programs keyed by id, for nesting inside partnership payloads. */
+export interface PartnershipRefs {
+  brands: Map<string, MerchantBrand>;
+  programs: Map<string, LoyaltyProgram>;
+}
+
+export async function loadPartnershipRefs(): Promise<PartnershipRefs> {
+  const [brands, programs] = await Promise.all([
+    listAllVerifiedBrands(),
+    listLoyaltyPrograms(),
+  ]);
+  return {
+    brands: new Map(brands.map((b) => [b.id, b])),
+    programs: new Map(programs.map((p) => [p.id, p])),
+  };
 }
 
 export async function listPartnerships(filters: PartnershipFilters): Promise<{

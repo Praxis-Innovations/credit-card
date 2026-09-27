@@ -55,6 +55,11 @@ Card catalog data lives in the frontend `apps/api/src/domain` dataset — there 
 
 Optional snapshot for humans: [`schema.sql`](./schema.sql).
 
+Catalog images (card art, brand and program logos) are stored in the public
+Storage bucket `brand-assets`, which only the service role can write to. The
+`*_url` columns on `cards`, `merchant_brands` and `loyalty_programs` are null
+by default. See [`docs/data/ASSETS.md`](../docs/data/ASSETS.md).
+
 ## Client integration (Expo / Next.js)
 
 Apps talk to Supabase directly via `@supabase/supabase-js` (Auth + PostgREST). No custom backend server for this MVP.
