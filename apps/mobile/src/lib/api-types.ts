@@ -101,6 +101,29 @@ export interface LoyaltyProgram {
   logoAlt?: string | null;
 }
 
+/** GET /v1/categories */
+export interface CategoryInfo {
+  id: Category;
+  label: string;
+}
+
+/** GET /v1/partnerships/:id (fields the app renders). */
+export interface Partnership {
+  id: string;
+  merchantBrandIds: string[];
+  brands: LogoSummary[];
+  loyaltyProgramId: string | null;
+  loyaltyProgram: LogoSummary | null;
+  cardIds: string[];
+  affiliation: string;
+  /** What the cardholder must do before paying (link accounts, scan, …). */
+  requirements: string;
+  notes: string | null;
+  sourceUrls: string[];
+  sourceUrl: string | null;
+  lastVerified: string;
+}
+
 export interface SpendToDate {
   monthly?: Partial<Record<Category, number>>;
   annual?: Partial<Record<Category, number>>;

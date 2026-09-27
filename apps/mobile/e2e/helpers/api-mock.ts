@@ -1,7 +1,53 @@
-import type { Page } from "@playwright/test";
+import type { Page, Request } from "@playwright/test";
 
-/** Minimal catalog for Expo web E2E — enough cards for search + ranking. */
-const E2E_CARDS = [
+/** Card fixtures shaped like GET /v1/cards (dev catalog ids, no art). */
+export const E2E_CARDS = [
+  {
+    id: "scotia-gold-amex",
+    issuer: "Scotiabank",
+    name: "Gold American Express",
+    annualFee: 120,
+    pointCurrency: "Scene+",
+    network: "Amex",
+    lastVerified: "2026-09-20",
+    rewardCategories: [
+      { category: "groceries", earnRate: 5 },
+      { category: "gas", earnRate: 1 },
+      { category: "other", earnRate: 1 },
+    ],
+    imageUrl: null,
+    imageAlt: null,
+  },
+  {
+    id: "triangle-we",
+    issuer: "Canadian Tire",
+    name: "Triangle World Elite Mastercard",
+    annualFee: 0,
+    pointCurrency: "Triangle",
+    network: "Mastercard",
+    lastVerified: "2026-09-20",
+    rewardCategories: [
+      { category: "gas", earnRate: 4 },
+      { category: "other", earnRate: 1 },
+    ],
+    imageUrl: null,
+    imageAlt: null,
+  },
+  {
+    id: "cibc-costco-mc",
+    issuer: "CIBC",
+    name: "Costco Mastercard",
+    annualFee: 0,
+    pointCurrency: "cashback",
+    network: "Mastercard",
+    lastVerified: "2026-09-20",
+    rewardCategories: [
+      { category: "gas", earnRate: 3 },
+      { category: "other", earnRate: 1 },
+    ],
+    imageUrl: null,
+    imageAlt: null,
+  },
   {
     id: "amex-cobalt",
     issuer: "American Express",
@@ -11,166 +57,263 @@ const E2E_CARDS = [
     network: "Amex",
     lastVerified: "2026-09-20",
     rewardCategories: [
-      { category: "groceries", earnRate: 5, capMonthly: 2500 },
-      { category: "dining", earnRate: 5, capMonthly: 2500 },
+      { category: "dining", earnRate: 5 },
       { category: "other", earnRate: 1 },
     ],
-  },
-  {
-    id: "tangerine-moneyback",
-    issuer: "Tangerine",
-    name: "Money-Back Mastercard",
-    annualFee: 0,
-    pointCurrency: "cashback",
-    network: "Mastercard",
-    lastVerified: "2026-09-20",
-    rewardCategories: [
-      { category: "groceries", earnRate: 2 },
-      { category: "dining", earnRate: 2 },
-      { category: "other", earnRate: 0.5 },
-    ],
-  },
-  {
-    id: "scotia-scene-vi",
-    issuer: "Scotiabank",
-    name: "Scene+ Visa Infinite",
-    annualFee: 120,
-    pointCurrency: "Scene+",
-    network: "Visa",
-    lastVerified: "2026-09-20",
-    rewardCategories: [
-      { category: "groceries", earnRate: 2 },
-      { category: "gas", earnRate: 1 },
-      { category: "other", earnRate: 1 },
-    ],
+    imageUrl: null,
+    imageAlt: null,
   },
 ];
 
-const POINT_VALUES: Record<string, number> = {
-  "Amex MR": 2.4,
-  cashback: 1,
-  "Scene+": 1,
+const CATEGORIES = [
+  { id: "groceries", label: "Groceries" },
+  { id: "dining", label: "Dining" },
+  { id: "gas", label: "Gas" },
+  { id: "drugstore", label: "Drugstore" },
+  { id: "travel", label: "Travel" },
+  { id: "other", label: "Everything else" },
+];
+
+const brand = (id: string, name: string, category: string) => ({
+  id,
+  name,
+  category,
+  operator: null,
+  notes: null,
+  sourceUrl: `https://example.test/${id}`,
+  lastVerified: "2026-09-22",
+  logoUrl: null,
+  logoAlt: null,
+});
+
+export const E2E_BRANDS = [
+  brand("shell", "Shell", "gas"),
+  brand("petro-canada", "Petro-Canada", "gas"),
+  brand("esso", "Esso", "gas"),
+  brand("loblaws", "Loblaws", "groceries"),
+  brand("shoppers-drug-mart", "Shoppers Drug Mart", "drugstore"),
+];
+
+const PROGRAMS = [
+  {
+    id: "scene-plus",
+    name: "Scene+",
+    description: null,
+    pointCurrency: "Scene+",
+    sourceUrl: "https://example.test/scene",
+    lastVerified: "2026-09-22",
+    logoUrl: null,
+    logoAlt: null,
+  },
+  {
+    id: "triangle",
+    name: "Triangle Rewards",
+    description: null,
+    pointCurrency: "Triangle",
+    sourceUrl: "https://example.test/triangle",
+    lastVerified: "2026-09-22",
+    logoUrl: null,
+    logoAlt: null,
+  },
+];
+
+export const SHELL_PARTNERSHIP = {
+  id: "shell-scene-scotia-scene-cards",
+  brandIds: ["shell"],
+  merchantBrandIds: ["shell"],
+  brands: [{ id: "shell", name: "Shell", logoUrl: null, logoAlt: null }],
+  loyaltyProgramId: "scene-plus",
+  loyaltyProgram: { id: "scene-plus", name: "Scene+", logoUrl: null, logoAlt: null },
+  cardIds: ["scotia-gold-amex"],
+  affiliation: "linked",
+  requirements: "Link your card to Shell Go+ before you pay.",
+  benefits: [],
+  stacksWithCardCategoryRewards: true,
+  notes: null,
+  sourceUrls: ["https://www.scotiabank.com/ca/en/personal/programs-services/shell.html"],
+  sourceUrl: "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+  lastVerified: "2026-09-22",
+  status: "verified",
 };
 
+type RecommendationBody = {
+  amountCad: number;
+  category: string;
+  merchantQuery?: string;
+  ownedCardIds?: string[];
+  fuelGrade?: string;
+};
+
+function json(body: unknown, status = 200) {
+  return { status, contentType: "application/json", body: JSON.stringify(body) };
+}
+
 /**
- * Intercept NorthTap API so Expo web E2E works without a live apps/api process.
+ * Mirrors the API's Shell math for the fixtures: Scotia Gold wins at Shell
+ * via the Scene+ partnership; the others earn their card gas rate.
  */
-export async function installNorthtapApiMock(page: Page) {
+function recommend(body: RecommendationBody) {
+  const owned = new Set(body.ownedCardIds ?? []);
+  const atShell = /shell/i.test(body.merchantQuery ?? "");
+  const category = atShell ? "gas" : body.category;
+  const litres = Math.round((body.amountCad / 1.5) * 100) / 100;
+  const items = E2E_CARDS.filter((c) => owned.has(c.id)).map((card) => {
+    const rate =
+      card.rewardCategories.find((r) => r.category === category)?.earnRate ??
+      card.rewardCategories.find((r) => r.category === "other")?.earnRate ??
+      0;
+    const earn = Math.round(body.amountCad * rate) / 100;
+    const earnLabel =
+      card.pointCurrency === "cashback"
+        ? `${rate}% cash back on ${category}`
+        : `${rate}× ${card.pointCurrency} on ${category}`;
+    const breakdown: Array<Record<string, unknown>> = [
+      { label: earnLabel, kind: "card_earn", amountCad: earn },
+    ];
+    const partner = atShell && card.id === "scotia-gold-amex";
+    if (partner) {
+      breakdown.push(
+        {
+          label: "Instant 3¢/L off all fuel grades",
+          kind: "cents_per_litre_instant",
+          amountCad: Math.round(litres * 3) / 100,
+          partnershipId: SHELL_PARTNERSHIP.id,
+        },
+        {
+          label: "1 Scene+ point per litre on all fuel as a Scene+ member",
+          kind: "points_per_litre",
+          amountCad: Math.round(litres) / 100,
+          partnershipId: SHELL_PARTNERSHIP.id,
+          pointCurrency: "Scene+",
+        },
+      );
+    }
+    const total =
+      Math.round(breakdown.reduce((sum, l) => sum + Number(l.amountCad), 0) * 100) / 100;
+    return {
+      card,
+      earnRate: rate,
+      pointValue: 1,
+      centsPerDollar: (total / body.amountCad) * 100,
+      estimatedCentsBack: total * 100,
+      estimatedRewardCad: total,
+      capExhausted: false,
+      reason: earnLabel,
+      usedPartnership: partner,
+      partnershipId: partner ? SHELL_PARTNERSHIP.id : undefined,
+      merchantBrand: atShell ? { id: "shell", name: "Shell", logoUrl: null, logoAlt: null } : null,
+      loyaltyProgram: partner ? SHELL_PARTNERSHIP.loyaltyProgram : null,
+      valueBreakdown: breakdown,
+      assumptions: {
+        cadPerLitre: partner ? 1.5 : null,
+        litres: partner ? litres : null,
+        pointValuations: card.pointCurrency === "cashback" ? {} : { [card.pointCurrency]: 1 },
+      },
+    };
+  });
+  items.sort((a, b) => b.estimatedRewardCad - a.estimatedRewardCad);
+  const recommendations = items.map((item, i) => ({ rank: i + 1, ...item }));
+  return {
+    purchase: {
+      amountCad: body.amountCad,
+      category,
+      merchant: atShell ? "Shell" : body.merchantQuery ?? null,
+      merchantQuery: body.merchantQuery ?? null,
+      merchantBrandId: atShell ? "shell" : null,
+      merchantBrand: atShell ? { id: "shell", name: "Shell", logoUrl: null, logoAlt: null } : null,
+      fuelGrade: category === "gas" ? body.fuelGrade ?? "regular" : null,
+    },
+    recommendations,
+    bestCardId: recommendations[0]?.card.id ?? null,
+  };
+}
+
+export interface ApiMock {
+  /** Every request that reached the NorthTap API mock. */
+  requests: Request[];
+  recommendationBodies: RecommendationBody[];
+  /** When true, API calls fail like a dropped connection. */
+  offline: boolean;
+}
+
+/** Intercept the NorthTap API so Expo web E2E runs without apps/api. */
+export async function installNorthtapApiMock(page: Page): Promise<ApiMock> {
+  const mock: ApiMock = { requests: [], recommendationBodies: [], offline: false };
+
   await page.route("**/v1/**", async (route) => {
     const req = route.request();
     const url = new URL(req.url());
+    if (url.port !== "8787") return route.fallback();
+    mock.requests.push(req);
+    if (mock.offline) return route.abort("internetdisconnected");
+
     const path = url.pathname;
     const method = req.method();
-
-    if (path.endsWith("/health") && method === "GET") {
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ status: "ok" }),
-      });
+    if (method === "OPTIONS") return route.fulfill({ status: 204 });
+    if (!req.headers()["x-api-key"]) {
+      return route.fulfill(json({ error: { code: "unauthorized", message: "Missing API key" } }, 401));
     }
 
-    const apiKey =
-      req.headers()["x-api-key"] ||
-      req.headers()["authorization"]?.replace(/^Bearer\s+/i, "");
-    if (!apiKey) {
-      return route.fulfill({
-        status: 401,
-        contentType: "application/json",
-        body: JSON.stringify({
-          error: { code: "unauthorized", message: "Missing API key" },
-        }),
-      });
+    if (path === "/v1/cards" && method === "GET") {
+      return route.fulfill(
+        json({ data: E2E_CARDS, meta: { total: E2E_CARDS.length, limit: 200, offset: 0 } }),
+      );
     }
-
-    if (path.includes("/cards") && method === "GET" && !/\/cards\/[^/]+$/.test(path)) {
-      const q = (url.searchParams.get("q") ?? "").toLowerCase();
-      let data = E2E_CARDS;
-      if (q) {
-        data = data.filter(
-          (c) =>
-            c.name.toLowerCase().includes(q) ||
-            c.issuer.toLowerCase().includes(q) ||
-            c.id.includes(q),
-        );
-      }
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          data,
-          meta: { total: data.length, limit: 200, offset: 0 },
-        }),
-      });
+    if (path === "/v1/categories") return route.fulfill(json({ categories: CATEGORIES }));
+    if (path === "/v1/loyalty-programs") return route.fulfill(json({ data: PROGRAMS }));
+    if (path === "/v1/merchant-brands") {
+      const category = url.searchParams.get("category");
+      const data = category ? E2E_BRANDS.filter((b) => b.category === category) : E2E_BRANDS;
+      return route.fulfill(json({ data, meta: { total: data.length, limit: 200, offset: 0 } }));
     }
-
-    if (path.endsWith("/recommendations") && method === "POST") {
-      const body = req.postDataJSON() as {
-        amountCad: number;
-        category: string;
-        merchant?: string;
-        ownedCardIds?: string[];
-        merchantQuery?: string;
-      };
-      const owned = new Set(body.ownedCardIds ?? []);
-      const ranked = E2E_CARDS.filter((c) => owned.has(c.id))
-        .map((card) => {
-          const reward =
-            card.rewardCategories.find((r) => r.category === body.category) ??
-            card.rewardCategories.find((r) => r.category === "other");
-          const earnRate = reward?.earnRate ?? 0;
-          const pointValue = POINT_VALUES[card.pointCurrency] ?? 1;
-          const centsPerDollar = earnRate * pointValue;
-          return { card, earnRate, pointValue, centsPerDollar };
-        })
-        .sort((a, b) => b.centsPerDollar - a.centsPerDollar);
-
-      const recommendations = ranked.map((rec, index) => {
-        const estimatedCentsBack = body.amountCad * rec.centsPerDollar;
-        const estimatedRewardCad = estimatedCentsBack / 100;
-        const label = body.category;
-        const where = body.merchant ?? body.merchantQuery ?? label;
-        const reason =
-          index === 0
-            ? `${rec.card.name} gives ${rec.earnRate}${rec.card.pointCurrency === "cashback" ? "%" : "×"} ${rec.card.pointCurrency === "cashback" ? "cash back" : rec.card.pointCurrency} on ${label} — best for this $${body.amountCad.toFixed(2)} purchase at ${where} (~$${estimatedRewardCad.toFixed(2)} back)`
-            : `${rec.earnRate}× — ~$${estimatedRewardCad.toFixed(2)} back on this $${body.amountCad.toFixed(2)} purchase`;
-        return {
-          rank: index + 1,
-          card: rec.card,
-          earnRate: rec.earnRate,
-          pointValue: rec.pointValue,
-          centsPerDollar: rec.centsPerDollar,
-          estimatedCentsBack,
-          estimatedRewardCad,
-          capExhausted: false,
-          reason,
-          usedPartnership: false,
-        };
-      });
-
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          purchase: {
-            amountCad: body.amountCad,
-            category: body.category,
-            merchant: body.merchant ?? null,
-            merchantQuery: body.merchantQuery ?? null,
-            merchantBrandId: null,
-          },
-          recommendations,
-          bestCardId: recommendations[0]?.card.id ?? null,
-        }),
-      });
+    if (path === `/v1/partnerships/${SHELL_PARTNERSHIP.id}`) {
+      return route.fulfill(json(SHELL_PARTNERSHIP));
     }
-
-    return route.fulfill({
-      status: 404,
-      contentType: "application/json",
-      body: JSON.stringify({
-        error: { code: "not_found", message: `Unhandled mock path ${path}` },
-      }),
-    });
+    if (path === "/v1/recommendations" && method === "POST") {
+      const body = req.postDataJSON() as RecommendationBody;
+      mock.recommendationBodies.push(body);
+      return route.fulfill(json(recommend(body)));
+    }
+    return route.fulfill(
+      json({ error: { code: "not_found", message: `Unhandled mock path ${path}` } }, 404),
+    );
   });
+
+  return mock;
+}
+
+/** Overpass fixture: what the OSM lookup returns around the test location. */
+export async function installOverpassMock(page: Page) {
+  const bodies: string[] = [];
+  await page.route("**/api/interpreter", async (route) => {
+    bodies.push(route.request().postData() ?? "");
+    await route.fulfill(
+      json({
+        elements: [
+          {
+            type: "node",
+            id: 1,
+            lat: 43.6631,
+            lon: -79.3959,
+            tags: { amenity: "fuel", brand: "Shell", name: "Shell" },
+          },
+          {
+            type: "node",
+            id: 2,
+            lat: 43.6640,
+            lon: -79.3950,
+            tags: { amenity: "pharmacy", brand: "Shoppers Drug Mart", name: "Shoppers Drug Mart" },
+          },
+          {
+            type: "node",
+            id: 3,
+            lat: 43.6650,
+            lon: -79.3970,
+            tags: { shop: "convenience", name: "Harbord Convenience" },
+          },
+        ],
+      }),
+    );
+  });
+  return { bodies };
 }

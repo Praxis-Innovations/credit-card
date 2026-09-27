@@ -5,3 +5,6 @@ export const ONBOARDING_COMPLETE_KEY = "northtap.onboardingComplete";
 
 /** Last successful /v1/recommendations payload for offline (stale) display. */
 export const LAST_RECOMMENDATION_CACHE_KEY = "northtap.lastRecommendation";
+
+/** Partnership details (requirements, source) keyed by id, for offline display. */
+export const PARTNERSHIP_CACHE_KEY = "northtap.partnerships";

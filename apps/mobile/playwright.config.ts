@@ -21,12 +21,14 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: `pnpm exec expo export --platform web && pnpm exec serve dist -l ${PORT} --no-port-switching`,
+    command: `pnpm exec expo export --platform web --clear && pnpm exec serve dist -s -l ${PORT} --no-port-switching`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
     env: {
       ...process.env,
+      // Keep a developer's .env.local (real API URL/key) out of the E2E bundle.
+      EXPO_NO_DOTENV: "1",
       EXPO_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
       EXPO_PUBLIC_SUPABASE_ANON_KEY:
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e2UyfQ.e2e-test-anon-key",
@@ -35,5 +37,10 @@ export default defineConfig({
       EXPO_PUBLIC_NORTHTAP_API_KEY: "e2e-test-api-key",
     },
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } },
+    },
+  ],
 });
