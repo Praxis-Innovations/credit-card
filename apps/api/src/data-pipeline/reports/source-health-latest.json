@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-23T03:16:06.679Z",
-  "runId": "2026-09-23T03-16-06-679Z",
+  "generatedAt": "2026-09-28T18:58:53.616Z",
+  "runId": "2026-09-28T18-58-53-616Z",
   "checks": [
     {
       "table": "merchant_brands",
       "id": "shell",
       "sourceUrl": "https://scotiabank.investorroom.com/2026-05-26-Scotiabank-Offers-Clients-More-Ways-to-Earn-Through-Scene-with-Shell-Canada",
-      "checkedAt": "2026-09-23T03:16:06.679Z",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
       "outcome": "ok",
       "httpStatus": 200
     },
@@ -14,7 +14,7 @@
       "table": "merchant_brands",
       "id": "pioneer",
       "sourceUrl": "https://journie.ca/pe-en/terms",
-      "checkedAt": "2026-09-23T03:16:06.679Z",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
       "outcome": "ok",
       "httpStatus": 200
     },
@@ -22,7 +22,7 @@
       "table": "merchant_brands",
       "id": "ultramar",
       "sourceUrl": "https://journie.ca/pe-en/terms",
-      "checkedAt": "2026-09-23T03:16:06.679Z",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
       "outcome": "ok",
       "httpStatus": 200
     },
@@ -30,7 +30,7 @@
       "table": "merchant_brands",
       "id": "fas-gas",
       "sourceUrl": "https://journie.ca/pe-en/terms",
-      "checkedAt": "2026-09-23T03:16:06.679Z",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
       "outcome": "ok",
       "httpStatus": 200
     },
@@ -38,7 +38,7 @@
       "table": "merchant_brands",
       "id": "chevron-parkland",
       "sourceUrl": "https://journie.ca/pe-en/terms",
-      "checkedAt": "2026-09-23T03:16:06.679Z",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
       "outcome": "claim_missing",
       "httpStatus": 200,
       "detail": "None of claims matched: Chevron (Parkland)"
@@ -47,7 +47,7 @@
       "table": "merchant_brands",
       "id": "on-the-run",
       "sourceUrl": "https://journie.ca/pe-en/terms",
-      "checkedAt": "2026-09-23T03:16:06.679Z",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
       "outcome": "ok",
       "httpStatus": 200
     },
@@ -55,7 +55,7 @@
       "table": "merchant_brands",
       "id": "canadian-tire-gas-plus",
       "sourceUrl": "https://gasplus.canadiantire.ca/en/triangle-rewards.html",
-      "checkedAt": "2026-09-23T03:16:06.679Z",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
       "outcome": "ok",
       "httpStatus": 200
     },
@@ -63,14 +63,449 @@
       "table": "merchant_brands",
       "id": "petro-canada",
       "sourceUrl": "https://triangle.canadiantire.ca/en/partners.html",
-      "checkedAt": "2026-09-23T03:16:06.679Z",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
       "outcome": "unreachable",
       "detail": "The operation was aborted due to timeout"
+    },
+    {
+      "table": "merchant_brands",
+      "id": "costco-gas",
+      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "costco-warehouse",
+      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "costco-ca",
+      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "esso",
+      "sourceUrl": "https://www.esso.ca/en-ca/pc-optimum-faq",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "http_error",
+      "httpStatus": 403,
+      "detail": "HTTP 403"
+    },
+    {
+      "table": "merchant_brands",
+      "id": "mobil",
+      "sourceUrl": "https://www.esso.ca/en-ca/pc-optimum-faq",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "http_error",
+      "httpStatus": 403,
+      "detail": "HTTP 403"
+    },
+    {
+      "table": "merchant_brands",
+      "id": "loblaws",
+      "sourceUrl": "https://www.pcfinancial.ca/en/credit-cards/pc-mastercard/",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "claim_missing",
+      "httpStatus": 200,
+      "detail": "None of claims matched: Loblaws"
+    },
+    {
+      "table": "merchant_brands",
+      "id": "no-frills",
+      "sourceUrl": "https://www.pcfinancial.ca/en/credit-cards/pc-mastercard/",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "claim_missing",
+      "httpStatus": 200,
+      "detail": "None of claims matched: No Frills"
+    },
+    {
+      "table": "merchant_brands",
+      "id": "real-canadian-superstore",
+      "sourceUrl": "https://www.pcfinancial.ca/en/credit-cards/pc-mastercard/",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "claim_missing",
+      "httpStatus": 200,
+      "detail": "None of claims matched: Real Canadian Superstore"
+    },
+    {
+      "table": "merchant_brands",
+      "id": "shoppers-drug-mart",
+      "sourceUrl": "https://www.pcfinancial.ca/en/credit-cards/pc-mastercard/",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "claim_missing",
+      "httpStatus": 200,
+      "detail": "None of claims matched: Shoppers Drug Mart"
+    },
+    {
+      "table": "merchant_brands",
+      "id": "pharmaprix",
+      "sourceUrl": "https://www.pcfinancial.ca/en/credit-cards/pc-mastercard/",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "claim_missing",
+      "httpStatus": 200,
+      "detail": "None of claims matched: Pharmaprix"
+    },
+    {
+      "table": "merchant_brands",
+      "id": "sobeys",
+      "sourceUrl": "https://www.sobeys.com/sceneplus",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "http_error",
+      "httpStatus": 403,
+      "detail": "HTTP 403"
+    },
+    {
+      "table": "merchant_brands",
+      "id": "safeway",
+      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/participatingstores.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "foodland",
+      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/participatingstores.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "freshco",
+      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/participatingstores.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "iga",
+      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/participatingstores.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "claim_missing",
+      "httpStatus": 200,
+      "detail": "None of claims matched: IGA (participating)"
+    },
+    {
+      "table": "merchant_brands",
+      "id": "thrifty-foods",
+      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/participatingstores.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "lawtons-drugs",
+      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/participatingstores.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "metro",
+      "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "food-basics",
+      "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "super-c",
+      "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "jean-coutu",
+      "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_brands",
+      "id": "brunet",
+      "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "loyalty_programs",
+      "id": "scene-plus",
+      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "loyalty_programs",
+      "id": "shell-go-plus",
+      "sourceUrl": "https://www.shell.ca/en_ca/drivers/loyalty-and-payment/partners/scotiabank.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "claim_missing",
+      "httpStatus": 200,
+      "detail": "None of claims matched: Shell Go+"
+    },
+    {
+      "table": "loyalty_programs",
+      "id": "journie",
+      "sourceUrl": "https://journie.ca/pe-en/terms",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "loyalty_programs",
+      "id": "triangle",
+      "sourceUrl": "https://gasplus.canadiantire.ca/en/triangle-rewards.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "loyalty_programs",
+      "id": "pc-optimum",
+      "sourceUrl": "https://www.esso.ca/en-ca/pc-optimum-faq",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "http_error",
+      "httpStatus": 403,
+      "detail": "HTTP 403"
+    },
+    {
+      "table": "loyalty_programs",
+      "id": "moi-rewards",
+      "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "shell-scene-scotia-scene-cards",
+      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "shell-scene-scotia-scene-cards",
+      "sourceUrl": "https://www.shell.ca/en_ca/drivers/loyalty-and-payment/partners/scotiabank.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "claim_missing",
+      "httpStatus": 200,
+      "detail": "None of claims matched: 3 | 4 | 1"
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "shell-go-tangerine-scotia-cashback",
+      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "shell-go-tangerine-scotia-cashback",
+      "sourceUrl": "https://www.tangerine.ca/en/about-us/press-releases/pr-2026-05-26",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "journie-cibc-gas-discount",
+      "sourceUrl": "https://www.cibc.com/en/special-offers/journie-gas-rewards.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "journie-cibc-gas-discount",
+      "sourceUrl": "https://journie.ca/on-en/partners/cibc",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "journie-cibc-gas-discount",
+      "sourceUrl": "https://journie.ca/pe-en/terms",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "triangle-gas-plus-petro-canada",
+      "sourceUrl": "https://gasplus.canadiantire.ca/en/triangle-rewards.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "triangle-gas-plus-petro-canada",
+      "sourceUrl": "https://triangle.canadiantire.ca/en/credit-cards/triangle-mastercard.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "unreachable",
+      "detail": "The operation was aborted due to timeout"
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "triangle-gas-plus-petro-canada",
+      "sourceUrl": "https://triangle.canadiantire.ca/en/partners.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "unreachable",
+      "detail": "The operation was aborted due to timeout"
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "costco-cibc-mastercard-direct",
+      "sourceUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "costco-cibc-mastercard-direct",
+      "sourceUrl": "https://www.cibc.com/content/dam/cibc-public-assets/personal-banking/credit-cards/all-credit-cards/costco/documents/cibc-costco-benefit-guide-en.pdf",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "pc-optimum-esso-mobil",
+      "sourceUrl": "https://www.esso.ca/en-ca/pc-optimum-faq",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "http_error",
+      "httpStatus": 403,
+      "detail": "HTTP 403"
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "pc-optimum-esso-mobil",
+      "sourceUrl": "https://www.esso.ca/en-ca/pc-optimum-rewards",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "http_error",
+      "httpStatus": 403,
+      "detail": "HTTP 403"
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "pc-optimum-esso-mobil",
+      "sourceUrl": "https://www.pcfinancial.ca/en/credit-cards/pc-mastercard/",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "claim_missing",
+      "httpStatus": 200,
+      "detail": "None of claims matched: 10 | 30 | 10"
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "pc-optimum-shoppers-pharmaprix",
+      "sourceUrl": "https://www.pcfinancial.ca/en/credit-cards/pc-mastercard/",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "claim_missing",
+      "httpStatus": 200,
+      "detail": "None of claims matched: 2.5 | 3.5 | 4.5"
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "pc-optimum-loblaw-grocery",
+      "sourceUrl": "https://www.pcfinancial.ca/en/credit-cards/pc-mastercard/",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "claim_missing",
+      "httpStatus": 200,
+      "detail": "None of claims matched: 1 | 2 | 3"
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "scene-plus-empire-scotia-cards",
+      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/programs-services/participatingstores.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "scene-plus-empire-scotia-cards",
+      "sourceUrl": "https://www.sobeys.com/sceneplus",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "http_error",
+      "httpStatus": 403,
+      "detail": "HTTP 403"
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "scene-plus-empire-scotia-cards",
+      "sourceUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards/sceneplus.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "moi-rewards-rbc-linked",
+      "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/faq.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "moi-rewards-rbc-linked",
+      "sourceUrl": "https://www.avionrewards.com/partnerships/moi-rewards/",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "moi-rewards-rbc-linked",
+      "sourceUrl": "https://linkedloyalty.avionrewards.com/moi/linked-loyalty-terms-en.pdf",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "claim_missing",
+      "httpStatus": 200,
+      "detail": "None of claims matched: 0.5 | 1 extra Moi point per $2 eligible spend (0.5 pts/$) after minimum basket thresholds | Minimum baskets per Avion FAQ/terms: $60 at Metro / Food Basics / Super C; $40 at Jean Coutu / Brunet; $20 at Première Moisson. Extra Moi points are on top of base Moi earn."
+    },
+    {
+      "table": "merchant_partnerships",
+      "id": "moi-rbc-visa-affiliated",
+      "sourceUrl": "https://www.rbcroyalbank.com/credit-cards/rewards/moi-rbc-visa.html",
+      "checkedAt": "2026-09-28T18:58:53.616Z",
+      "outcome": "ok",
+      "httpStatus": 200
     }
   ],
   "summary": {
-    "ok": 6,
-    "failed": 2,
+    "ok": 37,
+    "failed": 23,
     "markedStale": 0
   }
 }

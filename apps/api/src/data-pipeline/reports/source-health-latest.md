@@ -1,12 +1,12 @@
 # NorthTap source-health — verified catalog URLs
 
-- **Run ID:** `2026-09-23T03-16-06-679Z`
-- **Generated:** 2026-09-23T03:16:06.679Z
-- **OK / failed / marked stale:** 6 / 2 / 0
+- **Run ID:** `2026-09-28T18-58-53-616Z`
+- **Generated:** 2026-09-28T18:58:53.616Z
+- **OK / failed / marked stale:** 37 / 23 / 0
 
 > Light daily check (GET + claim presence). Failures flip Supabase rows to `status=stale` when credentials are configured.
 
-## Failures (2)
+## Failures (23)
 
 - **[claim_missing] merchant_brands/chevron-parkland**
   - None of claims matched: Chevron (Parkland)
@@ -14,3 +14,66 @@
 - **[unreachable] merchant_brands/petro-canada**
   - The operation was aborted due to timeout
   - <https://triangle.canadiantire.ca/en/partners.html>
+- **[http_error] merchant_brands/esso**
+  - HTTP 403
+  - <https://www.esso.ca/en-ca/pc-optimum-faq>
+- **[http_error] merchant_brands/mobil**
+  - HTTP 403
+  - <https://www.esso.ca/en-ca/pc-optimum-faq>
+- **[claim_missing] merchant_brands/loblaws**
+  - None of claims matched: Loblaws
+  - <https://www.pcfinancial.ca/en/credit-cards/pc-mastercard/>
+- **[claim_missing] merchant_brands/no-frills**
+  - None of claims matched: No Frills
+  - <https://www.pcfinancial.ca/en/credit-cards/pc-mastercard/>
+- **[claim_missing] merchant_brands/real-canadian-superstore**
+  - None of claims matched: Real Canadian Superstore
+  - <https://www.pcfinancial.ca/en/credit-cards/pc-mastercard/>
+- **[claim_missing] merchant_brands/shoppers-drug-mart**
+  - None of claims matched: Shoppers Drug Mart
+  - <https://www.pcfinancial.ca/en/credit-cards/pc-mastercard/>
+- **[claim_missing] merchant_brands/pharmaprix**
+  - None of claims matched: Pharmaprix
+  - <https://www.pcfinancial.ca/en/credit-cards/pc-mastercard/>
+- **[http_error] merchant_brands/sobeys**
+  - HTTP 403
+  - <https://www.sobeys.com/sceneplus>
+- **[claim_missing] merchant_brands/iga**
+  - None of claims matched: IGA (participating)
+  - <https://www.scotiabank.com/ca/en/personal/programs-services/participatingstores.html>
+- **[claim_missing] loyalty_programs/shell-go-plus**
+  - None of claims matched: Shell Go+
+  - <https://www.shell.ca/en_ca/drivers/loyalty-and-payment/partners/scotiabank.html>
+- **[http_error] loyalty_programs/pc-optimum**
+  - HTTP 403
+  - <https://www.esso.ca/en-ca/pc-optimum-faq>
+- **[claim_missing] merchant_partnerships/shell-scene-scotia-scene-cards**
+  - None of claims matched: 3 | 4 | 1
+  - <https://www.shell.ca/en_ca/drivers/loyalty-and-payment/partners/scotiabank.html>
+- **[unreachable] merchant_partnerships/triangle-gas-plus-petro-canada**
+  - The operation was aborted due to timeout
+  - <https://triangle.canadiantire.ca/en/credit-cards/triangle-mastercard.html>
+- **[unreachable] merchant_partnerships/triangle-gas-plus-petro-canada**
+  - The operation was aborted due to timeout
+  - <https://triangle.canadiantire.ca/en/partners.html>
+- **[http_error] merchant_partnerships/pc-optimum-esso-mobil**
+  - HTTP 403
+  - <https://www.esso.ca/en-ca/pc-optimum-faq>
+- **[http_error] merchant_partnerships/pc-optimum-esso-mobil**
+  - HTTP 403
+  - <https://www.esso.ca/en-ca/pc-optimum-rewards>
+- **[claim_missing] merchant_partnerships/pc-optimum-esso-mobil**
+  - None of claims matched: 10 | 30 | 10
+  - <https://www.pcfinancial.ca/en/credit-cards/pc-mastercard/>
+- **[claim_missing] merchant_partnerships/pc-optimum-shoppers-pharmaprix**
+  - None of claims matched: 2.5 | 3.5 | 4.5
+  - <https://www.pcfinancial.ca/en/credit-cards/pc-mastercard/>
+- **[claim_missing] merchant_partnerships/pc-optimum-loblaw-grocery**
+  - None of claims matched: 1 | 2 | 3
+  - <https://www.pcfinancial.ca/en/credit-cards/pc-mastercard/>
+- **[http_error] merchant_partnerships/scene-plus-empire-scotia-cards**
+  - HTTP 403
+  - <https://www.sobeys.com/sceneplus>
+- **[claim_missing] merchant_partnerships/moi-rewards-rbc-linked**
+  - None of claims matched: 0.5 | 1 extra Moi point per $2 eligible spend (0.5 pts/$) after minimum basket thresholds | Minimum baskets per Avion FAQ/terms: $60 at Metro / Food Basics / Super C; $40 at Jean Coutu / Brunet; $20 at Première Moisson. Extra Moi points are on top of base Moi earn.
+  - <https://linkedloyalty.avionrewards.com/moi/linked-loyalty-terms-en.pdf>
