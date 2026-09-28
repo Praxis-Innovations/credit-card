@@ -90,19 +90,28 @@ export interface WelcomeOffer {
 }
 
 /**
- * Basis for displaying a catalog image. Only `licensed` and `issuer_provided`
- * assets are ever served; see docs/data/ASSETS.md.
+ * Basis for displaying a catalog image. Only `licensed`, `issuer_provided` and
+ * `generated` (our own card illustrations) assets are ever served; see
+ * docs/data/ASSETS.md.
  */
 export const ASSET_RIGHTS_STATUSES = [
   "licensed",
   "issuer_provided",
   "placeholder",
   "unknown",
+  "generated",
 ] as const;
 
 export type AssetRightsStatus = (typeof ASSET_RIGHTS_STATUSES)[number];
 
 export const SERVABLE_ASSET_RIGHTS: readonly AssetRightsStatus[] = [
+  "licensed",
+  "issuer_provided",
+  "generated",
+];
+
+/** Rights a person may record when uploading third-party art with `assets:upload`. */
+export const UPLOADABLE_ASSET_RIGHTS: readonly AssetRightsStatus[] = [
   "licensed",
   "issuer_provided",
 ];
