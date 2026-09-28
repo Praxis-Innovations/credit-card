@@ -140,6 +140,46 @@ describe("supabase migrations", () => {
     );
   });
 
+  it("lets cards store a generated illustration with alt text and no source URL", async () => {
+    const url = "https://example.supabase.co/storage/v1/object/public/brand-assets/cards/generated/x.png";
+    const id = CARDS[0]!.id;
+    for (const alt of ["null", "'  '"]) {
+      await expect(
+        db.query(
+          `update public.cards set image_url = $2, image_alt = ${alt}, image_rights_status = 'generated' where id = $1`,
+          [id, url],
+        ),
+      ).rejects.toThrow(/provenance_check/);
+    }
+    await db.query(
+      `update public.cards
+       set image_url = $2, image_alt = 'Card (illustration)', image_source_url = null,
+           image_rights_status = 'generated'
+       where id = $1`,
+      [id, url],
+    );
+    await db.query(
+      `update public.cards set image_url = null, image_alt = null, image_rights_status = 'placeholder' where id = $1`,
+      [id],
+    );
+  });
+
+  it.each([["merchant_brands"], ["loyalty_programs"]])(
+    "%s does not accept generated logos",
+    async (table) => {
+      const id = (await db.query<{ id: string }>(`select id from public.${table} limit 1`)).rows[0]!.id;
+      await expect(
+        db.query(
+          `update public.${table}
+           set logo_url = 'https://x/y.png', logo_alt = 'a', logo_source_url = 'https://s',
+               logo_rights_status = 'generated'
+           where id = $1`,
+          [id],
+        ),
+      ).rejects.toThrow(/provenance_check/);
+    },
+  );
+
   it("creates the public brand-assets bucket for raster images only", async () => {
     const { rows } = await db.query<{
       public: boolean;

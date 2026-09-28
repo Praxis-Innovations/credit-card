@@ -22,6 +22,7 @@ import {
   validateAssetBytes,
   type AssetKind,
 } from "./assets";
+import { readAssetRow, removeObject, replaceAsset } from "./storage";
 
 type Client = ReturnType<typeof createServiceClient>;
 
@@ -30,21 +31,9 @@ async function currentUrl(
   kind: AssetKind,
   id: string,
 ): Promise<string | null> {
-  const { table, prefix } = ASSET_KINDS[kind];
-  const { data, error } = await client
-    .from(table)
-    .select(`id, ${prefix}_url`)
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) throw new UsageError(`${table}/${id} does not exist`);
-  return ((data as Record<string, unknown>)[`${prefix}_url`] as string | null) ?? null;
-}
-
-async function removeObject(client: Client, path: string | null): Promise<void> {
-  if (!path) return;
-  const { error } = await client.storage.from(ASSET_BUCKET).remove([path]);
-  if (error) console.warn(`warning: could not remove ${path}: ${error.message}`);
+  const column = `${ASSET_KINDS[kind].prefix}_url`;
+  const row = await readAssetRow(client, kind, id, [column]);
+  return (row[column] as string | null) ?? null;
 }
 
 async function upload(argv: string[]): Promise<void> {
@@ -78,27 +67,15 @@ async function upload(argv: string[]): Promise<void> {
     await currentUrl(client, opts.kind, opts.id),
   );
 
-  const { error: uploadError } = await client.storage
-    .from(ASSET_BUCKET)
-    .upload(path, bytes, {
-      contentType,
-      cacheControl: "31536000",
-      upsert: true,
-    });
-  if (uploadError) throw uploadError;
-
-  const publicUrl = client.storage.from(ASSET_BUCKET).getPublicUrl(path).data
-    .publicUrl;
-  const { error: updateError } = await client
-    .from(table)
-    .update(buildUploadPatch(opts, publicUrl, new Date()))
-    .eq("id", opts.id);
-  if (updateError) {
-    if (path !== previousPath) await removeObject(client, path);
-    throw updateError;
-  }
-
-  if (previousPath !== path) await removeObject(client, previousPath);
+  const publicUrl = await replaceAsset(client, {
+    kind: opts.kind,
+    id: opts.id,
+    path,
+    bytes,
+    contentType,
+    previousPath,
+    patch: (url) => buildUploadPatch(opts, url, new Date()),
+  });
   console.log(`${table}/${opts.id} → ${publicUrl}`);
 }
 

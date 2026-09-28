@@ -257,6 +257,7 @@ describe("contract: static catalog (assets null)", () => {
 const ASSET_BASE = "https://proj.supabase.co/storage/v1/object/public/brand-assets";
 const COBALT_URL = `${ASSET_BASE}/cards/amex-cobalt-0123456789ab.webp`;
 const SCENE_VI_URL = `${ASSET_BASE}/cards/scotia-scene-vi-0123456789ab.webp`;
+const NEO_URL = `${ASSET_BASE}/cards/generated/neo-mastercard-0123456789ab.png`;
 const SHELL_URL = `${ASSET_BASE}/merchant-brands/shell-0123456789ab.png`;
 const SCENE_URL = `${ASSET_BASE}/loyalty-programs/scene-plus-0123456789ab.png`;
 
@@ -315,7 +316,13 @@ function seedTables(): void {
               image_alt: "Tangerine card",
               image_rights_status: "unknown",
             })
-          : assetCols("image")),
+          : c.id === "neo-mastercard"
+            ? assetCols("image", {
+                image_url: NEO_URL,
+                image_alt: "Neo Mastercard card (illustration)",
+                image_rights_status: "generated",
+              })
+            : assetCols("image")),
   }));
   tables.merchant_brands = MERCHANT_BRANDS.map((b) => ({
     id: b.id,
@@ -383,6 +390,10 @@ describe("contract: supabase catalog (assets populated)", () => {
       imageAlt: "American Express Cobalt card",
     });
     expect(byId.get("tangerine-moneyback")).toMatchObject({ imageUrl: null });
+    expect(byId.get("neo-mastercard")).toMatchObject({
+      imageUrl: NEO_URL,
+      imageAlt: "Neo Mastercard card (illustration)",
+    });
     expect(byId.get("rbc-avion-vi") ?? byId.get("td-aeroplan-vi")).toMatchObject({
       imageUrl: null,
       imageAlt: null,
@@ -391,6 +402,16 @@ describe("contract: supabase catalog (assets populated)", () => {
     const one = await ok(await getCard(get("/v1/cards/amex-cobalt"), params("amex-cobalt")));
     expectSchema("CreditCard", one);
     expect(one.imageUrl).toBe(COBALT_URL);
+  });
+
+  it("GET /v1/cards/:id serves a generated illustration and never an unknown URL", async () => {
+    const neo = await ok(await getCard(get("/v1/cards/neo-mastercard"), params("neo-mastercard")));
+    expectSchema("CreditCard", neo);
+    expect(neo.imageUrl).toBe(NEO_URL);
+    const tangerine = await ok(
+      await getCard(get("/v1/cards/tangerine-moneyback"), params("tangerine-moneyback")),
+    );
+    expect(tangerine.imageUrl).toBeNull();
   });
 
   it("brand and program endpoints serve logos", async () => {

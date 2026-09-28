@@ -9,8 +9,9 @@ import {
 import type { PartnershipRefs } from "./catalog";
 
 /**
- * URL a client may render, or null (→ neutral placeholder). Assets whose
- * rights are not cleared are never exposed, even if a URL is stored.
+ * URL a client may render, or null (→ neutral placeholder). Only licensed,
+ * issuer_provided and generated assets are exposed; any other stored URL
+ * (e.g. `unknown` provenance) never is.
  */
 export function publicAssetUrl(asset: CatalogAsset | undefined): string | null {
   if (!asset?.url) return null;
