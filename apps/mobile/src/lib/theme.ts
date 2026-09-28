@@ -53,8 +53,8 @@ export const fonts = {
 /** Minimum touch target (px) for anything tappable. */
 export const TOUCH = 44;
 
-/** Width at which the Save sheet becomes a centered dialog. */
+/** Native: width at which the Save sheet becomes a centered dialog (web uses responsive.ts). */
 export const WIDE_BREAKPOINT = 768;
 
-/** Content column width on wide web screens (the flow is phone-first). */
+/** Native content column cap (web columns are set in responsive.ts). */
 export const PHONE_COLUMN = 480;

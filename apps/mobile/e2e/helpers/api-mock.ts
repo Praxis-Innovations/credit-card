@@ -91,6 +91,10 @@ export const E2E_BRANDS = [
   brand("shell", "Shell", "gas"),
   brand("petro-canada", "Petro-Canada", "gas"),
   brand("esso", "Esso", "gas"),
+  brand("ultramar", "Ultramar", "gas"),
+  brand("pioneer", "Pioneer", "gas"),
+  brand("husky", "Husky", "gas"),
+  brand("mobil", "Mobil", "gas"),
   brand("loblaws", "Loblaws", "groceries"),
   brand("shoppers-drug-mart", "Shoppers Drug Mart", "drugstore"),
 ];

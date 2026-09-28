@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import { colors, TOUCH } from "../../lib/theme";
 import { ChevronLeftIcon } from "./Icons";
+import { pressState } from "./press-state";
 
 interface StepHeaderProps {
   step: 1 | 2 | 3;
@@ -14,7 +15,7 @@ export function StepHeader({ step, total = 3, onBack }: StepHeaderProps) {
     <View style={styles.header}>
       <Pressable
         onPress={onBack}
-        style={styles.back}
+        style={(state) => [styles.back, pressState(state).hovered && styles.backHover]}
         accessibilityRole="button"
         accessibilityLabel="Back"
         hitSlop={4}
@@ -61,6 +62,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 22,
+  },
+  backHover: {
+    backgroundColor: colors.tintStrong,
   },
   dots: {
     flexDirection: "row",

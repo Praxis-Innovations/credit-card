@@ -15,6 +15,7 @@ import { ErrorNote, InlineAction, LinkButton } from "../src/components/flow/Butt
 import { CardArt } from "../src/components/flow/CardArt";
 import { InfoIcon } from "../src/components/flow/Icons";
 import { SaveWalletSheet } from "../src/components/flow/SaveWalletSheet";
+import { pressState } from "../src/components/flow/press-state";
 import { Screen } from "../src/components/flow/Screen";
 import { StoreSummary } from "../src/components/flow/StoreSummary";
 import { resolveAssetUrl } from "../src/lib/api-client";
@@ -37,8 +38,12 @@ import {
   formatVerifiedDate,
   otherCardSubtitle,
 } from "../src/lib/result-copy";
+import { useLayout } from "../src/lib/responsive";
 import { colors, fonts } from "../src/lib/theme";
 import { useFlow } from "../src/state/flow";
+
+/** Desktop result column: best card beside "Other cards". */
+const RESULT_DESKTOP_WIDTH = 960;
 
 type ResultState =
   | { status: "loading" }
@@ -187,18 +192,8 @@ function OtherCard({ rec }: { rec: RecommendationItem }) {
 
 export default function ResultScreen() {
   const router = useRouter();
-  const {
-    hydrated,
-    store,
-    amount,
-    walletIds,
-    programs,
-    loadCatalog,
-    user,
-    walletSync,
-    walletSyncError,
-    signOut,
-  } = useFlow();
+  const { hydrated, store, amount, walletIds, programs, loadCatalog, user } = useFlow();
+  const layout = useLayout();
   const [state, setState] = useState<ResultState>({ status: "loading" });
   const [partnership, setPartnership] = useState<Partnership | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -266,12 +261,16 @@ export default function ResultScreen() {
   const shownAmount = purchase?.amountCad ?? amount;
   const shownCategory = purchase?.category ?? store?.category ?? "other";
   const others = state.status === "ready" ? state.response.recommendations.slice(1) : [];
+  const twoColumns = layout.desktop && Boolean(best);
+  const keepBanner =
+    state.status === "ready" ? <KeepWallet onSave={() => setSheetOpen(true)} /> : null;
 
   return (
     <Screen
+      desktopMaxWidth={RESULT_DESKTOP_WIDTH}
       header={
-        <View style={styles.header}>
-          <NorthTapLogo size={20} accessibilityRole="image" />
+        <View style={[styles.header, layout.desktop && styles.headerDesktop]}>
+          {layout.desktop ? null : <NorthTapLogo size={20} accessibilityRole="image" />}
           <InlineAction
             label="New search"
             onPress={() => router.dismissTo("/store")}
@@ -297,23 +296,21 @@ export default function ResultScreen() {
           </View>
         ) : null}
 
-        <View style={styles.storeRow}>
-          <StoreSummary
-            variant="plain"
-            name={storeName}
-            meta={`${CATEGORY_LABELS[shownCategory]} · ${formatCad(shownAmount)}`}
-            logoUrl={storeLogo}
-            actionLabel="Edit"
-            actionAccessibilityLabel="Edit amount"
-            onAction={() =>
-              store
-                ? router.canGoBack()
-                  ? router.back()
-                  : router.replace("/amount")
-                : router.dismissTo("/store")
-            }
-          />
-        </View>
+        <StoreSummary
+          variant="plain"
+          name={storeName}
+          meta={`${CATEGORY_LABELS[shownCategory]} · ${formatCad(shownAmount)}`}
+          logoUrl={storeLogo}
+          actionLabel="Edit"
+          actionAccessibilityLabel="Edit amount"
+          onAction={() =>
+            store
+              ? router.canGoBack()
+                ? router.back()
+                : router.replace("/amount")
+              : router.dismissTo("/store")
+          }
+        />
 
         {state.status === "loading" ? (
           <View style={styles.loading}>
@@ -332,21 +329,31 @@ export default function ResultScreen() {
             </ErrorNote>
             <LinkButton label="Edit your cards" onPress={() => router.push("/cards")} />
           </View>
-        ) : best && purchase ? (
-          <>
-            <BestCard
-              rec={best}
-              amountCad={purchase.amountCad}
-              category={purchase.category}
-              fuelGrade={purchase.fuelGrade}
-              partnership={
-                best.usedPartnership && partnership?.id === best.partnershipId ? partnership : null
-              }
-              programs={programs}
-            />
-            {others.length > 0 ? (
+        ) : null}
+
+        <View style={twoColumns && styles.columns}>
+          {best && purchase ? (
+            <View style={twoColumns && styles.primaryColumn}>
+              <BestCard
+                rec={best}
+                amountCad={purchase.amountCad}
+                category={purchase.category}
+                fuelGrade={purchase.fuelGrade}
+                partnership={
+                  best.usedPartnership && partnership?.id === best.partnershipId
+                    ? partnership
+                    : null
+                }
+                programs={programs}
+              />
+            </View>
+          ) : null}
+          <View style={twoColumns && styles.secondaryColumn}>
+            {best && others.length > 0 ? (
               <>
-                <Text style={styles.othersLabel}>Other cards in your wallet</Text>
+                <Text style={[styles.othersLabel, twoColumns && styles.othersLabelBeside]}>
+                  Other cards in your wallet
+                </Text>
                 <View style={styles.othersList}>
                   {others.map((rec) => (
                     <OtherCard key={rec.card.id} rec={rec} />
@@ -354,47 +361,55 @@ export default function ResultScreen() {
                 </View>
               </>
             ) : null}
-          </>
-        ) : null}
-
-        {state.status === "ready" ? (
-          user ? (
-            <View style={styles.keep}>
-              <View style={styles.keepText}>
-                <Text style={styles.keepTitle}>
-                  {walletSync === "syncing"
-                    ? "Saving your wallet…"
-                    : walletSync === "error"
-                      ? "Couldn't save your wallet"
-                      : "Wallet saved"}
-                </Text>
-                <Text style={styles.keepBody}>
-                  {walletSync === "error"
-                    ? walletSyncError
-                    : `Signed in as ${user.email ?? "your Google account"}.`}
-                </Text>
-              </View>
-              <InlineAction label="Sign out" onPress={() => void signOut()} />
-            </View>
-          ) : (
-            <View style={styles.keep}>
-              <View style={styles.keepText}>
-                <Text style={styles.keepTitle}>Keep your wallet</Text>
-                <Text style={styles.keepBody}>Save your cards for next time.</Text>
-              </View>
-              <Pressable
-                onPress={() => setSheetOpen(true)}
-                accessibilityRole="button"
-                accessibilityLabel="Save your wallet"
-                style={({ pressed }) => [styles.saveButton, pressed && styles.saveButtonPressed]}
-              >
-                <Text style={styles.saveText}>Save</Text>
-              </Pressable>
-            </View>
-          )
-        ) : null}
+            {keepBanner}
+          </View>
+        </View>
       </View>
     </Screen>
+  );
+}
+
+function KeepWallet({ onSave }: { onSave: () => void }) {
+  const { user, walletSync, walletSyncError, signOut } = useFlow();
+  if (user) {
+    return (
+      <View style={styles.keep}>
+        <View style={styles.keepText}>
+          <Text style={styles.keepTitle}>
+            {walletSync === "syncing"
+              ? "Saving your wallet…"
+              : walletSync === "error"
+                ? "Couldn't save your wallet"
+                : "Wallet saved"}
+          </Text>
+          <Text style={styles.keepBody}>
+            {walletSync === "error"
+              ? walletSyncError
+              : `Signed in as ${user.email ?? "your Google account"}.`}
+          </Text>
+        </View>
+        <InlineAction label="Sign out" onPress={() => void signOut()} />
+      </View>
+    );
+  }
+  return (
+    <View style={styles.keep}>
+      <View style={styles.keepText}>
+        <Text style={styles.keepTitle}>Keep your wallet</Text>
+        <Text style={styles.keepBody}>Save your cards for next time.</Text>
+      </View>
+      <Pressable
+        onPress={onSave}
+        accessibilityRole="button"
+        accessibilityLabel="Save your wallet"
+        style={(state) => {
+          const { pressed, hovered } = pressState(state);
+          return [styles.saveButton, (pressed || hovered) && styles.saveButtonPressed];
+        }}
+      >
+        <Text style={styles.saveText}>Save</Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -406,11 +421,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  headerDesktop: {
+    justifyContent: "flex-end",
+  },
   main: {
+    paddingHorizontal: 24,
     paddingBottom: 32,
   },
+  columns: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 24,
+  },
+  primaryColumn: {
+    flex: 3,
+    minWidth: 0,
+  },
+  secondaryColumn: {
+    flex: 2,
+    minWidth: 0,
+  },
   stale: {
-    marginHorizontal: 24,
     marginBottom: 12,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -425,9 +456,6 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     color: colors.warnText,
   },
-  storeRow: {
-    marginHorizontal: 24,
-  },
   loading: {
     marginTop: 48,
     alignItems: "center",
@@ -440,12 +468,10 @@ const styles = StyleSheet.create({
   },
   errorBox: {
     marginTop: 24,
-    marginHorizontal: 24,
     gap: 8,
   },
   best: {
     marginTop: 16,
-    marginHorizontal: 24,
     padding: 20,
     backgroundColor: colors.card,
     borderWidth: 1,
@@ -569,13 +595,14 @@ const styles = StyleSheet.create({
   othersLabel: {
     marginTop: 20,
     marginBottom: 8,
-    marginHorizontal: 24,
     fontFamily: fonts.semibold,
     fontSize: 14,
     color: colors.textBody,
   },
+  othersLabelBeside: {
+    marginTop: 16,
+  },
   othersList: {
-    marginHorizontal: 24,
     gap: 8,
   },
   other: {
@@ -618,7 +645,6 @@ const styles = StyleSheet.create({
   },
   keep: {
     marginTop: 16,
-    marginHorizontal: 24,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 14,

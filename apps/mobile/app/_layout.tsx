@@ -11,9 +11,11 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors, fonts, WORDMARK_FONT } from "../src/lib/theme";
+import { installWebInteractionStyles } from "../src/lib/web-styles";
 import { FlowProvider } from "../src/state/flow";
 
 void SplashScreen.preventAutoHideAsync();
+installWebInteractionStyles();
 
 /** Don't hold the UI hostage if a font request stalls. */
 const FONT_TIMEOUT_MS = 2500;

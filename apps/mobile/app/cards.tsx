@@ -5,6 +5,7 @@ import { ErrorNote, LinkButton, PrimaryButton } from "../src/components/flow/But
 import { CardArt } from "../src/components/flow/CardArt";
 import { CheckIcon } from "../src/components/flow/Icons";
 import { ProgramLogo } from "../src/components/flow/Logos";
+import { pressState } from "../src/components/flow/press-state";
 import { Screen } from "../src/components/flow/Screen";
 import { SearchField } from "../src/components/flow/SearchField";
 import { StepHeader } from "../src/components/flow/StepHeader";
@@ -32,7 +33,11 @@ function CardRow({
       accessibilityState={{ checked }}
       aria-checked={checked}
       accessibilityLabel={`${card.issuer} ${card.name}, ${program.name}`}
-      style={[styles.row, checked && styles.rowOn]}
+      style={(state) => [
+        styles.row,
+        pressState(state).hovered && !checked && styles.rowHover,
+        checked && styles.rowOn,
+      ]}
     >
       <CardArt card={card} width={64} radius={6} />
       <View style={styles.rowText}>
@@ -195,6 +200,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     minHeight: 64,
+  },
+  rowHover: {
+    borderColor: colors.primary,
   },
   rowOn: {
     borderWidth: 2,

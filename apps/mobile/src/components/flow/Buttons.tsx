@@ -7,7 +7,9 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
+import { useLayout } from "../../lib/responsive";
 import { colors, fonts, TOUCH } from "../../lib/theme";
+import { pressState } from "./press-state";
 
 interface ButtonProps {
   label: string;
@@ -26,6 +28,7 @@ export function PrimaryButton({
   accessibilityLabel,
   style,
 }: ButtonProps) {
+  const { wide } = useLayout();
   const inactive = disabled || busy;
   return (
     <Pressable
@@ -34,12 +37,16 @@ export function PrimaryButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: !!inactive, busy: !!busy }}
-      style={({ pressed }) => [
-        styles.primary,
-        pressed && !inactive && styles.primaryPressed,
-        disabled && styles.disabled,
-        style,
-      ]}
+      style={(state) => {
+        const { pressed, hovered } = pressState(state);
+        return [
+          styles.primary,
+          wide && styles.primaryWide,
+          (pressed || hovered) && !inactive && styles.primaryPressed,
+          disabled && styles.disabled,
+          style,
+        ];
+      }}
     >
       {busy ? (
         <ActivityIndicator color={colors.primaryFg} />
@@ -58,6 +65,7 @@ export function LinkButton({
   style,
   height = 48,
 }: ButtonProps & { height?: number }) {
+  const { wide } = useLayout();
   return (
     <Pressable
       onPress={onPress}
@@ -67,13 +75,20 @@ export function LinkButton({
       accessibilityState={{ disabled: !!disabled }}
       style={({ pressed }) => [
         styles.link,
+        wide && styles.linkWide,
         { height: Math.max(TOUCH, height) },
         pressed && styles.linkPressed,
         disabled && styles.disabled,
         style,
       ]}
     >
-      <Text style={styles.linkText}>{label}</Text>
+      {(state) => (
+        <Text
+          style={[styles.linkText, pressState(state).hovered && !disabled && styles.hoverText]}
+        >
+          {label}
+        </Text>
+      )}
     </Pressable>
   );
 }
@@ -95,7 +110,11 @@ export function InlineAction({
       accessibilityLabel={accessibilityLabel ?? label}
       style={({ pressed }) => [styles.inline, pressed && styles.linkPressed]}
     >
-      <Text style={styles.inlineText}>{label}</Text>
+      {(state) => (
+        <Text style={[styles.inlineText, pressState(state).hovered && styles.hoverText]}>
+          {label}
+        </Text>
+      )}
     </Pressable>
   );
 }
@@ -117,6 +136,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 16,
   },
+  primaryWide: {
+    width: "100%",
+    maxWidth: 400,
+    alignSelf: "center",
+  },
   primaryPressed: {
     backgroundColor: colors.primaryPressed,
   },
@@ -133,6 +157,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 12,
   },
+  linkWide: {
+    alignSelf: "center",
+  },
   linkPressed: {
     opacity: 0.7,
   },
@@ -140,6 +167,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: 15,
     color: colors.primary,
+  },
+  hoverText: {
+    color: colors.primaryPressed,
+    textDecorationLine: "underline",
   },
   inline: {
     minHeight: TOUCH,
