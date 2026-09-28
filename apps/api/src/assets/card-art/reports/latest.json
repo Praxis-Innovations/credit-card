@@ -1,0 +1,1321 @@
+{
+  "generatedAt": "2026-09-28T00:26:53.982Z",
+  "summary": {
+    "total": 68,
+    "fetched": 43,
+    "generated": 25,
+    "kept": 0,
+    "skipped": 0,
+    "failed": 25,
+    "changed": 0
+  },
+  "cards": [
+    {
+      "id": "amex-aeroplan",
+      "issuer": "American Express",
+      "name": "Aeroplan",
+      "productUrl": "https://www.americanexpress.com/en-ca/charge-cards/aeroplan-card/",
+      "outcome": "fetched",
+      "artUrl": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/aeroplan-card.png",
+      "artPageUrl": "https://www.americanexpress.com/en-ca/charge-cards/aeroplan-card/",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/amex-aeroplan-324f029a931a.png",
+      "fallbackUrl": "brand-assets/cards/generated/amex-aeroplan-d356d61797bb.png",
+      "attempts": [
+        {
+          "url": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/aeroplan-card.png",
+          "score": 45,
+          "result": "accepted 480×304 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "amex-aeroplan-reserve",
+      "issuer": "American Express",
+      "name": "Aeroplan Reserve",
+      "productUrl": "https://www.americanexpress.com/en-ca/credit-cards/aeroplan-reserve/",
+      "outcome": "fetched",
+      "artUrl": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/aeroplan-reserve-card.png",
+      "artPageUrl": "https://www.americanexpress.com/en-ca/credit-cards/aeroplan-reserve/",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/amex-aeroplan-reserve-8a2c38e3f1af.png",
+      "fallbackUrl": "brand-assets/cards/generated/amex-aeroplan-reserve-9edf281c2be1.png",
+      "attempts": [
+        {
+          "url": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/aeroplan-reserve-card.png",
+          "score": 75,
+          "result": "accepted 480×304 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "amex-business-gold",
+      "issuer": "American Express",
+      "name": "Business Gold Rewards",
+      "productUrl": "https://www.americanexpress.com/en-ca/charge-cards/small-business-gold-card/",
+      "outcome": "fetched",
+      "artUrl": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/Business_Gold_Rewards_Card.png",
+      "artPageUrl": "https://www.americanexpress.com/en-ca/charge-cards/small-business-gold-card/",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/amex-business-gold-71aa9cdaceb7.png",
+      "fallbackUrl": "brand-assets/cards/generated/amex-business-gold-cad727fae8ef.png",
+      "attempts": [
+        {
+          "url": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/Business_Gold_Rewards_Card.png",
+          "score": 105,
+          "result": "accepted 480×304 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "amex-cobalt",
+      "issuer": "American Express",
+      "name": "Cobalt",
+      "productUrl": "https://www.americanexpress.com/en-ca/credit-cards/cobalt-card/",
+      "outcome": "fetched",
+      "artUrl": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/American_Express_Cobalt_Card.png",
+      "artPageUrl": "https://www.americanexpress.com/en-ca/credit-cards/cobalt-card/",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/amex-cobalt-38beec27256f.png",
+      "fallbackUrl": "brand-assets/cards/generated/amex-cobalt-aa214ee581b4.png",
+      "attempts": [
+        {
+          "url": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/American_Express_Cobalt_Card.png",
+          "score": 45,
+          "result": "accepted 200×126 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "amex-gold",
+      "issuer": "American Express",
+      "name": "Gold Rewards",
+      "productUrl": "https://www.americanexpress.com/en-ca/credit-cards/gold-rewards-card/",
+      "outcome": "fetched",
+      "artUrl": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/Gold_Rewards_Card.png",
+      "artPageUrl": "https://www.americanexpress.com/en-ca/credit-cards/gold-rewards-card/",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/amex-gold-dd20cf73ce71.png",
+      "fallbackUrl": "brand-assets/cards/generated/amex-gold-d5e62f0f2046.png",
+      "attempts": [
+        {
+          "url": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/Gold_Rewards_Card.png",
+          "score": 100,
+          "result": "accepted 480×304 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "amex-green",
+      "issuer": "American Express",
+      "name": "Green",
+      "productUrl": "https://www.americanexpress.com/en-ca/credit-cards/green-card/",
+      "outcome": "fetched",
+      "artUrl": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/Green-Card-Art.png",
+      "artPageUrl": "https://www.americanexpress.com/en-ca/credit-cards/green-card/",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/amex-green-4282a45ef9b6.png",
+      "fallbackUrl": "brand-assets/cards/generated/amex-green-6bfdaa976179.png",
+      "attempts": [
+        {
+          "url": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/Green-Card-Art.png",
+          "score": 100,
+          "result": "accepted 480×304 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "amex-marriott-bonvoy",
+      "issuer": "American Express",
+      "name": "Marriott Bonvoy",
+      "productUrl": "https://www.americanexpress.com/en-ca/credit-cards/marriott-bonvoy-card/",
+      "outcome": "fetched",
+      "artUrl": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/marriott-bonvoy-card.png",
+      "artPageUrl": "https://www.americanexpress.com/en-ca/credit-cards/marriott-bonvoy-card/",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/amex-marriott-bonvoy-30a387f292c4.png",
+      "fallbackUrl": "brand-assets/cards/generated/amex-marriott-bonvoy-ca2ebb789c2e.png",
+      "attempts": [
+        {
+          "url": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/marriott-bonvoy-card.png",
+          "score": 65,
+          "result": "accepted 320×202 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "amex-platinum",
+      "issuer": "American Express",
+      "name": "Platinum Card",
+      "productUrl": "https://www.americanexpress.com/en-ca/charge-cards/the-platinum-card/",
+      "outcome": "fetched",
+      "artUrl": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/The_Platinum_Card.png",
+      "artPageUrl": "https://www.americanexpress.com/en-ca/charge-cards/the-platinum-card/",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/amex-platinum-f0050416fa7c.png",
+      "fallbackUrl": "brand-assets/cards/generated/amex-platinum-b11f745bd748.png",
+      "attempts": [
+        {
+          "url": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/The_Platinum_Card.png",
+          "score": 85,
+          "result": "accepted 480×304 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "amex-simplycash",
+      "issuer": "American Express",
+      "name": "SimplyCash",
+      "productUrl": "https://www.americanexpress.com/en-ca/credit-cards/simply-cash/",
+      "outcome": "fetched",
+      "artUrl": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/SimplyCash_Card.png",
+      "artPageUrl": "https://www.americanexpress.com/en-ca/credit-cards/simply-cash/",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/amex-simplycash-534e119f9cca.png",
+      "fallbackUrl": "brand-assets/cards/generated/amex-simplycash-d718206f1171.png",
+      "attempts": [
+        {
+          "url": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/SimplyCash_Card.png",
+          "score": 85,
+          "result": "accepted 960×608 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "amex-simplycash-preferred",
+      "issuer": "American Express",
+      "name": "SimplyCash Preferred",
+      "productUrl": "https://www.americanexpress.com/en-ca/credit-cards/simply-cash-preferred/",
+      "outcome": "fetched",
+      "artUrl": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/SimplyCash_Preferred_Card.png",
+      "artPageUrl": "https://www.americanexpress.com/en-ca/credit-cards/simply-cash-preferred/",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/amex-simplycash-preferred-65cf8acefe0d.png",
+      "fallbackUrl": "brand-assets/cards/generated/amex-simplycash-preferred-c13253b86dec.png",
+      "attempts": [
+        {
+          "url": "https://icm.aexp-static.com/Internet/internationalcardshop/en_ca/images/cards/SimplyCash_Preferred_Card.png",
+          "score": 115,
+          "result": "accepted 960×608 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "bmo-air-miles",
+      "issuer": "BMO",
+      "name": "AIR MILES Mastercard",
+      "productUrl": "https://www.bmo.com/en-ca/main/personal/credit-cards/bmo-blue-rewards-mastercard/",
+      "outcome": "generated",
+      "failure": "product page network_error (The operation was aborted due to timeout)",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/bmo-air-miles-e2c25b8791e8.png",
+      "fallbackUrl": "brand-assets/cards/generated/bmo-air-miles-e2c25b8791e8.png",
+      "attempts": []
+    },
+    {
+      "id": "bmo-air-miles-we",
+      "issuer": "BMO",
+      "name": "AIR MILES World Elite Mastercard",
+      "productUrl": "https://www.bmo.com/en-ca/main/personal/credit-cards/bmo-blue-rewards-world-elite-mastercard/",
+      "outcome": "generated",
+      "failure": "product page network_error (The operation was aborted due to timeout)",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/bmo-air-miles-we-d448f3987cd7.png",
+      "fallbackUrl": "brand-assets/cards/generated/bmo-air-miles-we-d448f3987cd7.png",
+      "attempts": []
+    },
+    {
+      "id": "bmo-ascend-we",
+      "issuer": "BMO",
+      "name": "Ascend World Elite Mastercard",
+      "productUrl": "https://www.bmo.com/en-ca/main/personal/credit-cards/bmo-ascend-world-elite-mastercard/",
+      "outcome": "generated",
+      "failure": "product page network_error (The operation was aborted due to timeout)",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/bmo-ascend-we-5d757836c4c4.png",
+      "fallbackUrl": "brand-assets/cards/generated/bmo-ascend-we-5d757836c4c4.png",
+      "attempts": []
+    },
+    {
+      "id": "bmo-cashback",
+      "issuer": "BMO",
+      "name": "CashBack Mastercard",
+      "productUrl": "https://www.bmo.com/en-ca/main/personal/credit-cards/bmo-cashback-mastercard/",
+      "outcome": "generated",
+      "failure": "product page network_error (The operation was aborted due to timeout)",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/bmo-cashback-69abae250ad4.png",
+      "fallbackUrl": "brand-assets/cards/generated/bmo-cashback-69abae250ad4.png",
+      "attempts": []
+    },
+    {
+      "id": "bmo-cashback-we",
+      "issuer": "BMO",
+      "name": "CashBack World Elite Mastercard",
+      "productUrl": "https://www.bmo.com/en-ca/main/personal/credit-cards/bmo-cashback-world-elite-mastercard/",
+      "outcome": "generated",
+      "failure": "product page network_error (The operation was aborted due to timeout)",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/bmo-cashback-we-114919a8d05d.png",
+      "fallbackUrl": "brand-assets/cards/generated/bmo-cashback-we-114919a8d05d.png",
+      "attempts": []
+    },
+    {
+      "id": "bmo-eclipse-vi",
+      "issuer": "BMO",
+      "name": "eclipse Visa Infinite",
+      "productUrl": "https://www.bmo.com/main/personal/credit-cards/bmo-eclipse-visa-infinite/",
+      "outcome": "generated",
+      "failure": "product page network_error (The operation was aborted due to timeout)",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/bmo-eclipse-vi-a0af262a1632.png",
+      "fallbackUrl": "brand-assets/cards/generated/bmo-eclipse-vi-a0af262a1632.png",
+      "attempts": []
+    },
+    {
+      "id": "bmo-preferred-rate",
+      "issuer": "BMO",
+      "name": "Preferred Rate Mastercard",
+      "productUrl": "https://www.bmo.com/en-ca/main/personal/credit-cards/preferred-rate-mastercard/",
+      "outcome": "generated",
+      "failure": "product page network_error (The operation was aborted due to timeout)",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/bmo-preferred-rate-8e3f660251a9.png",
+      "fallbackUrl": "brand-assets/cards/generated/bmo-preferred-rate-8e3f660251a9.png",
+      "attempts": []
+    },
+    {
+      "id": "triangle-mastercard",
+      "issuer": "Canadian Tire",
+      "name": "Triangle Mastercard",
+      "productUrl": "https://triangle.canadiantire.ca/en/credit-cards/triangle-mastercard.html",
+      "outcome": "generated",
+      "failure": "product page network_error (The operation was aborted due to timeout)",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/triangle-mastercard-4c6a2bcca050.png",
+      "fallbackUrl": "brand-assets/cards/generated/triangle-mastercard-4c6a2bcca050.png",
+      "attempts": []
+    },
+    {
+      "id": "triangle-we",
+      "issuer": "Canadian Tire",
+      "name": "Triangle World Elite Mastercard",
+      "productUrl": "https://triangle.canadiantire.ca/en/credit-cards/triangle-world-elite-mastercard.html",
+      "outcome": "generated",
+      "failure": "product page network_error (The operation was aborted due to timeout)",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/triangle-we-e7c5dceaa0e6.png",
+      "fallbackUrl": "brand-assets/cards/generated/triangle-we-e7c5dceaa0e6.png",
+      "attempts": []
+    },
+    {
+      "id": "cibc-aeroplan-visa",
+      "issuer": "CIBC",
+      "name": "Aeroplan Visa",
+      "productUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/aeroplan-visa-card.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/aeroplan-cards/cibc-aeroplan-visa-card/cibc-aeroplan-platinum-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+      "artPageUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/aeroplan-visa-card.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/cibc-aeroplan-visa-aeebc1f3f4bc.png",
+      "fallbackUrl": "brand-assets/cards/generated/cibc-aeroplan-visa-01db9ea73bc5.png",
+      "attempts": [
+        {
+          "url": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/aeroplan-cards/cibc-aeroplan-visa-card/cibc-aeroplan-platinum-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+          "score": 20,
+          "result": "accepted 972×613 — chosen"
+        },
+        {
+          "url": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/aeroplan-cards/cibc-aeroplan-visa-infinite-card/cibc-aeroplan-infinite-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+          "score": 20,
+          "result": "accepted 972×613"
+        }
+      ]
+    },
+    {
+      "id": "cibc-aeroplan-vi",
+      "issuer": "CIBC",
+      "name": "Aeroplan Visa Infinite",
+      "productUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/aeroplan-visa-infinite-card.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/aeroplan-cards/cibc-aeroplan-visa-infinite-card/cibc-aeroplan-infinite-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+      "artPageUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/aeroplan-visa-infinite-card.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/cibc-aeroplan-vi-eb3e1a857515.png",
+      "fallbackUrl": "brand-assets/cards/generated/cibc-aeroplan-vi-d424a3c7f1ee.png",
+      "attempts": [
+        {
+          "url": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/aeroplan-cards/cibc-aeroplan-visa-infinite-card/cibc-aeroplan-infinite-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+          "score": 110,
+          "result": "accepted 972×613 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "cibc-aventura-gold",
+      "issuer": "CIBC",
+      "name": "Aventura Gold Visa",
+      "productUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/aventura-gold-visa-card.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/aventura-cards/cibc-aventura-gold-visa-card/cibc-visa-aventura-gold-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+      "artPageUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/aventura-visa-infinite-card.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/cibc-aventura-gold-50c9192f36ef.png",
+      "fallbackUrl": "brand-assets/cards/generated/cibc-aventura-gold-445092a89573.png",
+      "attempts": [
+        {
+          "url": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/aventura-cards/cibc-aventura-gold-visa-card/cibc-visa-aventura-gold-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+          "score": 130,
+          "result": "accepted 972×613 — chosen"
+        },
+        {
+          "url": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/aventura-cards/cibc-aventura-gold-visa-card/cibc-visa-aventura-gold-fr.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+          "score": 127,
+          "result": "accepted 972×613"
+        },
+        {
+          "url": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/aventura-cards/cibc-us-dollar-aventura-gold-visa-card/cibc-visa-aventura-us-dollar-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+          "score": 124,
+          "result": "accepted 972×613"
+        }
+      ]
+    },
+    {
+      "id": "cibc-aventura-vi",
+      "issuer": "CIBC",
+      "name": "Aventura Visa Infinite",
+      "productUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/aventura-visa-infinite-card.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/aventura-cards/cibc-aventura-visa-infinite-card/cibc-visa-aventura-infinite-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+      "artPageUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/aventura-visa-infinite-card.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/cibc-aventura-vi-8a7f1eb0b44a.png",
+      "fallbackUrl": "brand-assets/cards/generated/cibc-aventura-vi-cadf57cab898.png",
+      "attempts": [
+        {
+          "url": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/aventura-cards/cibc-aventura-visa-infinite-card/cibc-visa-aventura-infinite-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+          "score": 110,
+          "result": "accepted 972×613 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "cibc-aventura-vip",
+      "issuer": "CIBC",
+      "name": "Aventura Visa Infinite Privilege",
+      "productUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/aventura-visa-infinite-privilege-card.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/aventura-cards/cibc-aventura-visa-infinite-privilege-card/cibc-visa-aventura-infinite-privilege-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+      "artPageUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/aventura-visa-infinite-privilege-card.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/cibc-aventura-vip-43e24a9a36ec.png",
+      "fallbackUrl": "brand-assets/cards/generated/cibc-aventura-vip-c736753830d4.png",
+      "attempts": [
+        {
+          "url": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/aventura-cards/cibc-aventura-visa-infinite-privilege-card/cibc-visa-aventura-infinite-privilege-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+          "score": 140,
+          "result": "accepted 972×613 — chosen"
+        },
+        {
+          "url": "https://www.cibc.com/content/dam/cibc-public-assets/personal-banking/credit-cards/all-credit-cards/aventura-visa-infinite-privilege/images/visa-infinite-privilege-card-callout.jpg/_jcr_content/renditions/cq5dam.web.1280.1280.jpeg",
+          "score": 112,
+          "result": "rejected: aspect 1.40:1 is not card-shaped (1180×844)"
+        }
+      ]
+    },
+    {
+      "id": "cibc-costco-mc",
+      "issuer": "CIBC",
+      "name": "Costco Mastercard",
+      "productUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/costco-card/cibc-mastercard-costco.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+      "artPageUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/cibc-costco-mc-dbb83bbe846a.png",
+      "fallbackUrl": "brand-assets/cards/generated/cibc-costco-mc-7af03e179460.png",
+      "attempts": [
+        {
+          "url": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/costco-card/cibc-mastercard-costco.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+          "score": 100,
+          "result": "accepted 972×613 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "cibc-dividend",
+      "issuer": "CIBC",
+      "name": "Dividend Visa",
+      "productUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/dividend-visa-card.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/dividend-cards/cibc-dividend-visa-card/cibc-dividend-visa-card-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+      "artPageUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/dividend-visa-infinite-card.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/cibc-dividend-49baa8b69a9c.png",
+      "fallbackUrl": "brand-assets/cards/generated/cibc-dividend-4d4aa24fdd89.png",
+      "attempts": [
+        {
+          "url": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/dividend-cards/cibc-dividend-visa-card/cibc-dividend-visa-card-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+          "score": 100,
+          "result": "accepted 972×613 — chosen"
+        },
+        {
+          "url": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/dividend-cards/cibc-dividend-visa-card-for-students/cibc-dividend-visa-card-for-students-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+          "score": 94,
+          "result": "accepted 972×613"
+        }
+      ]
+    },
+    {
+      "id": "cibc-dividend-vi",
+      "issuer": "CIBC",
+      "name": "Dividend Visa Infinite",
+      "productUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/dividend-visa-infinite-card.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/dividend-cards/cibc-dividend-visa-infinite-card/cibc-dividend-visa-infinite-card-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+      "artPageUrl": "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/dividend-visa-infinite-card.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/cibc-dividend-vi-4cbdd1703259.png",
+      "fallbackUrl": "brand-assets/cards/generated/cibc-dividend-vi-431c9504167a.png",
+      "attempts": [
+        {
+          "url": "https://www.cibc.com/content/dam/global-assets/card-art/credit-cards/dividend-cards/cibc-dividend-visa-infinite-card/cibc-dividend-visa-infinite-card-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+          "score": 110,
+          "result": "accepted 972×613 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "cibc-dividend-vip",
+      "issuer": "CIBC",
+      "name": "Dividend Visa Infinite Privilege",
+      "productUrl": null,
+      "outcome": "generated",
+      "failure": "no official product page mapped",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/cibc-dividend-vip-cea7f2a95c21.png",
+      "fallbackUrl": "brand-assets/cards/generated/cibc-dividend-vip-cea7f2a95c21.png",
+      "attempts": []
+    },
+    {
+      "id": "desjardins-bonus",
+      "issuer": "Desjardins",
+      "name": "Bonus Dollars Mastercard",
+      "productUrl": null,
+      "outcome": "generated",
+      "failure": "no official product page mapped",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/desjardins-bonus-1db590025a25.png",
+      "fallbackUrl": "brand-assets/cards/generated/desjardins-bonus-1db590025a25.png",
+      "attempts": []
+    },
+    {
+      "id": "desjardins-odyssey-gold",
+      "issuer": "Desjardins",
+      "name": "Odyssey Gold Mastercard",
+      "productUrl": "https://www.desjardins.com/en/credit-cards/odyssey-gold-visa.html",
+      "outcome": "generated",
+      "failure": "no candidate image was card-shaped",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/desjardins-odyssey-gold-136f64dea6a8.png",
+      "fallbackUrl": "brand-assets/cards/generated/desjardins-odyssey-gold-136f64dea6a8.png",
+      "attempts": [
+        {
+          "url": "https://www.desjardins.com/en/credit-cards/odyssey-gold-visa.thumb.630.1200.png",
+          "score": 47,
+          "result": "rejected: aspect 1.00:1 is not card-shaped (200×200)"
+        }
+      ]
+    },
+    {
+      "id": "desjardins-odyssey-we",
+      "issuer": "Desjardins",
+      "name": "Odyssey World Elite Mastercard",
+      "productUrl": "https://www.desjardins.com/en/credit-cards/odyssey-world-elite-mastercard.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.desjardins.com/content/dam/images/photos/particuliers/cartes-credit/odyssee-world-elite-mastercard-en.png",
+      "artPageUrl": "https://www.desjardins.com/en/credit-cards/odyssey-world-elite-mastercard.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/desjardins-odyssey-we-de48b175c5c7.png",
+      "fallbackUrl": "brand-assets/cards/generated/desjardins-odyssey-we-43c46a864c51.png",
+      "attempts": [
+        {
+          "url": "https://www.desjardins.com/en/credit-cards/odyssey-world-elite-mastercard.thumb.630.1200.png",
+          "score": 52,
+          "result": "rejected: aspect 1.00:1 is not card-shaped (200×200)"
+        },
+        {
+          "url": "https://www.desjardins.com/content/dam/images/photos/particuliers/cartes-credit/odyssee-world-elite-mastercard-en.png",
+          "score": 32,
+          "result": "accepted 1024×576 (trimmed) — chosen"
+        }
+      ]
+    },
+    {
+      "id": "hsbc-westjet-we",
+      "issuer": "HSBC",
+      "name": "World Elite WestJet Mastercard",
+      "productUrl": null,
+      "outcome": "generated",
+      "failure": "no official product page mapped",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/hsbc-westjet-we-0e630733a716.png",
+      "fallbackUrl": "brand-assets/cards/generated/hsbc-westjet-we-0e630733a716.png",
+      "attempts": []
+    },
+    {
+      "id": "mbna-rewards-we",
+      "issuer": "MBNA",
+      "name": "Rewards World Elite Mastercard",
+      "productUrl": "https://www.mbna.ca/en/credit-cards/rewards/mbna-rewards-world-elite-mastercard",
+      "outcome": "fetched",
+      "artUrl": "https://www.mbna.ca/content/dam/mbna/images/credit-cards/tdmb-0006-creditcard-rewards-world-elite-en.png",
+      "artPageUrl": "https://www.mbna.ca/en/credit-cards/rewards/mbna-rewards-world-elite-mastercard",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/mbna-rewards-we-c7375ed1868e.png",
+      "fallbackUrl": "brand-assets/cards/generated/mbna-rewards-we-75bd84cb9082.png",
+      "attempts": [
+        {
+          "url": "https://www.mbna.ca/content/dam/mbna/images/credit-cards/tdmb-0006-creditcard-rewards-world-elite-en.png",
+          "score": 89,
+          "result": "accepted 500×316 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "mbna-smart-cash",
+      "issuer": "MBNA",
+      "name": "Smart Cash World Elite Mastercard",
+      "productUrl": "https://www.mbna.ca/en/credit-cards/cash-back/smart-cash-mastercard",
+      "outcome": "fetched",
+      "artUrl": "https://www.mbna.ca/content/dam/mbna/images/credit-cards/smart-cash-en.png",
+      "artPageUrl": "https://www.mbna.ca/en/credit-cards/cash-back/smart-cash-mastercard",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/mbna-smart-cash-b34b7f4bbd7b.png",
+      "fallbackUrl": "brand-assets/cards/generated/mbna-smart-cash-b64ca0d4e5ce.png",
+      "attempts": [
+        {
+          "url": "https://www.mbna.ca/content/dam/mbna/images/credit-cards/smart-cash-en.png",
+          "score": 40,
+          "result": "accepted 500×316 — chosen"
+        },
+        {
+          "url": "https://www.mbna.ca/content/dam/mbna/images/credit-cards/image-block-smart-cash-no-fee-en.jpeg",
+          "score": 31,
+          "result": "rejected: aspect 1.47:1 is not card-shaped (750×510)"
+        },
+        {
+          "url": "https://www.mbna.ca/en/credit-cards/cash-back/smart-cash-mastercard/_jcr_content/root/container/responsivegrid/container_158727384_/container/bannerimage.coreimg.jpeg/1635233297597/image-block-smart-cash-no-fee-en.jpeg",
+          "score": 31,
+          "result": "rejected: aspect 1.47:1 is not card-shaped (750×510)"
+        }
+      ]
+    },
+    {
+      "id": "nbc-allure",
+      "issuer": "National Bank",
+      "name": "Allure World Elite Mastercard",
+      "productUrl": "https://www.nbc.ca/personal/mastercard-credit-cards/allure.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.nbc.ca/content/dam/bnc/particuliers/catalogue/cartes-credit/allure-card-300x190.png",
+      "artPageUrl": "https://www.nbc.ca/personal/mastercard-credit-cards/allure.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/nbc-allure-78a20245d87f.png",
+      "fallbackUrl": "brand-assets/cards/generated/nbc-allure-85df4ec74ff0.png",
+      "attempts": [
+        {
+          "url": "https://www.nbc.ca/content/dam/bnc/particuliers/catalogue/cartes-credit/allure-card-300x190.png",
+          "score": 35,
+          "result": "accepted 600×378 — chosen"
+        },
+        {
+          "url": "https://www.nbc.ca/personal/mastercard-credit-cards/allure/_jcr_content/root/landmarks/responsivegrid/landmarks_1819559587/container_1992956147/responsivegrid_34556/responsivegrid_copy/image.coreimg.png/1707332554894/allure-card-300x190.png",
+          "score": 35,
+          "result": "accepted 600×378"
+        }
+      ]
+    },
+    {
+      "id": "nbc-world-elite",
+      "issuer": "National Bank",
+      "name": "World Elite Mastercard",
+      "productUrl": "https://www.nbc.ca/personal/mastercard-credit-cards/world-elite.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.nbc.ca/content/dam/bnc/particuliers/catalogue/cartes-credit/world-elite-card-300x190.png",
+      "artPageUrl": "https://www.nbc.ca/personal/mastercard-credit-cards/world-elite.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/nbc-world-elite-6eb8d62d5386.png",
+      "fallbackUrl": "brand-assets/cards/generated/nbc-world-elite-1036805c2f1f.png",
+      "attempts": [
+        {
+          "url": "https://www.nbc.ca/content/dam/bnc/particuliers/catalogue/cartes-credit/world-elite-card-300x190.png",
+          "score": 35,
+          "result": "accepted 600×378 — chosen"
+        },
+        {
+          "url": "https://www.nbc.ca/personal/mastercard-credit-cards/world-elite/_jcr_content/root/landmarks/responsivegrid/landmarks_683016834/responsivegrid_12564/responsivegrid_copy_/responsivegrid_74545/responsivegrid/responsivegrid_1219401158/responsivegrid_11000/image_copy.coreimg.png/1782226532316/world-elite-card-300x190.png",
+          "score": 35,
+          "result": "accepted 600×378"
+        },
+        {
+          "url": "https://www.nbc.ca/personal/mastercard-credit-cards/world-elite/_jcr_content/root/landmarks/responsivegrid/landmarks_683016834/container_1938913385/responsivegrid_34556/responsivegrid_copy/image.coreimg.png/1689621316881/world-elite-card-300x190.png",
+          "score": 35,
+          "result": "accepted 600×378"
+        }
+      ]
+    },
+    {
+      "id": "neo-mastercard",
+      "issuer": "Neo",
+      "name": "Mastercard",
+      "productUrl": "https://www.neofinancial.com/credit-cards/neo-mastercard",
+      "outcome": "fetched",
+      "artUrl": "https://www.neofinancial.com/_next/image?url=https%3A%2F%2Fn9typqfrnexj4eg9.public.blob.vercel-storage.com%2Fmastercard-card-desktop-bzEQcr4e7iOalw20iaDr74XEORrkwg.webp&w=1920&q=75",
+      "artPageUrl": "https://www.neofinancial.com/credit-cards/neo-mastercard",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/neo-mastercard-5d24d3b4b89d.png",
+      "fallbackUrl": "brand-assets/cards/generated/neo-mastercard-5a9c1daf38df.png",
+      "attempts": [
+        {
+          "url": "https://www.neofinancial.com/_next/image?url=https%3A%2F%2Fn9typqfrnexj4eg9.public.blob.vercel-storage.com%2Fmastercard-card-desktop-bzEQcr4e7iOalw20iaDr74XEORrkwg.webp&w=1920&q=75",
+          "score": 109,
+          "result": "accepted 610×960 (trimmed) (rotated) — chosen"
+        },
+        {
+          "url": "https://www.neofinancial.com/_next/image?url=https%3A%2F%2Fn9typqfrnexj4eg9.public.blob.vercel-storage.com%2Fmastercard-card-desktop-bzEQcr4e7iOalw20iaDr74XEORrkwg.webp",
+          "score": 109,
+          "result": "http_error 400"
+        }
+      ]
+    },
+    {
+      "id": "neo-world-elite",
+      "issuer": "Neo",
+      "name": "World Elite Mastercard",
+      "productUrl": "https://www.neofinancial.com/credit-cards/neo-world-elite-mastercard",
+      "outcome": "fetched",
+      "artUrl": "https://www.neofinancial.com/_next/image?url=https%3A%2F%2Fn9typqfrnexj4eg9.public.blob.vercel-storage.com%2Fworld-elite-card-desktop-77h1cbcOhiHWHW0eEfx4Lg7l059k9P.webp&w=1920&q=75",
+      "artPageUrl": "https://www.neofinancial.com/credit-cards/neo-world-elite-mastercard",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/neo-world-elite-a87e756c36aa.png",
+      "fallbackUrl": "brand-assets/cards/generated/neo-world-elite-8078e7d72af6.png",
+      "attempts": [
+        {
+          "url": "https://www.neofinancial.com/_next/image?url=https%3A%2F%2Fn9typqfrnexj4eg9.public.blob.vercel-storage.com%2Fworld-elite-card-desktop-77h1cbcOhiHWHW0eEfx4Lg7l059k9P.webp&w=1920&q=75",
+          "score": 29,
+          "result": "accepted 610×960 (trimmed) (rotated) — chosen"
+        },
+        {
+          "url": "https://www.neofinancial.com/_next/image?url=https%3A%2F%2Fn9typqfrnexj4eg9.public.blob.vercel-storage.com%2Fworld-elite-card-desktop-77h1cbcOhiHWHW0eEfx4Lg7l059k9P.webp",
+          "score": 29,
+          "result": "http_error 400"
+        }
+      ]
+    },
+    {
+      "id": "pc-financial",
+      "issuer": "PC Financial",
+      "name": "PC Mastercard",
+      "productUrl": "https://www.pcfinancial.ca/en/credit-cards/pc-silver-mastercard/",
+      "outcome": "generated",
+      "failure": "no card-art candidate in the page HTML",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/pc-financial-dfebeae3390b.png",
+      "fallbackUrl": "brand-assets/cards/generated/pc-financial-dfebeae3390b.png",
+      "attempts": []
+    },
+    {
+      "id": "pc-financial-we",
+      "issuer": "PC Financial",
+      "name": "PC Mastercard World Elite",
+      "productUrl": "https://www.pcfinancial.ca/en/credit-cards/world-elite/",
+      "outcome": "generated",
+      "failure": "no card-art candidate in the page HTML",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/pc-financial-we-eca169c0ed29.png",
+      "fallbackUrl": "brand-assets/cards/generated/pc-financial-we-eca169c0ed29.png",
+      "attempts": []
+    },
+    {
+      "id": "pc-financial-world",
+      "issuer": "PC Financial",
+      "name": "PC World Mastercard",
+      "productUrl": "https://www.pcfinancial.ca/en/credit-cards/world-mastercard/",
+      "outcome": "generated",
+      "failure": "no card-art candidate in the page HTML",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/pc-financial-world-4b705c9ff056.png",
+      "fallbackUrl": "brand-assets/cards/generated/pc-financial-world-4b705c9ff056.png",
+      "attempts": []
+    },
+    {
+      "id": "rbc-avion-gold",
+      "issuer": "RBC",
+      "name": "Avion Gold Visa",
+      "productUrl": null,
+      "outcome": "generated",
+      "failure": "no official product page mapped",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/rbc-avion-gold-a673f70a01e4.png",
+      "fallbackUrl": "brand-assets/cards/generated/rbc-avion-gold-a673f70a01e4.png",
+      "attempts": []
+    },
+    {
+      "id": "rbc-avion-vi",
+      "issuer": "RBC",
+      "name": "Avion Visa Infinite",
+      "productUrl": "https://www.rbcroyalbank.com/credit-cards/travel/rbc-avion-visa-infinite.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.rbcroyalbank.com/credit-cards/canada/travel/images/rbc-avion-visa-infinite.webp",
+      "artPageUrl": "https://www.rbcroyalbank.com/credit-cards/travel/rbc-avion-visa-infinite.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/rbc-avion-vi-a8042fd4e7c7.png",
+      "fallbackUrl": "brand-assets/cards/generated/rbc-avion-vi-ab8e9b8849b0.png",
+      "attempts": [
+        {
+          "url": "https://www.rbcroyalbank.com/credit-cards/canada/travel/images/rbc-avion-visa-infinite.webp",
+          "score": 70,
+          "result": "accepted 556×350 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "rbc-avion-vip",
+      "issuer": "RBC",
+      "name": "Avion Visa Infinite Privilege",
+      "productUrl": "https://www.rbcroyalbank.com/credit-cards/travel/rbc-avion-visa-infinite-privilege.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.rbcroyalbank.com/credit-cards/canada/travel/images/rbc-avion-visa-infinite-privilege.webp",
+      "artPageUrl": "https://www.rbcroyalbank.com/credit-cards/travel/rbc-avion-visa-infinite-privilege.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/rbc-avion-vip-e6c8477375c3.png",
+      "fallbackUrl": "brand-assets/cards/generated/rbc-avion-vip-0ebf220d14a1.png",
+      "attempts": [
+        {
+          "url": "https://www.rbcroyalbank.com/credit-cards/canada/travel/images/rbc-avion-visa-infinite-privilege.webp",
+          "score": 100,
+          "result": "accepted 556×350 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "rbc-cashback",
+      "issuer": "RBC",
+      "name": "Cash Back Mastercard",
+      "productUrl": "https://www.rbcroyalbank.com/credit-cards/cash-back/rbc-cashback-mastercard.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.rbcroyalbank.com/credit-cards/canada/cash-back/images/rbc-cash-back-mastercard.webp",
+      "artPageUrl": "https://www.rbcroyalbank.com/credit-cards/cash-back/rbc-cashback-mastercard.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/rbc-cashback-58647ac56024.png",
+      "fallbackUrl": "brand-assets/cards/generated/rbc-cashback-6e9c1d3a5347.png",
+      "attempts": [
+        {
+          "url": "https://www.rbcroyalbank.com/credit-cards/canada/cash-back/images/rbc-cash-back-mastercard.webp",
+          "score": 115,
+          "result": "accepted 556×350 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "rbc-cashback-preferred",
+      "issuer": "RBC",
+      "name": "Cash Back Preferred World Elite Mastercard",
+      "productUrl": "https://www.rbcroyalbank.com/credit-cards/cash-back/rbc-preferred-world-elite-mastercard.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.rbcroyalbank.com/credit-cards/canada/cash-back/images/rbc-cash-back-preferred-world-elite-mastercard.webp",
+      "artPageUrl": "https://www.rbcroyalbank.com/credit-cards/cash-back/rbc-preferred-world-elite-mastercard.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/rbc-cashback-preferred-b98448e4447d.png",
+      "fallbackUrl": "brand-assets/cards/generated/rbc-cashback-preferred-b38c55575dd6.png",
+      "attempts": [
+        {
+          "url": "https://www.rbcroyalbank.com/credit-cards/canada/cash-back/images/rbc-cash-back-preferred-world-elite-mastercard.webp",
+          "score": 165,
+          "result": "accepted 556×350 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "rbc-ion",
+      "issuer": "RBC",
+      "name": "Ion",
+      "productUrl": "https://www.rbcroyalbank.com/credit-cards/rewards/rbc-ion-visa.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.rbcroyalbank.com/credit-cards/canada/rewards/images/rbc-ion-visa.webp",
+      "artPageUrl": "https://www.rbcroyalbank.com/credit-cards/rewards/rbc-ion-visa.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/rbc-ion-c2bc52c03774.png",
+      "fallbackUrl": "brand-assets/cards/generated/rbc-ion-a50b94781d6e.png",
+      "attempts": [
+        {
+          "url": "https://www.rbcroyalbank.com/credit-cards/canada/rewards/images/rbc-ion-visa.webp",
+          "score": 60,
+          "result": "accepted 500×315 — chosen"
+        },
+        {
+          "url": "https://www.rbcroyalbank.com/credit-cards/canada/rewards/images/rbc-ion-plus-visa.webp",
+          "score": 60,
+          "result": "accepted 500×315"
+        }
+      ]
+    },
+    {
+      "id": "rbc-iono",
+      "issuer": "RBC",
+      "name": "Ion+",
+      "productUrl": "https://www.rbcroyalbank.com/credit-cards/rewards/rbc-ion-plus-visa.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.rbcroyalbank.com/credit-cards/canada/rewards/images/rbc-ion-plus-visa.webp",
+      "artPageUrl": "https://www.rbcroyalbank.com/credit-cards/rewards/rbc-ion-plus-visa.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/rbc-iono-9e98191b5eaa.png",
+      "fallbackUrl": "brand-assets/cards/generated/rbc-iono-f89e3a61ff19.png",
+      "attempts": [
+        {
+          "url": "https://www.rbcroyalbank.com/credit-cards/canada/rewards/images/rbc-ion-plus-visa.webp",
+          "score": 60,
+          "result": "accepted 500×315 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "rbc-moi-visa",
+      "issuer": "RBC",
+      "name": "moi RBC Visa",
+      "productUrl": "https://www.rbcroyalbank.com/credit-cards/rewards/moi-rbc-visa.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.rbcroyalbank.com/credit-cards/canada/rewards/images/moi-rbc-visa.webp",
+      "artPageUrl": "https://www.rbcroyalbank.com/credit-cards/rewards/moi-rbc-visa.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/rbc-moi-visa-f93c4f48effb.png",
+      "fallbackUrl": "brand-assets/cards/generated/rbc-moi-visa-5d3056a2dcd5.png",
+      "attempts": [
+        {
+          "url": "https://www.rbcroyalbank.com/credit-cards/canada/rewards/images/moi-rbc-visa.webp",
+          "score": 60,
+          "result": "accepted 580×364 (trimmed) — chosen"
+        }
+      ]
+    },
+    {
+      "id": "rbc-westjet-we",
+      "issuer": "RBC",
+      "name": "WestJet World Elite Mastercard",
+      "productUrl": "https://www.rbcroyalbank.com/credit-cards/travel/westjet-rbc-world-elite-mastercard.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.rbcroyalbank.com/credit-cards/canada/travel/images/westjet-rbc-world-elite-mastercard.webp",
+      "artPageUrl": "https://www.rbcroyalbank.com/credit-cards/travel/westjet-rbc-world-elite-mastercard.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/rbc-westjet-we-867affe4337f.png",
+      "fallbackUrl": "brand-assets/cards/generated/rbc-westjet-we-3e6789be7ca2.png",
+      "attempts": [
+        {
+          "url": "https://www.rbcroyalbank.com/credit-cards/canada/travel/images/westjet-rbc-world-elite-mastercard.webp",
+          "score": 80,
+          "result": "accepted 1700×1072 — chosen"
+        },
+        {
+          "url": "https://www.rbcroyalbank.com/credit-cards/transformer/img/cards/westjet-plane.png",
+          "score": 67,
+          "result": "rejected: aspect 1.94:1 is not card-shaped (271×140)"
+        }
+      ]
+    },
+    {
+      "id": "rogers-red-we",
+      "issuer": "Rogers",
+      "name": "Red World Elite Mastercard",
+      "productUrl": "https://www.rogersbank.com/en/rogers_red_worldelite_mastercard_details/",
+      "outcome": "generated",
+      "failure": "card art is only on a non-issuer host (images.ctfassets.net)",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/rogers-red-we-4b6b4e00d1dc.png",
+      "fallbackUrl": "brand-assets/cards/generated/rogers-red-we-4b6b4e00d1dc.png",
+      "attempts": []
+    },
+    {
+      "id": "scotia-gold-amex",
+      "issuer": "Scotiabank",
+      "name": "Gold American Express",
+      "productUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards/american-express/gold-card.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.scotiabank.com/content/sc_scotiabank/ca/en/personal/credit-cards/american-express/platinum-card/_jcr_content/root/container/main/container/carddeck_copy_copy_c/teaser-64e296aeae5b.coreimg.png/1784321544854/amex-gold-card-en.png",
+      "artPageUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards/american-express/platinum-card.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/scotia-gold-amex-dea5ca2d880e.png",
+      "fallbackUrl": "brand-assets/cards/generated/scotia-gold-amex-599aa7eb1137.png",
+      "attempts": [
+        {
+          "url": "https://www.scotiabank.com/content/sc_scotiabank/ca/en/personal/credit-cards/american-express/platinum-card/_jcr_content/root/container/main/container/carddeck_copy_copy_c/teaser-64e296aeae5b.coreimg.png/1784321544854/amex-gold-card-en.png",
+          "score": 85,
+          "result": "accepted 400×252 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "scotia-momentum",
+      "issuer": "Scotiabank",
+      "name": "Momentum Visa",
+      "productUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards/visa/momentum-cash-back-card.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.scotiabank.com/content/sc_scotiabank/ca/en/personal/credit-cards/visa/momentum-infinite-card/_jcr_content/root/container/main/container/carddeck_copy_copy_c/teaser-64e296aeae5b.coreimg.png/1784321541514/regular-momentum-regular-visa-hex-e.png",
+      "artPageUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards/visa/momentum-infinite-card.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/scotia-momentum-14a95113e679.png",
+      "fallbackUrl": "brand-assets/cards/generated/scotia-momentum-7c821a86d994.png",
+      "attempts": [
+        {
+          "url": "https://www.scotiabank.com/content/sc_scotiabank/ca/en/personal/credit-cards/visa/momentum-infinite-card/_jcr_content/root/container/main/container/carddeck_copy_copy_c/teaser-64e296aeae5b.coreimg.png/1784321541514/regular-momentum-regular-visa-hex-e.png",
+          "score": 48,
+          "result": "accepted 320×203 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "scotia-momentum-vi",
+      "issuer": "Scotiabank",
+      "name": "Momentum Visa Infinite",
+      "productUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards/visa/momentum-infinite-card.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.scotiabank.com/content/sc_scotiabank/ca/en/personal/credit-cards/visa/momentum-cash-back-card/_jcr_content/root/container/main/container/carddeck_copy_copy_c/teaser-64e296aeae5b.coreimg.png/1784321533852/momentum-infinite-plus-card-en.png",
+      "artPageUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards/visa/momentum-cash-back-card.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/scotia-momentum-vi-c6b47bf271de.png",
+      "fallbackUrl": "brand-assets/cards/generated/scotia-momentum-vi-b740ee2299b4.png",
+      "attempts": [
+        {
+          "url": "https://www.scotiabank.com/content/sc_scotiabank/ca/en/personal/credit-cards/visa/momentum-cash-back-card/_jcr_content/root/container/main/container/carddeck_copy_copy_c/teaser-64e296aeae5b.coreimg.png/1784321533852/momentum-infinite-plus-card-en.png",
+          "score": 85,
+          "result": "accepted 1011×636 (trimmed) — chosen"
+        }
+      ]
+    },
+    {
+      "id": "scotia-passport-vi",
+      "issuer": "Scotiabank",
+      "name": "Passport Visa Infinite",
+      "productUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards/visa/passport-infinite-card.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.scotiabank.com/content/sc_scotiabank/ca/en/personal/credit-cards/visa/scene-card/_jcr_content/root/container/main/container/carddeck_copy_copy_c/teaser-64e296aeae5b.coreimg.png/1784321538602/pvi-plus-card-en.png",
+      "artPageUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards/visa/scene-card.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/scotia-passport-vi-22e2425aa3d1.png",
+      "fallbackUrl": "brand-assets/cards/generated/scotia-passport-vi-2bf929d7f883.png",
+      "attempts": [
+        {
+          "url": "https://www.scotiabank.com/content/sc_scotiabank/ca/en/personal/credit-cards/visa/scene-card/_jcr_content/root/container/main/container/carddeck_copy_copy_c/teaser-64e296aeae5b.coreimg.png/1784321538602/pvi-plus-card-en.png",
+          "score": 52,
+          "result": "accepted 1011×636 (trimmed) — chosen"
+        },
+        {
+          "url": "https://www.scotiabank.com/content/sc_scotiabank/ca/en/personal/credit-cards/visa/passport-infinite-card/_jcr_content/root/container/main/container_heroBanner/teaser.coreimg.png/1786037511266/passport-visa-infinite--1600x900-en.png",
+          "score": 30,
+          "result": "rejected: aspect 1.78:1 is not card-shaped (1280×721)"
+        }
+      ]
+    },
+    {
+      "id": "scotia-platinum-amex",
+      "issuer": "Scotiabank",
+      "name": "Platinum American Express",
+      "productUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards/american-express/platinum-card.html",
+      "outcome": "generated",
+      "failure": "no candidate image was card-shaped",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/scotia-platinum-amex-df44fbb91d57.png",
+      "fallbackUrl": "brand-assets/cards/generated/scotia-platinum-amex-df44fbb91d57.png",
+      "attempts": [
+        {
+          "url": "https://www.scotiabank.com/2f%20content/2f%20dam/2fscotia-project-checkout/2f%20canada/2fimages/2f%20credit-cards/2f%20featured-benefits/2f%20Amex_Platinum_card_Highlights_No_FX.jpg",
+          "score": 33,
+          "result": "http_error 404"
+        },
+        {
+          "url": "https://www.scotiabank.com/2f%20content/2f%20dam/2fscotia-project-checkout/2f%20canada/2fimages/2f%20credit-cards/2f%20featured-benefits/2f%20Amex_Platinum_Card_Highlights_Airport_Lounge.jpg",
+          "score": 33,
+          "result": "http_error 404"
+        },
+        {
+          "url": "https://www.scotiabank.com/content/sc_scotiabank/ca/en/personal/credit-cards/american-express/platinum-card/_jcr_content/root/container/main/container_heroBanner/teaser.coreimg.jpeg/1784321548669/platinum-american-express-catch-all-1600x900-e.jpeg",
+          "score": 21,
+          "result": "rejected: aspect 1.78:1 is not card-shaped (1280×720)"
+        }
+      ]
+    },
+    {
+      "id": "scotia-scene-visa",
+      "issuer": "Scotiabank",
+      "name": "Scene+ Visa",
+      "productUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards/visa/scene-card.html",
+      "outcome": "fetched",
+      "artUrl": "https://www.scotiabank.com/content/sc_scotiabank/ca/en/personal/credit-cards/visa/passport-infinite-card/_jcr_content/root/container/main/container/carddeck_copy_copy_c/teaser-64e296aeae5b.coreimg.png/1784321529851/sceneplusvisa-noname-en-2x.png",
+      "artPageUrl": "https://www.scotiabank.com/ca/en/personal/credit-cards/visa/passport-infinite-card.html",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/scotia-scene-visa-c0f97cb55dfb.png",
+      "fallbackUrl": "brand-assets/cards/generated/scotia-scene-visa-d8ba02691bbd.png",
+      "attempts": [
+        {
+          "url": "https://www.scotiabank.com/content/sc_scotiabank/ca/en/personal/credit-cards/visa/passport-infinite-card/_jcr_content/root/container/main/container/carddeck_copy_copy_c/teaser-64e296aeae5b.coreimg.png/1784321529851/sceneplusvisa-noname-en-2x.png",
+          "score": 51,
+          "result": "accepted 935×590 — chosen"
+        }
+      ]
+    },
+    {
+      "id": "scotia-scene-vi",
+      "issuer": "Scotiabank",
+      "name": "Scene+ Visa Infinite",
+      "productUrl": null,
+      "outcome": "generated",
+      "failure": "no official product page mapped",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/scotia-scene-vi-25e4850d0bd8.png",
+      "fallbackUrl": "brand-assets/cards/generated/scotia-scene-vi-25e4850d0bd8.png",
+      "attempts": []
+    },
+    {
+      "id": "simplii-cashback",
+      "issuer": "Simplii",
+      "name": "Cash Back Visa",
+      "productUrl": "https://www.simplii.com/en/credit-cards/cash-back-visa.html",
+      "outcome": "generated",
+      "failure": "no candidate image was card-shaped",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/simplii-cashback-f31864e0499e.png",
+      "fallbackUrl": "brand-assets/cards/generated/simplii-cashback-f31864e0499e.png",
+      "attempts": [
+        {
+          "url": "https://www.simplii.com/content/dam/simplii-assets/global/card-art/credit-card/cash-back-visa/simplii-credit-card-cashback-visa-static-front-tilted-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+          "score": 91,
+          "result": "rejected: aspect 1.78:1 is not card-shaped (1280×720)"
+        },
+        {
+          "url": "https://www.simplii.com/content/dam/simplii-assets/global/card-art/credit-card/cash-back-visa/simplii-credit-card-two-cashback-visa-static-front-tilted-en.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+          "score": 88,
+          "result": "rejected: aspect 1.40:1 is not card-shaped (1207×862)"
+        }
+      ]
+    },
+    {
+      "id": "tangerine-moneyback",
+      "issuer": "Tangerine",
+      "name": "Money-Back Mastercard",
+      "productUrl": "https://www.tangerine.ca/en/personal/spend/credit-cards/money-back-credit-card",
+      "outcome": "generated",
+      "failure": "no candidate image was card-shaped",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/tangerine-moneyback-d701b6d34b8d.png",
+      "fallbackUrl": "brand-assets/cards/generated/tangerine-moneyback-d701b6d34b8d.png",
+      "attempts": [
+        {
+          "url": "https://www.tangerine.ca/adobe/dynamicmedia/deliver/dm-aid--18ff11c3-32f2-402b-b325-f21ea2d67187/credit-card-money-back-card-592x648-en.jpg?quality=100&preferwebp=true",
+          "score": 75,
+          "result": "rejected: aspect 1.00:1 is not card-shaped (1600×1600)"
+        },
+        {
+          "url": "https://www.tangerine.ca/adobe/dynamicmedia/deliver/dm-aid--18ff11c3-32f2-402b-b325-f21ea2d67187/credit-card-money-back-card-592x648-en.jpg?quality=100&preferwebp=true&width=320",
+          "score": 75,
+          "result": "rejected: aspect 1.00:1 is not card-shaped (320×320)"
+        },
+        {
+          "url": "https://www.tangerine.ca/adobe/dynamicmedia/deliver/dm-aid--18ff11c3-32f2-402b-b325-f21ea2d67187/credit-card-money-back-card-592x648-en.jpg?quality=100&amp;preferwebp=true&amp;width=320",
+          "score": 75,
+          "result": "rejected: aspect 1.00:1 is not card-shaped (1600×1600)"
+        },
+        {
+          "url": "https://www.tangerine.ca/adobe/dynamicmedia/deliver/dm-aid--18ff11c3-32f2-402b-b325-f21ea2d67187/credit-card-money-back-card-592x648-en.jpg?quality=100&amp;preferwebp=true&amp;width=480",
+          "score": 75,
+          "result": "rejected: aspect 1.00:1 is not card-shaped (1600×1600)"
+        },
+        {
+          "url": "https://www.tangerine.ca/adobe/dynamicmedia/deliver/dm-aid--18ff11c3-32f2-402b-b325-f21ea2d67187/credit-card-money-back-card-592x648-en.jpg?quality=100&amp;preferwebp=true&amp;width=600",
+          "score": 75,
+          "result": "rejected: aspect 1.00:1 is not card-shaped (1600×1600)"
+        },
+        {
+          "url": "https://www.tangerine.ca/adobe/dynamicmedia/deliver/dm-aid--18ff11c3-32f2-402b-b325-f21ea2d67187/credit-card-money-back-card-592x648-en.jpg?quality=100&amp;preferwebp=true&amp;width=800",
+          "score": 75,
+          "result": "rejected: aspect 1.00:1 is not card-shaped (1600×1600)"
+        },
+        {
+          "url": "https://www.tangerine.ca/adobe/dynamicmedia/deliver/dm-aid--18ff11c3-32f2-402b-b325-f21ea2d67187/credit-card-money-back-card-592x648-en.jpg?quality=100&amp;preferwebp=true&amp;width=1024",
+          "score": 75,
+          "result": "rejected: aspect 1.00:1 is not card-shaped (1600×1600)"
+        },
+        {
+          "url": "https://www.tangerine.ca/adobe/dynamicmedia/deliver/dm-aid--18ff11c3-32f2-402b-b325-f21ea2d67187/credit-card-money-back-card-592x648-en.jpg?quality=100&amp;preferwebp=true&amp;width=1200",
+          "score": 75,
+          "result": "rejected: aspect 1.00:1 is not card-shaped (1600×1600)"
+        },
+        {
+          "url": "https://www.tangerine.ca/adobe/dynamicmedia/deliver/dm-aid--18ff11c3-32f2-402b-b325-f21ea2d67187/credit-card-money-back-card-592x648-en.jpg?quality=100&amp;preferwebp=true&amp;width=1280",
+          "score": 75,
+          "result": "rejected: aspect 1.00:1 is not card-shaped (1600×1600)"
+        }
+      ]
+    },
+    {
+      "id": "td-aeroplan-visa",
+      "issuer": "TD",
+      "name": "Aeroplan Visa",
+      "productUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards/aeroplan/aeroplan-visa-platinum-card",
+      "outcome": "generated",
+      "failure": "no card-art candidate in the page HTML",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/td-aeroplan-visa-3396dfe67ea6.png",
+      "fallbackUrl": "brand-assets/cards/generated/td-aeroplan-visa-3396dfe67ea6.png",
+      "attempts": []
+    },
+    {
+      "id": "td-aeroplan-vi",
+      "issuer": "TD",
+      "name": "Aeroplan Visa Infinite",
+      "productUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards/aeroplan/aeroplan-visa-infinite-card",
+      "outcome": "fetched",
+      "artUrl": "https://www.td.com/content/dam/tdct/images/personal-banking/aeroplan-infinite-visa-card-fr-comp39-en.jpeg",
+      "artPageUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards/aeroplan/aeroplan-visa-infinite-card",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/td-aeroplan-vi-295fe36b3289.png",
+      "fallbackUrl": "brand-assets/cards/generated/td-aeroplan-vi-73a0bc0b3ea7.png",
+      "attempts": [
+        {
+          "url": "https://www.td.com/content/dam/tdct/images/personal-banking/aeroplan-infinite-visa-card-fr-comp39-en.jpeg",
+          "score": 69,
+          "result": "accepted 255×160 (trimmed) — chosen"
+        }
+      ]
+    },
+    {
+      "id": "td-aeroplan-vip",
+      "issuer": "TD",
+      "name": "Aeroplan Visa Infinite Privilege",
+      "productUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards/aeroplan/aeroplan-visa-infinite-privilege-card",
+      "outcome": "generated",
+      "failure": "no candidate image was card-shaped",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/td-aeroplan-vip-b72afc833fd1.png",
+      "fallbackUrl": "brand-assets/cards/generated/td-aeroplan-vip-b72afc833fd1.png",
+      "attempts": [
+        {
+          "url": "https://www.td.com/content/dam/tdct/images/personal-banking/aeroplan-privilege-750x510.jpeg",
+          "score": 50,
+          "result": "rejected: aspect 1.47:1 is not card-shaped (750×510)"
+        },
+        {
+          "url": "https://www.td.com/ca/en/personal-banking/products/credit-cards/aeroplan/aeroplan-visa-infinite-privilege-card/_jcr_content/root/container/responsivegrid/container_307418962_/container/bannerimage.coreimg.jpeg/1707771641796/aeroplan-privilege-750x510.jpeg",
+          "score": 50,
+          "result": "rejected: aspect 1.47:1 is not card-shaped (750×510)"
+        }
+      ]
+    },
+    {
+      "id": "td-cash-back-visa",
+      "issuer": "TD",
+      "name": "Cash Back Visa",
+      "productUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards/cash-back/cash-back-visa-card",
+      "outcome": "fetched",
+      "artUrl": "https://www.td.com/content/dam/tdct/images/personal-banking/cash-back-entry-en.jpeg",
+      "artPageUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards/cash-back/cash-back-visa-card",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/td-cash-back-visa-6d649b5ca1fb.png",
+      "fallbackUrl": "brand-assets/cards/generated/td-cash-back-visa-7bd3a0c15ca4.png",
+      "attempts": [
+        {
+          "url": "https://www.td.com/content/dam/tdct/images/personal-banking/cash-back-entry-en.jpeg",
+          "score": 77,
+          "result": "accepted 548×344 (trimmed) — chosen"
+        }
+      ]
+    },
+    {
+      "id": "td-cash-back-vi",
+      "issuer": "TD",
+      "name": "Cash Back Visa Infinite",
+      "productUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards/cash-back/cash-back-visa-infinite-card",
+      "outcome": "fetched",
+      "artUrl": "https://www.td.com/content/dam/tdct/images/personal-banking/cash-back-infinite-visa-card-large-1-en.jpeg",
+      "artPageUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards/cash-back/cash-back-visa-infinite-card",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/td-cash-back-vi-355d5b45fa78.png",
+      "fallbackUrl": "brand-assets/cards/generated/td-cash-back-vi-b3788dcfe420.png",
+      "attempts": [
+        {
+          "url": "https://www.td.com/content/dam/tdct/images/personal-banking/cash-back-infinite-visa-card-large-1-en.jpeg",
+          "score": 102,
+          "result": "accepted 548×344 (trimmed) — chosen"
+        }
+      ]
+    },
+    {
+      "id": "td-first-class-travel",
+      "issuer": "TD",
+      "name": "First Class Travel Visa Infinite",
+      "productUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards/travel-rewards/first-class-travel-visa-infinite-card",
+      "outcome": "fetched",
+      "artUrl": "https://www.td.com/content/dam/tdct/images/personal-banking/first-class-travel-en-comp27.jpeg",
+      "artPageUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards/travel-rewards/first-class-travel-visa-infinite-card",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/td-first-class-travel-c37f2fe82032.png",
+      "fallbackUrl": "brand-assets/cards/generated/td-first-class-travel-361fd3720ceb.png",
+      "attempts": [
+        {
+          "url": "https://www.td.com/content/dam/tdct/images/personal-banking/first-class-travel-en-comp27.jpeg",
+          "score": 87,
+          "result": "accepted 548×344 — chosen"
+        },
+        {
+          "url": "https://www.td.com/content/dam/tdct/images/personal-banking/first-class-travel-750x510.jpg",
+          "score": 60,
+          "result": "rejected: aspect 1.47:1 is not card-shaped (750×510)"
+        },
+        {
+          "url": "https://www.td.com/ca/en/personal-banking/products/credit-cards/travel-rewards/first-class-travel-visa-infinite-card/_jcr_content/root/container/responsivegrid/container_307418962/container/bannerimage.coreimg.jpeg/1707760914079/first-class-travel-750x510.jpeg",
+          "score": 60,
+          "result": "rejected: aspect 1.47:1 is not card-shaped (750×510)"
+        }
+      ]
+    },
+    {
+      "id": "td-rewards-visa",
+      "issuer": "TD",
+      "name": "Rewards Visa",
+      "productUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards/travel-rewards/rewards-visa-card",
+      "outcome": "fetched",
+      "artUrl": "https://www.td.com/content/dam/tdct/images/personal-banking/browse-all/RewardsTravel_VISA_MKT_RGB_L_EN_548x344.jpg",
+      "artPageUrl": "https://www.td.com/ca/en/personal-banking/products/credit-cards/travel-rewards/rewards-visa-card",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/td-rewards-visa-22fe945c3998.png",
+      "fallbackUrl": "brand-assets/cards/generated/td-rewards-visa-e01bb68bebf0.png",
+      "attempts": [
+        {
+          "url": "https://www.td.com/content/dam/tdct/images/personal-banking/browse-all/RewardsTravel_VISA_MKT_RGB_L_EN_548x344.jpg",
+          "score": 28,
+          "result": "accepted 548×344 (trimmed) — chosen"
+        },
+        {
+          "url": "https://www.td.com/content/dam/tdct/images/personal-banking/td-rewards-750x510.jpeg",
+          "score": 20,
+          "result": "rejected: aspect 1.47:1 is not card-shaped (750×510)"
+        },
+        {
+          "url": "https://www.td.com/ca/en/personal-banking/products/credit-cards/travel-rewards/rewards-visa-card/_jcr_content/root/container/responsivegrid/container_307418962_/container/bannerimage.coreimg.jpeg/1707762862769/td-rewards-750x510.jpeg",
+          "score": 20,
+          "result": "rejected: aspect 1.47:1 is not card-shaped (750×510)"
+        }
+      ]
+    },
+    {
+      "id": "td-rewards-visa-infinite",
+      "issuer": "TD",
+      "name": "Rewards Visa Infinite",
+      "productUrl": null,
+      "outcome": "generated",
+      "failure": "no official product page mapped",
+      "changed": false,
+      "imageUrl": "brand-assets/cards/generated/td-rewards-visa-infinite-c2fef76ad27d.png",
+      "fallbackUrl": "brand-assets/cards/generated/td-rewards-visa-infinite-c2fef76ad27d.png",
+      "attempts": []
+    }
+  ]
+}

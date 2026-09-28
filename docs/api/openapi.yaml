@@ -42,8 +42,12 @@ info:
     Cards expose `imageUrl` / `imageAlt`; merchant brands and loyalty programs
     expose `logoUrl` / `logoAlt` (also nested in partnerships and
     recommendations as `LogoSummary`). URLs point at the public Supabase
-    Storage bucket `brand-assets` and are **null until a rights-cleared asset
-    is uploaded** — which is the default for every row. When a URL is null,
+    Storage bucket `brand-assets`. Only images whose rights status is
+    `licensed`, `issuer_provided` or `generated` are returned (`unknown` too
+    when the server runs with `NORTHTAP_SERVE_UNLICENSED_ASSETS=true`, dev
+    only). Cards fall back to a generated neutral card render when their art is
+    withheld, so in the Supabase catalog every card normally has an `imageUrl`.
+    When a URL is null (static catalog, brands / programs without a logo),
     clients MUST render a neutral placeholder: a card-shaped tile for cards and
     an initial-letter tile for brands / programs. See `docs/data/ASSETS.md`.
 
@@ -964,10 +968,13 @@ components:
       format: uri
       readOnly: true
       description: >
-        Public image URL in the `brand-assets` Storage bucket. Null until a
-        rights-cleared (licensed / issuer-provided) asset is uploaded; clients
-        then render a neutral placeholder (card shape or initial-letter tile).
-        Set only by the `assets:upload` admin script.
+        Public image URL in the `brand-assets` Storage bucket, or null.
+        Returned only for rights `licensed`, `issuer_provided` or `generated`
+        (plus `unknown` when NORTHTAP_SERVE_UNLICENSED_ASSETS=true); a card
+        whose art is withheld gets its generated neutral render instead. On
+        null, clients render a neutral placeholder (card shape or
+        initial-letter tile). Set by the `assets:upload` and
+        `assets:fetch-card-art` admin scripts.
 
     AssetAlt:
       type: [string, "null"]

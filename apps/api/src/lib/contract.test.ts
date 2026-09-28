@@ -257,6 +257,9 @@ describe("contract: static catalog (assets null)", () => {
 const ASSET_BASE = "https://proj.supabase.co/storage/v1/object/public/brand-assets";
 const COBALT_URL = `${ASSET_BASE}/cards/amex-cobalt-0123456789ab.webp`;
 const SCENE_VI_URL = `${ASSET_BASE}/cards/scotia-scene-vi-0123456789ab.webp`;
+const TANGERINE_URL = `${ASSET_BASE}/cards/tangerine-moneyback-0123456789ab.png`;
+const TANGERINE_FALLBACK = `${ASSET_BASE}/cards/generated/tangerine-moneyback-0123456789ab.png`;
+const NEO_FALLBACK = `${ASSET_BASE}/cards/generated/neo-mastercard-0123456789ab.png`;
 const SHELL_URL = `${ASSET_BASE}/merchant-brands/shell-0123456789ab.png`;
 const SCENE_URL = `${ASSET_BASE}/loyalty-programs/scene-plus-0123456789ab.png`;
 
@@ -309,13 +312,22 @@ function seedTables(): void {
       : c.id === "scotia-scene-vi"
         ? cleared("image", SCENE_VI_URL, "Scotiabank Scene+ Visa Infinite card", "issuer_provided")
         : c.id === "tangerine-moneyback"
-          // Blocked by the DB check constraint; proves the API gate independently.
+          // Issuer product-page art (dev only): withheld unless the serve flag is on.
           ? assetCols("image", {
-              image_url: `${ASSET_BASE}/cards/tangerine.png`,
+              image_url: TANGERINE_URL,
               image_alt: "Tangerine card",
+              image_source_url: "https://www.tangerine.ca/en/products/spending/creditcard/money-back",
               image_rights_status: "unknown",
+              image_fallback_url: TANGERINE_FALLBACK,
             })
-          : assetCols("image")),
+          : c.id === "neo-mastercard"
+            ? assetCols("image", {
+                image_url: NEO_FALLBACK,
+                image_alt: "Neo Mastercard card (illustration)",
+                image_rights_status: "generated",
+                image_fallback_url: NEO_FALLBACK,
+              })
+            : assetCols("image")),
   }));
   tables.merchant_brands = MERCHANT_BRANDS.map((b) => ({
     id: b.id,
@@ -382,7 +394,8 @@ describe("contract: supabase catalog (assets populated)", () => {
       imageUrl: COBALT_URL,
       imageAlt: "American Express Cobalt card",
     });
-    expect(byId.get("tangerine-moneyback")).toMatchObject({ imageUrl: null });
+    expect(byId.get("tangerine-moneyback")).toMatchObject({ imageUrl: TANGERINE_FALLBACK });
+    expect(byId.get("neo-mastercard")).toMatchObject({ imageUrl: NEO_FALLBACK });
     expect(byId.get("rbc-avion-vi") ?? byId.get("td-aeroplan-vi")).toMatchObject({
       imageUrl: null,
       imageAlt: null,
@@ -391,6 +404,20 @@ describe("contract: supabase catalog (assets populated)", () => {
     const one = await ok(await getCard(get("/v1/cards/amex-cobalt"), params("amex-cobalt")));
     expectSchema("CreditCard", one);
     expect(one.imageUrl).toBe(COBALT_URL);
+  });
+
+  it("serves unknown-rights art only with NORTHTAP_SERVE_UNLICENSED_ASSETS=true", async () => {
+    process.env.NORTHTAP_SERVE_UNLICENSED_ASSETS = "true";
+    try {
+      const list = await ok<{ data: Row[] }>(await getCards(get("/v1/cards?limit=200")));
+      expectSchema("CardListResponse", list);
+      const byId = new Map(list.data.map((c) => [c.id, c]));
+      expect(byId.get("tangerine-moneyback")).toMatchObject({ imageUrl: TANGERINE_URL });
+      expect(byId.get("neo-mastercard")).toMatchObject({ imageUrl: NEO_FALLBACK });
+      expect(byId.get("amex-cobalt")).toMatchObject({ imageUrl: COBALT_URL });
+    } finally {
+      delete process.env.NORTHTAP_SERVE_UNLICENSED_ASSETS;
+    }
   });
 
   it("brand and program endpoints serve logos", async () => {

@@ -114,7 +114,15 @@ describe("supabase migrations", () => {
 
     for (const bad of [
       `${prefix}_url = '${url}'`,
-      `${prefix}_url = '${url}', ${prefix}_rights_status = 'unknown', ${prefix}_alt = 'a', ${prefix}_source_url = 'https://s'`,
+      ...(table === "cards"
+        ? [
+            `${prefix}_url = '${url}', ${prefix}_rights_status = 'unknown', ${prefix}_alt = 'a'`,
+            `${prefix}_url = '${url}', ${prefix}_rights_status = 'generated', ${prefix}_alt = ' '`,
+          ]
+        : [
+            `${prefix}_url = '${url}', ${prefix}_rights_status = 'unknown', ${prefix}_alt = 'a', ${prefix}_source_url = 'https://s'`,
+            `${prefix}_url = '${url}', ${prefix}_rights_status = 'generated', ${prefix}_alt = 'a'`,
+          ]),
       `${prefix}_url = '${url}', ${prefix}_rights_status = 'licensed', ${prefix}_source_url = 'https://s'`,
       `${prefix}_url = '${url}', ${prefix}_rights_status = 'licensed', ${prefix}_alt = '  ', ${prefix}_source_url = 'https://s'`,
       `${prefix}_url = '${url}', ${prefix}_rights_status = 'licensed', ${prefix}_alt = 'a'`,
@@ -137,6 +145,39 @@ describe("supabase migrations", () => {
            ${prefix}_rights_status = 'placeholder'
        where id = $1`,
       [id],
+    );
+  });
+
+  it("lets cards store dev issuer art as 'unknown' and generated renders as 'generated'", async () => {
+    const url = "https://example.supabase.co/storage/v1/object/public/brand-assets/cards/x.png";
+    const fallback = "https://example.supabase.co/storage/v1/object/public/brand-assets/cards/generated/x.png";
+    await db.query(
+      `update public.cards
+       set image_url = $1, image_alt = 'Issuer X card', image_source_url = 'https://issuer.example/x',
+           image_rights_status = 'unknown', image_fallback_url = $2
+       where id = 'amex-cobalt'`,
+      [url, fallback],
+    );
+    await db.query(
+      `update public.cards
+       set image_url = $1, image_alt = 'Issuer Y card (illustration)', image_source_url = null,
+           image_rights_status = 'generated', image_fallback_url = $1
+       where id = 'amex-gold'`,
+      [fallback],
+    );
+    const { rows } = await db.query<{ id: string; image_rights_status: string }>(
+      `select id, image_rights_status from public.cards
+       where id in ('amex-cobalt', 'amex-gold') order by id`,
+    );
+    expect(rows).toEqual([
+      { id: "amex-cobalt", image_rights_status: "unknown" },
+      { id: "amex-gold", image_rights_status: "generated" },
+    ]);
+    await db.query(
+      `update public.cards
+       set image_url = null, image_alt = null, image_source_url = null,
+           image_rights_status = 'placeholder', image_fallback_url = null
+       where id in ('amex-cobalt', 'amex-gold')`,
     );
   });
 

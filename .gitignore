@@ -46,6 +46,8 @@ lerna-debug.log*
 # Temp
 .temp
 .tmp
+# Card-art fetcher download cache (issuer images; never commit)
+apps/api/.cache
 .DS_Store
 
 # IDE
@@ -66,3 +68,6 @@ apps/mobile/playwright-report
 apps/mobile/blob-report
 apps/mobile/playwright/.cache
 .vercel
+
+# Ad-hoc card-art runs (--only / --dry-run); latest.* is the committed report
+apps/api/src/assets/card-art/reports/partial.*
