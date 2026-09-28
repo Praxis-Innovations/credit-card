@@ -13,7 +13,9 @@
     "pipeline:source-health": "tsx src/data-pipeline/run-source-health.ts",
     "pipeline:promote": "tsx src/data-pipeline/promote.ts",
     "assets:upload": "tsx src/assets/cli.ts upload",
-    "assets:clear": "tsx src/assets/cli.ts clear"
+    "assets:clear": "tsx src/assets/cli.ts clear",
+    "assets:fetch-card-art": "tsx src/assets/fetch-card-art.ts",
+    "assets:contact-sheet": "tsx src/assets/contact-sheet.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
@@ -30,6 +32,7 @@
     "ajv-formats": "^3.0.1",
     "cheerio": "^1.2.0",
     "robots-parser": "^3.0.1",
+    "sharp": "^0.35.5",
     "tsx": "^4.23.15",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4",
