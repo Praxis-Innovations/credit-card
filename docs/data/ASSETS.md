@@ -2,11 +2,29 @@
 
 The app design shows a card-art thumbnail on every card, a logo for each store,
 and a small logo for each rewards program. The schema, API and admin tooling for
-these exist, but **every asset currently ships empty** (`*_url = null`,
-`*_rights_status = 'placeholder'`). How to get real images is an open decision for
-the project owner; the options are below.
+these exist. **Cards show a generated illustration** (our own neutral render,
+rights `generated`); **store and program logos ship empty** (`*_url = null`,
+`*_rights_status = 'placeholder'`). Real card art comes later, through the
+routes in the decision below.
 
-## Rights: why the images are empty
+## Decisions, 2026-09-27 (project owner)
+
+- **No scraping.** Card art is not fetched from issuer websites, not even for
+  development or testing. The "do not scrape" rule below applies everywhere.
+- **Generated illustrations for now.** Every card shows a neutral
+  illustration we generate ourselves (see "Generated card illustrations"
+  below), stored with rights `generated`. No real card images for now.
+- **Real card art later** will come only from sources that grant use:
+  - issuer press kits / media centres, where the terms cover use in the app;
+  - affiliate programs that supply approved card art to participants, such as
+    **Fintel Connect** (RBC, Scotiabank, Tangerine) and **CJ** (American
+    Express Canada).
+
+  Each image is uploaded with `assets:upload` as `licensed` or
+  `issuer_provided`, with its source recorded. It then replaces the
+  illustration for that card, and the generator leaves it alone.
+
+## Rights: why there is no real art
 
 Issuer card art and store / program logos are trademarks and copyrighted
 images. We do not own them, and a public catalog API redistributes whatever we
@@ -33,18 +51,22 @@ store. So:
 | Value | Meaning | Served by the API? |
 | --- | --- | --- |
 | `placeholder` | No asset. Default for every row. | No (URL is null) |
-| `unknown` | Provenance not established. | No |
+| `unknown` | Provenance not established. | No, never |
 | `licensed` | We hold a licence / partner agreement covering display. | Yes |
 | `issuer_provided` | Supplied by the issuer or brand for this use (press kit, partner portal, written permission). | Yes |
+| `generated` | Our own neutral card illustration (cards only). No issuer art. | Yes |
 
 Guardrails:
 
 - A database check constraint only allows a non-null URL when the rights status
   is `licensed` or `issuer_provided` **and** alt text and a source URL are set.
-- The API only returns a URL for those two statuses, even if one is stored.
+  For `cards` it also allows `generated` with alt text (no source URL: we made
+  it). Logos can't be `generated`.
+- The API only returns a URL for `licensed`, `issuer_provided` and `generated`,
+  even if one is stored. There is no switch that serves `unknown`.
 - Files live in the public Storage bucket `brand-assets` (reads are public,
   writes are service-role only). PNG, JPEG or WebP only, 1 MiB max. SVG is
-  refused because it can carry script.
+  refused because it can carry script, so illustrations are rasterised to PNG.
 
 ## API surface
 
@@ -59,6 +81,36 @@ Guardrails:
 
 The static-catalog mode (`NORTHTAP_CATALOG_SOURCE=static`) has no assets and
 always returns nulls.
+
+## Generated card illustrations
+
+```bash
+# Needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.
+pnpm --filter api assets:generate-card-art             # all cards
+pnpm --filter api assets:generate-card-art --only amex-cobalt,td-aeroplan-vi
+pnpm --filter api assets:generate-card-art --dry-run   # print planned changes only
+pnpm --filter api assets:contact-sheet ./cards.jpg     # grid of all illustrations (local, no Supabase)
+```
+
+Each illustration is a card-shaped render (ID-1 ratio, rounded corners):
+
+- one muted tone per issuer from a fixed palette that avoids each issuer's own
+  brand colour;
+- the issuer, card name and network as plain text, a simple chip, and an
+  "Illustration" label;
+- no logos, network marks or card number, so it can't pass for a real card.
+
+For each card, the generator:
+
+- renders the illustration, rasterises it to a 640 px PNG, and uploads it to
+  `cards/generated/<id>-<hash>.png`;
+- sets `image_url`, `image_alt` = `<issuer> <card name> card (illustration)`,
+  `image_source_url` = null and `image_rights_status` = `generated`.
+
+Cards with `licensed` or `issuer_provided` art are never touched. Re-running is
+idempotent: the render is deterministic, object paths are content-hashed, and a
+row is only written when its image fields would change. If a row pointed at an
+older object, that object is deleted once replaced.
 
 ## Client fallback when a URL is null
 
@@ -98,10 +150,12 @@ bytes, stores it under a content-hashed path (`cards/<id>-<hash>.webp`) so CDN
 caches never serve a stale image, sets the URL and metadata on the row, and
 deletes the object it replaced.
 
-## Sourcing options (not decided)
+## Sourcing options
 
-These are options for the project owner to weigh. Each has different terms, and
-legal review is advisable before relying on any of them.
+For card art the owner has chosen press kits and affiliate programs (see the
+decisions above). The full list of options, which still applies to store and
+program logos, is below. Each has different terms, and legal review is
+advisable before relying on any of them.
 
 1. **Issuer and brand press kits / media centres.** Many banks, retailers and
    loyalty programs publish logos and product images for media use. The terms
@@ -109,8 +163,10 @@ legal review is advisable before relying on any of them.
    Read the terms for each asset.
 2. **Partner or affiliate programs.** Card-comparison affiliate and partner
    programs often supply approved card art and logos to participants, under
-   the program agreement. This usually brings disclosure and placement
-   obligations, and may affect how recommendations have to be presented.
+   the program agreement (e.g. Fintel Connect for RBC, Scotiabank and
+   Tangerine; CJ for American Express Canada). This usually brings disclosure
+   and placement obligations, and may affect how recommendations have to be
+   presented.
 3. **Direct written permission.** Ask the issuer, merchant or program for
    permission to display their card art or logo in the app. Keep the
    correspondence and link or reference it in `*_source_url`.
@@ -119,8 +175,9 @@ legal review is advisable before relying on any of them.
    clear space and minimum size, and nothing that implies endorsement or
    partnership. Guidelines describe how to use a logo; they are not a licence by
    themselves.
-5. **Stay with placeholders.** The app works without any images. Neutral
-   placeholders have no rights exposure and can be kept for some or all rows.
+5. **Stay with placeholders / generated illustrations.** The app works without
+   any third-party images. Neutral placeholders and our generated card
+   illustrations have no rights exposure and can be kept for some or all rows.
 
 Whichever route is chosen, record the basis per asset: `*_rights_status`,
 `*_source_url` and the uploader in `*_updated_by`.
