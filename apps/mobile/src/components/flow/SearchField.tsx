@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { colors, fonts, TOUCH } from "../../lib/theme";
 import { SearchIcon } from "./Icons";
+import { pressState } from "./press-state";
 
 interface SearchFieldProps {
   value: string;
@@ -15,13 +17,16 @@ export function SearchField({
   placeholder,
   accessibilityLabel,
 }: SearchFieldProps) {
+  const [focused, setFocused] = useState(false);
   return (
-    <View style={styles.field}>
+    <View style={[styles.field, focused && styles.fieldFocused]}>
       <SearchIcon />
       <TextInput
         style={styles.input}
         value={value}
         onChangeText={onChangeText}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         placeholder={placeholder}
         placeholderTextColor={colors.textMuted}
         accessibilityLabel={accessibilityLabel}
@@ -37,7 +42,11 @@ export function SearchField({
           accessibilityLabel="Clear search"
           style={styles.clear}
         >
-          <Text style={styles.clearText}>×</Text>
+          {(state) => (
+            <Text style={[styles.clearText, pressState(state).hovered && styles.clearHover]}>
+              ×
+            </Text>
+          )}
         </Pressable>
       ) : null}
     </View>
@@ -57,8 +66,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderInput,
   },
+  fieldFocused: {
+    borderColor: colors.primary,
+  },
   input: {
     flex: 1,
+    minWidth: 0,
     height: "100%",
     fontFamily: fonts.body,
     fontSize: 16,
@@ -74,5 +87,8 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 24,
     color: colors.textMuted,
+  },
+  clearHover: {
+    color: colors.text,
   },
 });

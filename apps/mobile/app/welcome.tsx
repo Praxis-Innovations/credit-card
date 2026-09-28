@@ -4,14 +4,16 @@ import { NorthTapLogo } from "../src/components/brand/NorthTapLogo";
 import { PrimaryButton } from "../src/components/flow/Buttons";
 import { ContactlessIcon } from "../src/components/flow/Icons";
 import { Screen } from "../src/components/flow/Screen";
-import { colors, fonts, PHONE_COLUMN } from "../src/lib/theme";
+import { useLayout } from "../src/lib/responsive";
+import { colors, fonts } from "../src/lib/theme";
 
 const ART_WIDTH = 342;
 const ART_HEIGHT = 230;
 
 function CardStack() {
   const { width } = useWindowDimensions();
-  const available = Math.min(width, PHONE_COLUMN) - 48;
+  const { columnMaxWidth } = useLayout();
+  const available = Math.min(width, columnMaxWidth ?? width) - 48;
   const scale = Math.min(1, available / ART_WIDTH);
   return (
     <View
@@ -45,12 +47,15 @@ function CardStack() {
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { desktop } = useLayout();
   return (
     <Screen
       header={
-        <View style={styles.header}>
-          <NorthTapLogo size={20} accessibilityRole="image" />
-        </View>
+        desktop ? undefined : (
+          <View style={styles.header}>
+            <NorthTapLogo size={20} accessibilityRole="image" />
+          </View>
+        )
       }
       footer={
         <View style={styles.footer}>

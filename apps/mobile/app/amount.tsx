@@ -2,6 +2,7 @@ import { Redirect, useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ErrorNote, LinkButton, PrimaryButton } from "../src/components/flow/Buttons";
+import { pressState } from "../src/components/flow/press-state";
 import { Screen } from "../src/components/flow/Screen";
 import { StepHeader } from "../src/components/flow/StepHeader";
 import { StoreSummary } from "../src/components/flow/StoreSummary";
@@ -18,6 +19,7 @@ export default function AmountScreen() {
   const { store, amount, setAmount } = useFlow();
   const [text, setText] = useState(amount.toFixed(2));
   const [error, setError] = useState<string | null>(null);
+  const [inputFocused, setInputFocused] = useState(false);
 
   if (!store) return <Redirect href="/store" />;
 
@@ -87,12 +89,14 @@ export default function AmountScreen() {
               inputMode="decimal"
               keyboardType="decimal-pad"
               selectTextOnFocus
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
               accessibilityLabel="Amount in dollars"
               style={styles.input}
             />
           </View>
         </View>
-        <View style={styles.rule} />
+        <View style={[styles.rule, inputFocused && styles.ruleFocused]} />
 
         <View style={styles.quick} role="group" aria-label="Quick amounts">
           {QUICK_AMOUNTS.map((value) => {
@@ -108,7 +112,11 @@ export default function AmountScreen() {
                 accessibilityLabel={`$${value}`}
                 accessibilityState={{ selected: on }}
                 aria-pressed={on}
-                style={[styles.quickChip, on && styles.quickChipOn]}
+                style={(state) => [
+                  styles.quickChip,
+                  pressState(state).hovered && !on && styles.quickChipHover,
+                  on && styles.quickChipOn,
+                ]}
               >
                 <Text style={[styles.quickText, on && styles.quickTextOn]}>${value}</Text>
               </Pressable>
@@ -167,6 +175,9 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.borderStrong,
   },
+  ruleFocused: {
+    backgroundColor: colors.primary,
+  },
   quick: {
     marginTop: 20,
     flexDirection: "row",
@@ -181,6 +192,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     alignItems: "center",
     justifyContent: "center",
+  },
+  quickChipHover: {
+    borderColor: colors.primary,
   },
   quickChipOn: {
     backgroundColor: colors.primary,

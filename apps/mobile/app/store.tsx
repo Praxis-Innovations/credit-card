@@ -1,11 +1,12 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { LinkButton, PrimaryButton } from "../src/components/flow/Buttons";
 import { PinIcon } from "../src/components/flow/Icons";
 import { Screen } from "../src/components/flow/Screen";
 import { SearchField } from "../src/components/flow/SearchField";
 import { StepHeader } from "../src/components/flow/StepHeader";
+import { pressState } from "../src/components/flow/press-state";
 import { StoreTile, TileGrid } from "../src/components/flow/StoreTile";
 import { fetchCategories } from "../src/lib/api-client";
 import {
@@ -25,6 +26,7 @@ import {
   type NearbyStore,
   type StoreChoice,
 } from "../src/lib/stores";
+import { useLayout } from "../src/lib/responsive";
 import { colors, fonts, TOUCH } from "../src/lib/theme";
 import { useFlow } from "../src/state/flow";
 
@@ -68,7 +70,11 @@ function Tabs({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
             accessibilityRole="tab"
             accessibilityState={{ selected }}
             aria-selected={selected}
-            style={[styles.tab, selected && styles.tabOn]}
+            style={(state) => [
+              styles.tab,
+              pressState(state).hovered && !selected && styles.tabHover,
+              selected && styles.tabOn,
+            ]}
           >
             <Text style={[styles.tabText, selected && styles.tabTextOn]}>
               {id === "nearby" ? "Nearby" : "Browse"}
@@ -77,6 +83,28 @@ function Tabs({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
         );
       })}
     </View>
+  );
+}
+
+/** Category chips: one scrolling row on phones, wrapped rows on wider screens. */
+function ChipRow({ wrap, children }: { wrap: boolean; children: ReactNode }) {
+  if (wrap) {
+    return (
+      <View style={[styles.chips, styles.chipsWrap]} role="group" aria-label="Categories">
+        {children}
+      </View>
+    );
+  }
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.chips}
+      role="group"
+      aria-label="Categories"
+    >
+      {children}
+    </ScrollView>
   );
 }
 
@@ -92,6 +120,7 @@ export default function StoreScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ tab?: string }>();
   const { brands, loadBrands, location, setLocation, setStore } = useFlow();
+  const layout = useLayout();
   const categories = useCategories();
   const [tab, setTab] = useState<Tab>(params.tab === "browse" ? "browse" : "nearby");
   const [query, setQuery] = useState("");
@@ -301,13 +330,7 @@ export default function StoreScreen() {
             <Notice>Location is off, so pick your store here.</Notice>
           </View>
         ) : null}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chips}
-          role="group"
-          aria-label="Categories"
-        >
+        <ChipRow wrap={layout.wide}>
           {categories.map((c) => {
             const on = c.id === category;
             return (
@@ -317,13 +340,17 @@ export default function StoreScreen() {
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
                 aria-pressed={on}
-                style={[styles.chip, on && styles.chipOn]}
+                style={(state) => [
+                  styles.chip,
+                  pressState(state).hovered && !on && styles.chipHover,
+                  on && styles.chipOn,
+                ]}
               >
                 <Text style={[styles.chipText, on && styles.chipTextOn]}>{c.label}</Text>
               </Pressable>
             );
           })}
-        </ScrollView>
+        </ChipRow>
         {brands.status === "loading" ? (
           <View style={styles.stateBox}>
             <ActivityIndicator color={colors.primary} />
@@ -471,6 +498,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  tabHover: {
+    backgroundColor: colors.tintStrong,
+  },
   tabOn: {
     backgroundColor: colors.card,
     shadowColor: "#141816",
@@ -522,6 +552,13 @@ const styles = StyleSheet.create({
   chips: {
     paddingHorizontal: 20,
     gap: 8,
+  },
+  chipsWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  chipHover: {
+    borderColor: colors.primary,
   },
   chip: {
     minHeight: TOUCH,

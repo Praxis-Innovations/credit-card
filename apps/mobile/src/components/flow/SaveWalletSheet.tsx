@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -11,9 +12,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { signInWithGoogle } from "../../lib/auth";
+import { useLayout } from "../../lib/responsive";
+import { useDialogFocus } from "../../lib/use-dialog-focus";
 import { colors, fonts, TOUCH, WIDE_BREAKPOINT } from "../../lib/theme";
 import { ErrorNote, LinkButton } from "./Buttons";
 import { CheckIcon, CloseIcon, GoogleIcon } from "./Icons";
+import { pressState } from "./press-state";
 
 interface SaveWalletSheetProps {
   visible: boolean;
@@ -35,10 +39,13 @@ function cardsPhrase(count: number): string {
  */
 export function SaveWalletSheet({ visible, cardCount, onClose }: SaveWalletSheetProps) {
   const { width } = useWindowDimensions();
+  const layout = useLayout();
   const insets = useSafeAreaInsets();
-  const wide = width >= WIDE_BREAKPOINT;
+  // Web: centred dialog on desktop, bottom sheet below. Native keeps the tablet rule.
+  const wide = Platform.OS === "web" ? layout.desktop : width >= WIDE_BREAKPOINT;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useRef<View>(null);
 
   async function continueWithGoogle() {
     setBusy(true);
@@ -55,6 +62,8 @@ export function SaveWalletSheet({ visible, cardCount, onClose }: SaveWalletSheet
     setBusy(false);
     onClose();
   }
+
+  useDialogFocus(dialogRef, visible, close);
 
   const body = `Sign in to keep ${cardsPhrase(cardCount)} and use them on any device.`;
 
@@ -78,13 +87,17 @@ export function SaveWalletSheet({ visible, cardCount, onClose }: SaveWalletSheet
           tabIndex={-1}
         />
         <View
+          ref={dialogRef}
           role="dialog"
           aria-modal
           aria-label="Save your wallet"
           accessibilityViewIsModal
           style={[
             wide ? styles.dialog : styles.sheet,
-            !wide && { paddingBottom: Math.max(36, insets.bottom + 16) },
+            !wide && {
+              maxWidth: layout.columnMaxWidth,
+              paddingBottom: Math.max(36, insets.bottom + 16),
+            },
           ]}
         >
           {wide ? (
@@ -92,7 +105,10 @@ export function SaveWalletSheet({ visible, cardCount, onClose }: SaveWalletSheet
               onPress={close}
               accessibilityRole="button"
               accessibilityLabel="Close"
-              style={styles.closeButton}
+              style={(state) => [
+                styles.closeButton,
+                pressState(state).hovered && styles.closeButtonHover,
+              ]}
             >
               <CloseIcon />
             </Pressable>
@@ -129,11 +145,14 @@ export function SaveWalletSheet({ visible, cardCount, onClose }: SaveWalletSheet
             accessibilityRole="button"
             accessibilityLabel="Continue with Google"
             accessibilityState={{ disabled: busy, busy }}
-            style={({ pressed }) => [
-              styles.google,
-              wide && styles.googleWide,
-              pressed && styles.googlePressed,
-            ]}
+            style={(state) => {
+              const { pressed, hovered } = pressState(state);
+              return [
+                styles.google,
+                wide && styles.googleWide,
+                (pressed || hovered) && !busy && styles.googlePressed,
+              ];
+            }}
           >
             {busy ? (
               <ActivityIndicator color={colors.primary} />
@@ -189,7 +208,6 @@ const styles = StyleSheet.create({
   },
   sheet: {
     width: "100%",
-    maxWidth: 480,
     alignSelf: "center",
     backgroundColor: colors.bg,
     borderTopLeftRadius: 24,
@@ -222,6 +240,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1,
+    borderRadius: 22,
+  },
+  closeButtonHover: {
+    backgroundColor: colors.tintStrong,
   },
   title: {
     fontFamily: fonts.heading,
