@@ -22,6 +22,7 @@ export function getSupabaseClient(): SupabaseClient | null {
   if (typeof window === "undefined") return null;
   if (client) return client;
 
+  const web = Platform.OS === "web";
   client = createClient(
     process.env.EXPO_PUBLIC_SUPABASE_URL!,
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
@@ -30,8 +31,10 @@ export function getSupabaseClient(): SupabaseClient | null {
         storage: ssrSafeStorage,
         persistSession: true,
         autoRefreshToken: true,
-        // Deep-link / magic-link session detection is web-oriented.
-        detectSessionInUrl: Platform.OS === "web",
+        // Web: Google redirects back with tokens in the URL, parsed on load.
+        // Native: the auth session returns a ?code= we exchange ourselves.
+        detectSessionInUrl: web,
+        flowType: web ? "implicit" : "pkce",
       },
     },
   );
