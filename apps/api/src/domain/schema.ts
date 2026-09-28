@@ -90,19 +90,28 @@ export interface WelcomeOffer {
 }
 
 /**
- * Basis for displaying a catalog image. Only `licensed` and `issuer_provided`
- * assets are ever served; see docs/data/ASSETS.md.
+ * Basis for displaying a catalog image; see docs/data/ASSETS.md. `unknown` is
+ * served only when NORTHTAP_SERVE_UNLICENSED_ASSETS=true (dev / test).
  */
 export const ASSET_RIGHTS_STATUSES = [
   "licensed",
   "issuer_provided",
   "placeholder",
   "unknown",
+  "generated",
 ] as const;
 
 export type AssetRightsStatus = (typeof ASSET_RIGHTS_STATUSES)[number];
 
+/** Always served: cleared third-party art, or our own generated render. */
 export const SERVABLE_ASSET_RIGHTS: readonly AssetRightsStatus[] = [
+  "licensed",
+  "issuer_provided",
+  "generated",
+];
+
+/** Rights an admin may assert when uploading a third-party image by hand. */
+export const UPLOADABLE_ASSET_RIGHTS: readonly AssetRightsStatus[] = [
   "licensed",
   "issuer_provided",
 ];
@@ -116,6 +125,8 @@ export interface CatalogAsset {
   rightsStatus: AssetRightsStatus;
   /** ISO timestamp of the last asset change. */
   updatedAt: string | null;
+  /** Generated neutral render, served when `url` is absent or withheld (cards only). */
+  fallbackUrl?: string | null;
 }
 
 export interface CreditCard {

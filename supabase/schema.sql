@@ -21,10 +21,11 @@ create table public.user_cards (
 
 create type public.catalog_status as enum ('pending', 'verified', 'stale', 'rejected');
 create type public.api_key_tier as enum ('internal', 'standard', 'elevated');
-create type public.asset_rights_status as enum ('licensed', 'issuer_provided', 'placeholder', 'unknown');
+create type public.asset_rights_status as enum ('licensed', 'issuer_provided', 'placeholder', 'unknown', 'generated');
 
 -- *_url may only be non-null with rights licensed/issuer_provided, alt text and a source URL
--- (see *_provenance_check constraints and docs/data/ASSETS.md).
+-- (see *_provenance_check constraints and docs/data/ASSETS.md). cards also allow
+-- 'unknown' (issuer product-page art, dev only) with alt + source, and 'generated' with alt.
 create table public.cards (
   id text primary key,
   name text not null,
@@ -44,7 +45,8 @@ create table public.cards (
   image_source_url text,
   image_rights_status public.asset_rights_status not null default 'placeholder',
   image_updated_at timestamptz,
-  image_updated_by text
+  image_updated_by text,
+  image_fallback_url text
 );
 
 create table public.loyalty_programs (

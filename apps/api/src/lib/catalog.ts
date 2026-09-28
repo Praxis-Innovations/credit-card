@@ -45,14 +45,21 @@ function nullableString(value: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value : null;
 }
 
-/** Maps `<prefix>_url`, `_alt`, `_source_url`, `_rights_status`, `_updated_at`. */
+/**
+ * Maps `<prefix>_url`, `_alt`, `_source_url`, `_rights_status`, `_updated_at`,
+ * and `_fallback_url` when the table has one.
+ */
 export function mapAsset(
   row: Record<string, unknown>,
   prefix: "image" | "logo",
 ): CatalogAsset {
   const rights = row[`${prefix}_rights_status`];
   const updatedAt = row[`${prefix}_updated_at`];
+  const fallbackKey = `${prefix}_fallback_url`;
   return {
+    ...(fallbackKey in row
+      ? { fallbackUrl: nullableString(row[fallbackKey]) }
+      : {}),
     url: nullableString(row[`${prefix}_url`]),
     alt: nullableString(row[`${prefix}_alt`]),
     sourceUrl: nullableString(row[`${prefix}_source_url`]),

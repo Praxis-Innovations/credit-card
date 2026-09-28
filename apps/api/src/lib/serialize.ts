@@ -1,20 +1,45 @@
 import {
   SERVABLE_ASSET_RIGHTS,
+  type AssetRightsStatus,
   type CatalogAsset,
   type CreditCard,
   type LoyaltyProgram,
   type MerchantBrand,
   type MerchantPartnership,
 } from "@/domain";
+import { fallbackAlt } from "@/assets/card-art/fallback";
 import type { PartnershipRefs } from "./catalog";
 
 /**
- * URL a client may render, or null (→ neutral placeholder). Assets whose
- * rights are not cleared are never exposed, even if a URL is stored.
+ * `unknown`-provenance assets (e.g. art fetched from issuer product pages for
+ * dev) are served only when NORTHTAP_SERVE_UNLICENSED_ASSETS=true.
  */
-export function publicAssetUrl(asset: CatalogAsset | undefined): string | null {
-  if (!asset?.url) return null;
-  return SERVABLE_ASSET_RIGHTS.includes(asset.rightsStatus) ? asset.url : null;
+export function serveUnlicensedAssets(
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  return env.NORTHTAP_SERVE_UNLICENSED_ASSETS?.trim().toLowerCase() === "true";
+}
+
+export function isServableRights(
+  rights: AssetRightsStatus,
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  if (SERVABLE_ASSET_RIGHTS.includes(rights)) return true;
+  return rights === "unknown" && serveUnlicensedAssets(env);
+}
+
+/**
+ * URL a client may render, or null (→ neutral placeholder). A stored URL whose
+ * rights are not servable is never exposed; the generated fallback is used
+ * instead when there is one.
+ */
+export function publicAssetUrl(
+  asset: CatalogAsset | undefined,
+  env: NodeJS.ProcessEnv = process.env,
+): string | null {
+  if (!asset) return null;
+  if (asset.url && isServableRights(asset.rightsStatus, env)) return asset.url;
+  return asset.fallbackUrl ?? null;
 }
 
 export type CardResponse = Omit<CreditCard, "image"> & {
@@ -24,10 +49,12 @@ export type CardResponse = Omit<CreditCard, "image"> & {
 
 export function serializeCard(card: CreditCard): CardResponse {
   const { image, ...rest } = card;
+  const imageUrl = publicAssetUrl(image);
+  const servesFallback = !!imageUrl && imageUrl !== image?.url;
   return {
     ...rest,
-    imageUrl: publicAssetUrl(image),
-    imageAlt: image?.alt ?? null,
+    imageUrl,
+    imageAlt: servesFallback ? fallbackAlt(card) : image?.alt ?? null,
   };
 }
 
