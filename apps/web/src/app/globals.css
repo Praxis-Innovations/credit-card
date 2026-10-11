@@ -21,6 +21,7 @@
   --color-wordmark-accent: var(--wordmark-accent);
   --color-highlight: var(--highlight);
   --color-segment-thumb: var(--segment-thumb);
+  --color-step-line: var(--step-line);
 }
 
 :root {
@@ -43,6 +44,8 @@
   --highlight: #eef3f1;
   --segment-thumb: #ffffff;
   --hero-shadow: rgba(20, 24, 22, 0.4);
+  /* Mobile "How it works" connector between step numerals */
+  --step-line: #d4e4df;
 }
 
 .dark {
@@ -62,6 +65,7 @@
   --highlight: #12302c;
   --segment-thumb: #33403c;
   --hero-shadow: rgba(0, 0, 0, 0.7);
+  --step-line: #2b3d38;
 }
 
 @layer base {

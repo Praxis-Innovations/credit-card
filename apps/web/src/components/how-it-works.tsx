@@ -47,13 +47,32 @@ const STEPS: { title: string; body: string; icon: ReactNode }[] = [
 export function HowItWorks() {
   return (
     <section id="how" aria-labelledby="how-heading" className={CONTAINER}>
-      <div className="border-t border-divider py-14 md:py-20 lg:py-28">
-        <h2 id="how-heading" className="sr-only">
-          How NorthTap works
+      <div className="flex flex-col gap-7 border-t border-divider pt-12 pb-14 min-[600px]:block min-[600px]:pt-14 md:py-20 lg:py-28">
+        <h2
+          id="how-heading"
+          className="font-display text-[26px] font-semibold tracking-[-0.01em] text-foreground min-[600px]:sr-only"
+        >
+          How it works
         </h2>
-        <ol className="flex flex-col gap-9 md:grid md:grid-cols-3 md:gap-10 lg:gap-16">
+        {/* Below 600px: numbered timeline. From 600px: icon blocks, then the 3-column grid from md. */}
+        <ol className="flex flex-col min-[600px]:gap-9 md:grid md:grid-cols-3 md:gap-10 lg:gap-16">
           {STEPS.map((step, index) => (
-            <li key={step.title} className="flex flex-col gap-2 md:gap-3">
+            <li
+              key={step.title}
+              className="relative grid grid-cols-[36px_minmax(0,1fr)] gap-x-4 pb-7 last:pb-0 min-[600px]:flex min-[600px]:flex-col min-[600px]:gap-2 min-[600px]:pb-0 md:gap-3"
+            >
+              {index < STEPS.length - 1 && (
+                <span
+                  className="absolute top-11 -bottom-2 left-[17px] w-0.5 bg-step-line min-[600px]:hidden"
+                  aria-hidden="true"
+                />
+              )}
+              <span
+                className="flex size-9 items-center justify-center rounded-full bg-primary font-display text-base font-semibold text-primary-foreground min-[600px]:hidden"
+                aria-hidden="true"
+              >
+                {index + 1}
+              </span>
               <svg
                 width="36"
                 height="36"
@@ -63,23 +82,25 @@ export function HowItWorks() {
                 strokeWidth="1.6"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-accent"
+                className="hidden text-accent min-[600px]:block"
                 aria-hidden="true"
               >
                 {step.icon}
               </svg>
               <span
-                className="text-[13px] text-muted md:text-sm"
+                className="hidden text-[13px] text-muted min-[600px]:block md:text-sm"
                 aria-hidden="true"
               >
                 {String(index + 1).padStart(2, "0")}
               </span>
-              <h3 className="font-display text-xl font-semibold text-foreground lg:text-[22px]">
-                {step.title}
-              </h3>
-              <p className="text-base leading-[1.6] text-body md:text-[17px]">
-                {step.body}
-              </p>
+              <div className="flex flex-col gap-1.5 pt-[5px] min-[600px]:contents">
+                <h3 className="font-display text-[19px] leading-[1.3] font-semibold text-foreground min-[600px]:text-xl min-[600px]:leading-[1.4] lg:text-[22px]">
+                  {step.title}
+                </h3>
+                <p className="text-base leading-[1.55] text-body min-[600px]:leading-[1.6] md:text-[17px]">
+                  {step.body}
+                </p>
+              </div>
             </li>
           ))}
         </ol>
