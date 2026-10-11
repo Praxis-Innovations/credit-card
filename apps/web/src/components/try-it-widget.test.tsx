@@ -105,14 +105,24 @@ describe("TryItWidget ranking", () => {
       expect(first.textContent).toContain(winner);
       expect(first.textContent).toContain(winnerAmount);
       expect(within(first).getByText("Tap this")).toBeTruthy();
+      expect(within(first).queryByText("Earns less")).toBeNull();
 
       expect(second.textContent).toContain(runnerUp);
       expect(second.textContent).toContain(runnerUpAmount);
+      expect(within(second).getByText("Earns less")).toBeTruthy();
       expect(within(second).queryByText("Tap this")).toBeNull();
 
       expect(screen.getAllByText("Tap this")).toHaveLength(1);
+      expect(screen.getAllByText("Earns less")).toHaveLength(1);
     },
   );
+
+  it("captions each amount with 'back'", () => {
+    render(<TryItWidget />);
+    for (const row of rows()) {
+      expect(within(row).getByText("back")).toBeTruthy();
+    }
+  });
 
   it("shows the why text and the footnote", () => {
     render(<TryItWidget />);

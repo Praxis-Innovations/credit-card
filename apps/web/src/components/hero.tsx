@@ -10,7 +10,7 @@ import { CONTAINER } from "@/lib/styles";
 export function Hero() {
   return (
     <section id="top" className={CONTAINER}>
-      <div className="flex max-w-[640px] flex-col gap-4 pt-8 pb-10 md:gap-5 md:pt-16 md:pb-20 lg:mx-auto lg:grid lg:max-w-[1200px] lg:grid-cols-[minmax(0,1fr)_min(520px,48%)] lg:grid-rows-[1fr_repeat(5,auto)_1fr] lg:gap-x-12 lg:gap-y-0 lg:pt-24 lg:pb-32 xl:gap-x-[72px]">
+      <div className="flex max-w-[640px] flex-col gap-4 pt-8 pb-10 md:gap-5 md:pt-16 md:pb-20 lg:grid lg:max-w-none lg:grid-cols-[minmax(0,1fr)_min(560px,50%)] lg:grid-rows-[1fr_repeat(5,auto)_1fr] lg:gap-x-16 lg:gap-y-0 lg:pt-24 lg:pb-32">
         <p className="text-sm font-semibold text-accent md:text-[15px] lg:col-start-1 lg:row-start-2">
           For Canadian cardholders
         </p>
@@ -21,7 +21,7 @@ export function Hero() {
           The best card changes with what you buy. NorthTap tells you which one
           to tap, and how much you get back.
         </p>
-        <TryItWidget className="mt-3 lg:col-start-2 lg:row-span-full lg:mt-0 lg:self-center" />
+        <TryItWidget className="mt-2 lg:col-start-2 lg:row-span-full lg:mt-0 lg:self-center" />
         <OpenAppLink
           size="lg"
           className="mt-2 lg:col-start-1 lg:row-start-5 lg:mt-8 lg:justify-self-start"

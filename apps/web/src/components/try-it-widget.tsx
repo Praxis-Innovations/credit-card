@@ -22,11 +22,11 @@ function CardArt({ id, label }: { id: ExampleCardId; label: string }) {
     <span
       role="img"
       aria-label={`${label} card`}
-      className="relative block h-9 w-14 shrink-0 rounded-[5px] shadow-[0_10px_24px_-14px_rgba(20,24,22,0.5)] md:h-[46px] md:w-[72px] md:rounded-md"
+      className="relative block h-9 w-14 shrink-0 rounded-[5px] shadow-[0_6px_14px_-8px_rgba(20,24,22,0.45)] md:h-[53px] md:w-[84px] md:rounded-md"
       style={{ background: art.body }}
     >
       <span
-        className="absolute top-[13px] left-1.5 h-[9px] w-2.5 rounded-[3px] md:top-[17px] md:left-[7px] md:h-[11px] md:w-3"
+        className="absolute top-[13px] left-1.5 h-[9px] w-2.5 rounded-[3px] md:top-5 md:left-2 md:h-[13px] md:w-3.5"
         style={{ background: art.chip }}
       />
     </span>
@@ -57,7 +57,7 @@ export function TryItWidget({ className = "" }: { className?: string }) {
   return (
     <section
       aria-labelledby={headingId}
-      className={`flex flex-col gap-3.5 rounded-[20px] border border-divider bg-surface p-[18px] shadow-[0_24px_48px_-36px_var(--hero-shadow)] md:gap-5 md:rounded-3xl md:p-7 md:shadow-[0_30px_60px_-40px_var(--hero-shadow)] ${className}`}
+      className={`flex flex-col gap-3.5 rounded-[20px] border border-divider bg-surface p-4 shadow-[0_24px_48px_-36px_var(--hero-shadow)] md:gap-5 md:rounded-3xl md:p-8 md:shadow-[0_30px_60px_-40px_var(--hero-shadow)] ${className}`}
     >
       <div className="flex items-baseline justify-between">
         <h2
@@ -102,39 +102,45 @@ export function TryItWidget({ className = "" }: { className?: string }) {
         })}
       </div>
 
-      <ol aria-label="Cards, best first" className="flex flex-col gap-2 md:gap-2.5">
+      <ol aria-label="Cards, best first" className="flex flex-col gap-3">
         {ranked.map((card) => (
           <li
             key={card.id}
             data-card={card.id}
-            className={`flex items-center gap-3 rounded-[14px] p-3 md:gap-3.5 md:p-3.5 ${
+            className={`flex items-center gap-3 rounded-xl px-4 py-3.5 md:gap-4 md:px-5 md:py-[18px] ${
               card.best
                 ? "border-2 border-primary bg-highlight"
                 : "border border-divider bg-surface"
             }`}
           >
             <CardArt id={card.id} label={card.fullName} />
-            <div className="min-w-0 grow">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="text-sm leading-[1.25] font-semibold text-foreground md:text-[15px]">
-                  {card.name}
-                </span>
-                {card.best && (
-                  <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">
-                    Tap this
-                  </span>
-                )}
-              </div>
-              <div className="text-[13px] text-body md:text-sm">{card.why}</div>
+            <div className="flex min-w-0 grow flex-col items-start">
+              <span
+                className={`text-[11px] leading-4 font-bold tracking-[0.04em] uppercase ${
+                  card.best
+                    ? "rounded-full bg-primary px-2 py-0.5 text-primary-foreground"
+                    : "py-0.5 text-muted"
+                }`}
+              >
+                {card.best ? "Tap this" : "Earns less"}
+              </span>
+              <span className="mt-1.5 text-sm leading-[1.3] font-semibold text-foreground md:text-[15px]">
+                {card.name}
+              </span>
+              <span className="mt-0.5 text-[13px] text-muted md:text-sm">
+                {card.why}
+              </span>
             </div>
-            <span
-              className={`font-display text-[22px] font-semibold md:text-[26px] ${
-                card.best ? "text-accent" : "text-foreground"
-              }`}
-            >
-              {card.amount}
-              <span className="sr-only"> back</span>
-            </span>
+            <div className="flex shrink-0 flex-col items-end">
+              <span
+                className={`font-display text-2xl leading-[1.1] font-semibold md:text-[28px] ${
+                  card.best ? "text-accent" : "text-foreground"
+                }`}
+              >
+                {card.amount}
+              </span>
+              <span className="text-xs text-muted"> back</span>
+            </div>
           </li>
         ))}
       </ol>
