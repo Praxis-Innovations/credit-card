@@ -32,7 +32,7 @@ const STEPS: { title: string; body: string; icon: ReactNode }[] = [
   },
   {
     title: "Use the best card",
-    body: "See which card earns the most, and why.",
+    body: "See which card earns the most, in dollars.",
     icon: (
       <>
         <rect x="4" y="9" width="24" height="16" rx="3" />

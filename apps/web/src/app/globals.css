@@ -19,6 +19,8 @@
   --color-surface: var(--surface);
   --color-surface-divider: var(--surface-divider);
   --color-wordmark-accent: var(--wordmark-accent);
+  --color-highlight: var(--highlight);
+  --color-segment-thumb: var(--segment-thumb);
 }
 
 :root {
@@ -37,11 +39,10 @@
   --wordmark-accent: #0c5c56;
   --surface: #ffffff;
   --surface-divider: #eef1ef;
-  --surface-shadow: rgba(20, 24, 22, 0.35);
-  --card-teal: #0c5c56;
-  --card-pale: #e3ebe7;
-  --card-pale-border: #d4dfda;
-  --card-chip: #d7c89b;
+  /* Try-it widget: winning row, selected segment, card shadow */
+  --highlight: #eef3f1;
+  --segment-thumb: #ffffff;
+  --hero-shadow: rgba(20, 24, 22, 0.4);
 }
 
 .dark {
@@ -58,9 +59,9 @@
   --wordmark-accent: #bfe0da;
   --surface: #171d1b;
   --surface-divider: #242d2a;
-  --surface-shadow: rgba(0, 0, 0, 0.7);
-  --card-pale: #1e2926;
-  --card-pale-border: #2b3834;
+  --highlight: #12302c;
+  --segment-thumb: #33403c;
+  --hero-shadow: rgba(0, 0, 0, 0.7);
 }
 
 @layer base {
@@ -76,163 +77,5 @@
 
   .font-display {
     font-family: var(--font-syne), ui-sans-serif, system-ui, sans-serif;
-  }
-}
-
-/*
- * Hero card illustration. Geometry is authored in design pixels (342px wide
- * on mobile, 640px from md up) and scaled by --u so it shrinks on narrow
- * phones instead of overflowing. The parent must be an inline-size container.
- */
-@layer components {
-  .hero-art {
-    --u: calc(100cqw / 342);
-    position: relative;
-    width: 100%;
-    aspect-ratio: 342 / 300;
-  }
-
-  .hero-art__card {
-    position: absolute;
-    box-sizing: border-box;
-    width: calc(var(--u) * 230);
-    height: calc(var(--u) * 145);
-    border-radius: calc(var(--u) * 12);
-    border: 1px solid;
-  }
-
-  .hero-art__back {
-    left: calc(var(--u) * 6);
-    top: calc(var(--u) * 36);
-    background: var(--card-pale);
-    border-color: var(--card-pale-border);
-    transform: rotate(-8deg);
-  }
-
-  .hero-art__front {
-    left: calc(var(--u) * 30);
-    top: calc(var(--u) * 18);
-    background: var(--card-teal);
-    border-color: var(--card-teal);
-    transform: rotate(-3deg);
-  }
-
-  .hero-art__chip {
-    position: absolute;
-    left: calc(var(--u) * 18);
-    top: calc(var(--u) * 38);
-    width: calc(var(--u) * 30);
-    height: calc(var(--u) * 22);
-    border-radius: calc(var(--u) * 4);
-    background: var(--card-chip);
-  }
-
-  .hero-art__contactless {
-    position: absolute;
-    right: calc(var(--u) * 16);
-    top: calc(var(--u) * 16);
-    width: calc(var(--u) * 16);
-    height: calc(var(--u) * 16);
-  }
-
-  .hero-art__number {
-    position: absolute;
-    left: calc(var(--u) * 18);
-    bottom: calc(var(--u) * 16);
-    font-size: calc(var(--u) * 11);
-    line-height: 1;
-    letter-spacing: 0.12em;
-    color: rgba(255, 255, 255, 0.85);
-  }
-
-  .hero-art__circles {
-    position: absolute;
-    right: calc(var(--u) * 16);
-    bottom: calc(var(--u) * 15);
-    display: flex;
-  }
-
-  .hero-art__circles > span {
-    width: calc(var(--u) * 18);
-    height: calc(var(--u) * 18);
-    border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.35);
-  }
-
-  .hero-art__circles > span + span {
-    margin-left: calc(var(--u) * -7);
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  .hero-art__rec {
-    position: absolute;
-    left: calc(var(--u) * 92);
-    top: calc(var(--u) * 118);
-    width: calc(var(--u) * 250);
-    box-shadow: 0 18px 40px -24px var(--surface-shadow);
-  }
-
-  @media (min-width: 48rem) {
-    .hero-art {
-      --u: calc(100cqw / 640);
-      aspect-ratio: 640 / 360;
-    }
-
-    .hero-art__card {
-      width: calc(var(--u) * 340);
-      height: calc(var(--u) * 214);
-      border-radius: calc(var(--u) * 18);
-    }
-
-    .hero-art__back {
-      left: calc(var(--u) * 70);
-      top: calc(var(--u) * 56);
-    }
-
-    .hero-art__front {
-      left: calc(var(--u) * 120);
-      top: calc(var(--u) * 30);
-    }
-
-    .hero-art__chip {
-      left: calc(var(--u) * 26);
-      top: calc(var(--u) * 56);
-      width: calc(var(--u) * 44);
-      height: calc(var(--u) * 32);
-      border-radius: calc(var(--u) * 6);
-    }
-
-    .hero-art__contactless {
-      right: calc(var(--u) * 24);
-      top: calc(var(--u) * 24);
-      width: calc(var(--u) * 24);
-      height: calc(var(--u) * 24);
-    }
-
-    .hero-art__number {
-      left: calc(var(--u) * 26);
-      bottom: calc(var(--u) * 24);
-      font-size: calc(var(--u) * 16);
-    }
-
-    .hero-art__circles {
-      right: calc(var(--u) * 24);
-      bottom: calc(var(--u) * 22);
-    }
-
-    .hero-art__circles > span {
-      width: calc(var(--u) * 26);
-      height: calc(var(--u) * 26);
-    }
-
-    .hero-art__circles > span + span {
-      margin-left: calc(var(--u) * -10);
-    }
-
-    .hero-art__rec {
-      left: calc(var(--u) * 330);
-      top: calc(var(--u) * 150);
-      width: calc(var(--u) * 310);
-    }
   }
 }
