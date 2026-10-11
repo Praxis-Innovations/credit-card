@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { DM_Sans, Syne } from "next/font/google";
-import { ThemeProvider } from "@/components/theme-provider";
 import { BRAND_TEAL } from "@/lib/brand";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -55,16 +55,10 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${dmSans.variable} ${syne.variable}`}
     >
-      <body className="font-sans">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
-      </body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body className="font-sans">{children}</body>
     </html>
   );
 }
