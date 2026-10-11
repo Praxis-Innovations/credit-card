@@ -9,6 +9,7 @@ describe("rankCards", () => {
         name: "Triangle World Elite",
         amount: "$4.00",
         why: "4× Triangle Rewards on gas",
+        whyCompact: "4× points on gas",
         best: true,
       }),
       expect.objectContaining({
@@ -16,6 +17,7 @@ describe("rankCards", () => {
         name: "Scotiabank Gold Amex",
         amount: "$1.00",
         why: "1× Scene+ on gas",
+        whyCompact: "1× points on gas",
         best: false,
       }),
     ]);
@@ -27,12 +29,14 @@ describe("rankCards", () => {
         id: "gold",
         amount: "$5.00",
         why: "5× Scene+ on groceries",
+        whyCompact: "5× points on groceries",
         best: true,
       }),
       expect.objectContaining({
         id: "tri",
         amount: "$2.00",
         why: "2× Triangle Rewards on groceries",
+        whyCompact: "2× points on groceries",
         best: false,
       }),
     ]);
@@ -44,12 +48,14 @@ describe("rankCards", () => {
         id: "gold",
         amount: "$3.00",
         why: "3× Scene+ on dining",
+        whyCompact: "3× points on dining",
         best: true,
       }),
       expect.objectContaining({
         id: "tri",
         amount: "$1.00",
         why: "1× Triangle Rewards on dining",
+        whyCompact: "1× points on dining",
         best: false,
       }),
     ]);

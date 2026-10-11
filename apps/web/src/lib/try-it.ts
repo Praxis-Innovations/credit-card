@@ -46,6 +46,8 @@ export type RankedCard = {
   amount: string;
   /** e.g. "4× Triangle Rewards on gas". */
   why: string;
+  /** Shorter why line for phones, e.g. "4× points on gas". */
+  whyCompact: string;
   best: boolean;
 };
 
@@ -62,6 +64,7 @@ export function rankCards(category: Category): RankedCard[] {
       rate: card.rate,
       amount: `$${card.rate.toFixed(2)}`,
       why: `${card.rate}× ${card.unit} on ${category}`,
+      whyCompact: `${card.rate}× points on ${category}`,
       best: index === 0,
     }));
 }
