@@ -118,14 +118,30 @@ describe("row mappers attach assets", () => {
   });
 });
 
-describe("publicAssetUrl", () => {
-  it("returns the URL only for cleared rights", () => {
+describe("publicAssetUrl (rights-status serving guard)", () => {
+  it("serves licensed, issuer_provided and generated URLs", () => {
     expect(publicAssetUrl(asset({ rightsStatus: "licensed" }))).toBe(URL_);
     expect(publicAssetUrl(asset({ rightsStatus: "issuer_provided" }))).toBe(URL_);
+    expect(publicAssetUrl(asset({ rightsStatus: "generated" }))).toBe(URL_);
+  });
+
+  it("never serves unknown or placeholder, and returns null without a URL", () => {
     expect(publicAssetUrl(asset({ rightsStatus: "unknown" }))).toBeNull();
     expect(publicAssetUrl(asset({ rightsStatus: "placeholder" }))).toBeNull();
     expect(publicAssetUrl(asset({ url: null }))).toBeNull();
+    expect(publicAssetUrl(asset({ url: null, rightsStatus: "generated" }))).toBeNull();
     expect(publicAssetUrl(undefined)).toBeNull();
+  });
+
+  it("has no environment switch that exposes unknown assets", () => {
+    const before = process.env.NORTHTAP_SERVE_UNLICENSED_ASSETS;
+    try {
+      process.env.NORTHTAP_SERVE_UNLICENSED_ASSETS = "true";
+      expect(publicAssetUrl(asset({ rightsStatus: "unknown" }))).toBeNull();
+    } finally {
+      if (before === undefined) delete process.env.NORTHTAP_SERVE_UNLICENSED_ASSETS;
+      else process.env.NORTHTAP_SERVE_UNLICENSED_ASSETS = before;
+    }
   });
 });
 

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { userInfo } from "node:os";
 import { extname } from "node:path";
 import { parseArgs } from "node:util";
-import { SERVABLE_ASSET_RIGHTS, type AssetRightsStatus } from "@/domain";
+import { UPLOADABLE_ASSET_RIGHTS, type AssetRightsStatus } from "@/domain";
 
 export const ASSET_BUCKET = "brand-assets";
 /** Mirrors storage.buckets.file_size_limit in the catalog_assets migration. */
@@ -111,9 +111,9 @@ export function parseUploadArgs(argv: string[]): UploadOptions {
   }
 
   const rights = values.rights as AssetRightsStatus | undefined;
-  if (!rights || !SERVABLE_ASSET_RIGHTS.includes(rights)) {
+  if (!rights || !UPLOADABLE_ASSET_RIGHTS.includes(rights)) {
     throw new UsageError(
-      `--rights must be one of: ${SERVABLE_ASSET_RIGHTS.join(", ")}`,
+      `--rights must be one of: ${UPLOADABLE_ASSET_RIGHTS.join(", ")}`,
     );
   }
 
@@ -212,11 +212,13 @@ export function objectPathFor(
   id: string,
   file: string,
   bytes: Uint8Array,
+  subfolder?: string,
 ): string {
   const hash = createHash("sha256").update(bytes).digest("hex").slice(0, 12);
   const raw = extname(file).toLowerCase();
   const ext = raw === ".jpeg" ? ".jpg" : raw;
-  return `${ASSET_KINDS[kind].folder}/${id}-${hash}${ext}`;
+  const folder = ASSET_KINDS[kind].folder + (subfolder ? `/${subfolder}` : "");
+  return `${folder}/${id}-${hash}${ext}`;
 }
 
 /** Row update (snake_case columns) after a successful upload. */

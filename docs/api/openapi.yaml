@@ -42,10 +42,12 @@ info:
     Cards expose `imageUrl` / `imageAlt`; merchant brands and loyalty programs
     expose `logoUrl` / `logoAlt` (also nested in partnerships and
     recommendations as `LogoSummary`). URLs point at the public Supabase
-    Storage bucket `brand-assets` and are **null until a rights-cleared asset
-    is uploaded** — which is the default for every row. When a URL is null,
-    clients MUST render a neutral placeholder: a card-shaped tile for cards and
-    an initial-letter tile for brands / programs. See `docs/data/ASSETS.md`.
+    Storage bucket `brand-assets`. A card's URL is a rights-cleared image or,
+    for now, our generated card illustration (alt text ends in
+    "(illustration)"); a logo URL is **null until a rights-cleared asset is
+    uploaded**. When a URL is null, clients MUST render a neutral placeholder:
+    a card-shaped tile for cards and an initial-letter tile for brands /
+    programs. See `docs/data/ASSETS.md`.
 
     ## Versioning
 
@@ -964,10 +966,11 @@ components:
       format: uri
       readOnly: true
       description: >
-        Public image URL in the `brand-assets` Storage bucket. Null until a
-        rights-cleared (licensed / issuer-provided) asset is uploaded; clients
-        then render a neutral placeholder (card shape or initial-letter tile).
-        Set only by the `assets:upload` admin script.
+        Public image URL in the `brand-assets` Storage bucket: a
+        rights-cleared (licensed / issuer-provided) asset, or for cards our
+        generated illustration. Null otherwise; clients then render a neutral
+        placeholder (card shape or initial-letter tile). Set only by the
+        `assets:upload` and `assets:generate-card-art` admin scripts.
 
     AssetAlt:
       type: [string, "null"]

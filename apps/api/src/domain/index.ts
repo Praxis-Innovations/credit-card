@@ -32,6 +32,7 @@ export {
   PARTNERSHIP_BENEFIT_KINDS,
   POINT_CURRENCIES,
   SERVABLE_ASSET_RIGHTS,
+  UPLOADABLE_ASSET_RIGHTS,
 } from "./schema";
 
 export { CARDS, getCardById, getCardsByIssuer, groupCardsByIssuer } from "./cards";
