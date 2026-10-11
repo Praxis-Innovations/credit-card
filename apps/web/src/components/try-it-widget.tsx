@@ -10,10 +10,10 @@ import {
 } from "@/lib/try-it";
 import type { Category, ExampleCardId } from "@/lib/try-it";
 
-/** Placeholder card art (no issuer images): body colour and chip colour. */
+/** Placeholder card art (no issuer images): body and chip colour classes. */
 const CARD_ART: Record<ExampleCardId, { body: string; chip: string }> = {
-  gold: { body: "#b8913f", chip: "#ecdcae" },
-  tri: { body: "#5b4640", chip: "#d7c89b" },
+  gold: { body: "bg-card-gold", chip: "bg-card-gold-chip" },
+  tri: { body: "bg-card-tri", chip: "bg-card-tri-chip" },
 };
 
 function CardArt({ id, label }: { id: ExampleCardId; label: string }) {
@@ -22,12 +22,10 @@ function CardArt({ id, label }: { id: ExampleCardId; label: string }) {
     <span
       role="img"
       aria-label={`${label} card`}
-      className="relative block h-7 w-11 shrink-0 rounded shadow-[0_6px_14px_-8px_rgba(20,24,22,0.45)] md:h-[38px] md:w-[60px]"
-      style={{ background: art.body }}
+      className={`relative block h-7 w-11 shrink-0 rounded shadow-[0_6px_14px_-8px_var(--card-art-shadow)] md:h-[38px] md:w-[60px] ${art.body}`}
     >
       <span
-        className="absolute top-[11px] left-1 size-[7px] rounded-[2px] md:top-3.5 md:left-1.5 md:h-[9px] md:w-2.5"
-        style={{ background: art.chip }}
+        className={`absolute top-[11px] left-1 size-[7px] rounded-[2px] md:top-3.5 md:left-1.5 md:h-[9px] md:w-2.5 ${art.chip}`}
       />
     </span>
   );
@@ -92,7 +90,7 @@ export function TryItWidget({ className = "" }: { className?: string }) {
               onKeyDown={onRadioKeyDown}
               className={`h-11 cursor-pointer rounded-[9px] text-[15px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:h-10 ${
                 checked
-                  ? "bg-segment-thumb text-foreground shadow-[0_1px_3px_rgba(20,24,22,0.15)]"
+                  ? "bg-segment-thumb text-foreground shadow-[0_1px_3px_var(--segment-thumb-shadow)]"
                   : "bg-transparent text-muted hover:text-foreground"
               }`}
             >
@@ -113,12 +111,12 @@ export function TryItWidget({ className = "" }: { className?: string }) {
             data-card={card.id}
             className={`relative flex items-center gap-2.5 rounded-xl p-3 md:gap-3.5 md:px-4 md:py-3.5 ${
               card.best
-                ? "border-2 border-primary bg-highlight"
+                ? "border-2 border-highlight-border bg-highlight"
                 : "border border-divider bg-surface"
             }`}
           >
             {card.best && (
-              <span className="absolute -top-2.5 left-3.5 rounded-full bg-primary px-2 py-0.5 text-[11px] leading-4 font-bold tracking-[0.04em] text-primary-foreground uppercase">
+              <span className="absolute -top-2.5 left-3.5 rounded-full bg-pill px-2 py-0.5 text-[11px] leading-4 font-bold tracking-[0.04em] text-pill-foreground uppercase">
                 Tap this
               </span>
             )}

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
   --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
@@ -20,11 +20,22 @@
   --color-surface-divider: var(--surface-divider);
   --color-wordmark-accent: var(--wordmark-accent);
   --color-highlight: var(--highlight);
+  --color-highlight-border: var(--highlight-border);
+  --color-pill: var(--pill);
+  --color-pill-foreground: var(--pill-foreground);
   --color-segment-thumb: var(--segment-thumb);
   --color-step-line: var(--step-line);
+  --color-card-gold: var(--card-gold);
+  --color-card-gold-chip: var(--card-gold-chip);
+  --color-card-tri: var(--card-tri);
+  --color-card-tri-chip: var(--card-tri-chip);
 }
 
+/* Light is the default, so a missing data-theme still renders correctly. */
 :root {
+  color-scheme: light;
+  --header-h: 68px;
+
   --background: #fbfbfa;
   --foreground: #141816;
   --body: #4a524e;
@@ -33,39 +44,79 @@
   --primary: #0c5c56;
   --primary-hover: #08403c;
   --primary-foreground: #ffffff;
-  /* Links and line icons */
+  /* Links, eyebrow, focus rings, winning amount */
   --accent: #0c5c56;
   --accent-hover: #08403c;
-  /* "Tap" in the wordmark: brand teal on light, pale teal on dark */
+  /* "Tap" in the wordmark */
   --wordmark-accent: #0c5c56;
   --surface: #ffffff;
+  /* Segmented-control track */
   --surface-divider: #eef1ef;
-  /* Try-it widget: winning row, selected segment, card shadow */
+  /* Try-it widget: winning row, Tap this pill, selected segment, shadows */
   --highlight: #eef3f1;
+  --highlight-border: #0c5c56;
+  --pill: #0c5c56;
+  --pill-foreground: #ffffff;
   --segment-thumb: #ffffff;
+  --segment-thumb-shadow: rgba(20, 24, 22, 0.15);
   --hero-shadow: rgba(20, 24, 22, 0.4);
-  /* Mobile "How it works" connector between step numerals */
+  --card-art-shadow: rgba(20, 24, 22, 0.45);
+  /* How it works connector between step numerals */
   --step-line: #d4e4df;
+  /* Placeholder card art, same in both themes */
+  --card-gold: #b8913f;
+  --card-gold-chip: #ecdcae;
+  --card-tri: #5b4640;
+  --card-tri-chip: #d7c89b;
 }
 
-.dark {
+[data-theme="dark"] {
+  color-scheme: dark;
+
   --background: #0f1312;
-  --foreground: #e9eeec;
-  --body: #b9c3bf;
-  --muted: #9aa6a1;
-  --divider: #27302d;
-  --primary: #11756d;
-  --primary-hover: #0c5c56;
+  --foreground: #eef2f0;
+  --body: #c4ccc8;
+  --muted: #9aa5a0;
+  --divider: #26302c;
+  --primary: #0c5c56;
+  --primary-hover: #0f6e67;
   --primary-foreground: #ffffff;
-  --accent: #6fd3c7;
-  --accent-hover: #a3e6de;
-  --wordmark-accent: #bfe0da;
-  --surface: #171d1b;
-  --surface-divider: #242d2a;
+  --accent: #5fc1b4;
+  --accent-hover: #8dd5cb;
+  --wordmark-accent: #5fc1b4;
+  --surface: #171c1a;
+  --surface-divider: #1e2522;
   --highlight: #12302c;
-  --segment-thumb: #33403c;
+  --highlight-border: #5fc1b4;
+  --pill: #5fc1b4;
+  --pill-foreground: #0f1312;
+  --segment-thumb: #2b3531;
+  --segment-thumb-shadow: rgba(0, 0, 0, 0.4);
   --hero-shadow: rgba(0, 0, 0, 0.7);
-  --step-line: #2b3d38;
+  --card-art-shadow: rgba(0, 0, 0, 0.6);
+  --step-line: #26302c;
+}
+
+@media (min-width: 48rem) {
+  :root {
+    --header-h: 80px;
+  }
+}
+
+@media (min-width: 64rem) {
+  :root {
+    --header-h: 88px;
+  }
+}
+
+/*
+ * Header + hero fill the first screen. svh is the viewport with browser UI
+ * shown, so nothing below the hero peeks in on load; vh is the fallback.
+ * min-height only, so taller content still grows.
+ */
+@utility min-h-hero {
+  min-height: calc(100vh - var(--header-h));
+  min-height: calc(100svh - var(--header-h));
 }
 
 @layer base {

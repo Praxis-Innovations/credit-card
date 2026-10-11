@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
 import { OpenAppLink } from "@/components/open-app-link";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { CONTAINER } from "@/lib/styles";
 
 export function SiteHeader() {
   return (
     <header
-      className={`${CONTAINER} flex h-[68px] items-center justify-between md:h-20 lg:h-[88px]`}
+      className={`${CONTAINER} flex h-(--header-h) items-center justify-between`}
     >
       <Link
         href="/"
@@ -14,7 +15,10 @@ export function SiteHeader() {
       >
         <BrandLogo />
       </Link>
-      <OpenAppLink />
+      <div className="flex items-center gap-2 md:gap-3">
+        <ThemeToggle />
+        <OpenAppLink />
+      </div>
     </header>
   );
 }
