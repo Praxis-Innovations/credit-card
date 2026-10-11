@@ -1,19 +1,15 @@
-import type { Category, MerchantBrand } from "./api-types";
+import { CATEGORY_LABELS, type Category, type MerchantBrand } from "./api-types";
 import type { NearbyPlace } from "./places";
 
-/** A store the user can pick: an OSM place, a catalog brand, or free text. */
+/** A store the user picked: an OSM place, a catalog brand, a search, or a bare category. */
 export interface StoreChoice {
   /** Display name. */
   name: string;
-  /** Raw text sent as merchantQuery — the API resolves it to a brand. */
-  merchantQuery?: string;
-  /** Category sent with the request; the API overrides it when the brand resolves. */
+  /** The only purchase context sent to the API: v1 ranks by category earn rate. */
   category: Category;
   logoUrl: string | null;
   logoAlt: string | null;
   distanceMeters?: number;
-  /** Matches a brand in /v1/merchant-brands (i.e. has a card partnership). */
-  partner: boolean;
   source: "nearby" | "browse" | "search" | "category";
 }
 
@@ -21,7 +17,6 @@ export interface StoreChoice {
 export interface NearbyStore {
   id: string;
   name: string;
-  merchantQuery: string;
   category: Category;
   distanceMeters: number;
   brand: MerchantBrand | null;
@@ -57,9 +52,23 @@ export function categoryForPlaceType(placeType: string | undefined): Category {
 }
 
 /**
- * Find the catalog brand for an OSM place by name/brand tags. Only drives the
- * partner dot and logo — the API does the authoritative match from
- * merchantQuery. Exact normalized match wins; otherwise a whole-word prefix
+ * Spend category for a picked store: the catalog brand's category, else the
+ * OSM amenity/shop mapping, else the Browse category, else "other".
+ */
+export function storeCategory(input: {
+  brand?: Pick<MerchantBrand, "category"> | null;
+  placeType?: string;
+  browseCategory?: Category;
+}): Category {
+  if (input.brand) return input.brand.category;
+  const fromPlace = categoryForPlaceType(input.placeType);
+  if (fromPlace !== "other") return fromPlace;
+  return input.browseCategory ?? "other";
+}
+
+/**
+ * Find the catalog brand for an OSM place by name/brand tags (drives the logo
+ * and category). Exact normalized match wins; otherwise a whole-word prefix
  * ("Costco" ↔ "Costco Gas"), preferring a brand in the place's category.
  */
 export function matchBrand(
@@ -107,22 +116,64 @@ export function toNearbyStores(
     const key = normalizeName(name);
     if (seen.has(key)) continue;
     seen.add(key);
-    const category = categoryForPlaceType(place.placeType);
-    const hints = [...place.brandHints, name];
-    const brand = matchBrand(hints, brands, category);
-    const merchantQuery =
-      place.brandHints.find((h) => h.trim().length > 0)?.trim() || name;
+    const brand = matchBrand(
+      [...place.brandHints, name],
+      brands,
+      categoryForPlaceType(place.placeType),
+    );
     stores.push({
       id: place.id,
       name,
-      merchantQuery,
-      category,
+      category: storeCategory({ brand, placeType: place.placeType }),
       distanceMeters: place.distanceMeters,
       brand,
     });
     if (stores.length >= limit) break;
   }
   return stores;
+}
+
+export function choiceFromNearby(store: NearbyStore): StoreChoice {
+  return {
+    name: store.name,
+    category: store.category,
+    logoUrl: store.brand?.logoUrl ?? null,
+    logoAlt: store.brand?.logoAlt ?? null,
+    distanceMeters: store.distanceMeters,
+    source: "nearby",
+  };
+}
+
+export function choiceFromBrand(brand: MerchantBrand): StoreChoice {
+  return {
+    name: brand.name,
+    category: storeCategory({ brand }),
+    logoUrl: brand.logoUrl ?? null,
+    logoAlt: brand.logoAlt ?? null,
+    source: "browse",
+  };
+}
+
+/** "Not listed? Use Gas rates": the category itself stands in for the store. */
+export function choiceForCategory(category: Category): StoreChoice {
+  return {
+    name: CATEGORY_LABELS[category],
+    category,
+    logoUrl: null,
+    logoAlt: null,
+    source: "category",
+  };
+}
+
+/** Free-text store from the search box, priced at the selected Browse category. */
+export function choiceFromSearch(text: string, browseCategory: Category): StoreChoice {
+  return {
+    name: text.trim(),
+    category: storeCategory({ browseCategory }),
+    logoUrl: null,
+    logoAlt: null,
+    source: "search",
+  };
 }
 
 export function formatDistance(meters: number): string {

@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { installNorthtapApiMock } from "./helpers/api-mock";
-import { browseShellAndSkip, COSTCO_MC, pickCards, SCOTIA_GOLD } from "./helpers/flow";
+import { expectNoForbiddenText, SCOTIA_GOLD, TRIANGLE } from "./helpers/flow";
 import { installSupabaseMock } from "./helpers/supabase-mock";
 
 type Size = "phone" | "tablet" | "desktop";
@@ -83,86 +83,233 @@ async function tilesInFirstRow(page: Page): Promise<number> {
   return tops.filter((top) => top === tops[0]).length;
 }
 
+const CONTENT_WIDTH = { tablet: 704, desktop: 1040 } as const;
+
+/** Widths of every visible page column (hidden stack screens have no box). */
+async function contentWidths(page: Page): Promise<number[]> {
+  return page
+    .locator('[data-testid="screen-content"]')
+    .evaluateAll((els) =>
+      els.map((el) => el.getBoundingClientRect().width).filter((w) => w > 0).map(Math.round),
+    );
+}
+
+/** Phone: no column. Tablet/desktop: the same fixed column, centred, on every screen. */
+async function expectColumn(page: Page, vp: { size: Size; width: number }) {
+  if (vp.size === "phone") {
+    await expect.poll(() => contentWidths(page)).toEqual([vp.width]);
+    return;
+  }
+  const width = CONTENT_WIDTH[vp.size];
+  await expect.poll(() => contentWidths(page)).toEqual([width]);
+}
+
+/** The current screen's bottom bar (earlier stack screens stay mounted, hidden). */
+function actionBar(page: Page) {
+  return page.locator('[data-testid="action-bar"]:visible');
+}
+
+/** Tablet/desktop action bar: Back at the column's left edge, the primary at its right. */
+async function expectActionBar(
+  page: Page,
+  vp: { size: Size; width: number },
+  primary: string | null,
+) {
+  const bar = actionBar(page);
+  if (vp.size === "phone") {
+    await expect(bar).toHaveCount(0);
+    return;
+  }
+  const width = CONTENT_WIDTH[vp.size];
+  const left = (vp.width - width) / 2;
+  const back = await box(bar.getByRole("button", { name: "Back" }));
+  expect(back.x).toBeCloseTo(left, 0);
+  if (primary) {
+    const b = await box(bar.getByRole("button", { name: primary }));
+    expect(b.x + b.width).toBeCloseTo(left + width, 0);
+  }
+}
+
 for (const vp of VIEWPORTS) {
   test.describe(`responsive web at ${vp.width}x${vp.height}`, () => {
     test.use({ viewport: { width: vp.width, height: vp.height } });
 
-    test("happy path: intro → cards → browse → Shell → result → Save", async ({ page }) => {
+    test("happy path: intro → cards → location → browse Gas → Shell → Skip → Triangle $4.00", async ({
+      page,
+    }) => {
       await installNorthtapApiMock(page);
       await installSupabaseMock(page, { googleEnabled: true });
 
       await page.goto("/");
       const banner = page.getByRole("banner");
-      if (vp.size === "desktop") {
-        await expect(banner.getByLabel("NorthTap")).toBeVisible();
-      } else {
+      if (vp.size === "phone") {
         await expect(banner).toHaveCount(0);
+      } else {
+        await expect(banner.getByLabel("NorthTap")).toBeVisible();
+        await expect(banner.getByRole("progressbar")).toHaveCount(0);
       }
+      await expectColumn(page, vp);
 
       const getStarted = page.getByRole("button", { name: "Get started" });
       await expect(getStarted).toBeVisible();
       const start = await box(getStarted);
       if (vp.size === "phone") {
         expect(start.width).toBeCloseTo(vp.width - 48, 0);
+      } else if (vp.size === "tablet") {
+        // In the bottom action bar, at the column's right edge.
+        expect(start.x + start.width).toBeCloseTo((vp.width + 704) / 2, 0);
+        await expect(actionBar(page)).toContainText(
+          "Takes about a minute · no account needed",
+        );
       } else {
-        expect(start.width).toBeLessThanOrEqual(400);
-        expect(start.x + start.width / 2).toBeCloseTo(vp.width / 2, 0);
+        // Inline under the copy, at the column's left edge.
+        expect(start.x).toBeCloseTo((vp.width - 1040) / 2, 0);
+        await expect(actionBar(page)).toHaveCount(0);
       }
       expect(await horizontalOverflow(page)).toEqual([]);
 
-      await pickCards(page, [SCOTIA_GOLD, COSTCO_MC]);
+      await getStarted.click();
+      await expect(page.getByText("Common cards")).toBeVisible();
+      await expectColumn(page, vp);
+      if (vp.size !== "phone") {
+        const steps = banner.getByRole("progressbar", { name: "Step 1 of 3" });
+        await expect(steps).toBeVisible();
+        const stepsBox = await box(steps);
+        expect(stepsBox.x + stepsBox.width / 2).toBeCloseTo(vp.width / 2, 0);
+        // Labelled on desktop, numbered only on tablet.
+        await expect(steps.getByText("Cards", { exact: true })).toHaveCount(
+          vp.size === "desktop" ? 1 : 0,
+        );
+      }
+      await page.getByRole("checkbox", { name: TRIANGLE }).click();
+      await page.getByRole("checkbox", { name: SCOTIA_GOLD }).click();
+      await expectActionBar(page, vp, "Continue with 2 cards");
+      if (vp.size !== "phone") {
+        const rows = page.getByRole("checkbox");
+        const [first, second] = [await box(rows.nth(0)), await box(rows.nth(1))];
+        expect(second.y).toBeCloseTo(first.y, 0);
+        expect(second.x).toBeGreaterThan(first.x + first.width);
+      }
+      expect(await horizontalOverflow(page)).toEqual([]);
+      await page.getByRole("button", { name: "Continue with 2 cards" }).click();
+
+      await expect(page.getByRole("heading", { name: /Find the store/ })).toBeVisible();
+      await expect(
+        page.getByText(/so it knows the kind of purchase: gas, groceries, dining and more/),
+      ).toBeVisible();
+      await expectColumn(page, vp);
+      await expectActionBar(page, vp, "Allow location");
+      if (vp.size !== "phone") {
+        // The tertiary action sits just left of the primary.
+        const bar = actionBar(page);
+        const choose = await box(bar.getByRole("button", { name: "Choose a store instead" }));
+        const allow = await box(bar.getByRole("button", { name: "Allow location" }));
+        expect(choose.x + choose.width).toBeLessThanOrEqual(allow.x);
+        expect(allow.x - (choose.x + choose.width)).toBeLessThan(24);
+      }
+      await expectNoForbiddenText(page);
       await page.getByRole("button", { name: "Choose a store instead" }).click();
+
       await expect(page.getByRole("tab", { name: "Browse" })).toHaveAttribute(
         "aria-selected",
         "true",
       );
       await page.getByRole("button", { name: "Gas", exact: true }).click();
-      await expect(page.getByText(/Partner stores for gas/i)).toBeVisible();
-
-      const column = await box(page.getByRole("tablist", { name: "Find a store" }));
-      if (vp.size === "phone") {
-        expect(column.x).toBeLessThan(30);
-      } else {
-        const maxColumn = vp.size === "tablet" ? 560 : 640;
-        expect(column.width).toBeLessThanOrEqual(maxColumn);
-        expect(column.x + column.width / 2).toBeCloseTo(vp.width / 2, 0);
+      await expect(page.getByText("Top stores for Gas")).toBeVisible();
+      await expectColumn(page, vp);
+      await expectActionBar(page, vp, null);
+      if (vp.size !== "phone") {
+        await expect(actionBar(page)).toContainText("Choose a store to continue");
       }
 
-      expect(await tilesInFirstRow(page)).toBe({ phone: 3, tablet: 4, desktop: 5 }[vp.size]);
+      const tabs = await box(page.getByRole("tablist", { name: "Find a store" }));
+      if (vp.size === "phone") {
+        expect(tabs.x).toBeLessThan(30);
+      } else if (vp.size === "tablet") {
+        expect(tabs.width).toBeCloseTo(704, 0);
+      } else {
+        expect(tabs.width).toBeCloseTo(320, 0);
+        expect(tabs.x + tabs.width).toBeCloseTo((vp.width + 1040) / 2, 0);
+      }
+
+      expect(await tilesInFirstRow(page)).toBe({ phone: 3, tablet: 4, desktop: 6 }[vp.size]);
 
       const chipGroup = page.getByRole("group", { name: "Categories" });
-      const chips = chipGroup.getByRole("button");
       if (vp.size === "phone") {
         const scrolls = await chipGroup.evaluate((el) => el.scrollWidth > el.clientWidth);
         expect(scrolls).toBe(true);
       } else {
-        for (const chip of await chips.all()) {
+        for (const chip of await chipGroup.getByRole("button").all()) {
           const b = await box(chip);
           expect(b.x + b.width).toBeLessThanOrEqual(vp.width);
         }
       }
+      await expectNoForbiddenText(page);
       expect(await horizontalOverflow(page)).toEqual([]);
 
       await page.getByRole("button", { name: /^Shell,/ }).click();
       await expect(page.getByLabel("Amount in dollars")).toBeVisible();
+      await expectColumn(page, vp);
+      await expectActionBar(page, vp, "Show my best card");
+      await expect(page.getByRole("button", { name: "Change store" })).toBeVisible();
+      if (vp.size === "desktop") {
+        await expect(
+          page.getByRole("heading", { name: "How much are you spending at Shell?" }),
+        ).toBeVisible();
+        const aside = page.getByRole("region", { name: "Your purchase" });
+        await expect(aside.getByText("Comparing 2 cards")).toBeVisible();
+        await expect(aside.getByRole("button", { name: "Edit cards" })).toBeVisible();
+        const asideBox = await box(aside);
+        const panel = await box(page.getByRole("region", { name: "Amount" }));
+        expect(asideBox.width).toBeCloseTo(360, 0);
+        expect(panel.x).toBeGreaterThan(asideBox.x + asideBox.width);
+      }
       expect(await horizontalOverflow(page)).toEqual([]);
       await page.getByRole("button", { name: "Skip" }).click();
 
       const best = page.getByRole("region", { name: "Best card" });
-      await expect(best.getByText("$3.67")).toBeVisible();
+      await expect(best.getByText("$4.00").first()).toBeVisible();
+      await expect(best.getByText("Triangle World Elite Mastercard")).toBeVisible();
       await expect(best.getByText("back on your $100")).toBeVisible();
-      const othersLabel = page.getByText("Other cards in your wallet");
-      await expect(othersLabel).toBeVisible();
-      await expect(page.getByLabel("Costco Mastercard, $3.00 back")).toBeVisible();
+      await expectColumn(page, vp);
+      await expect(actionBar(page)).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Change store" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Change amount" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "New search" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
+      if (vp.size === "phone") {
+        await expect(page.getByRole("button", { name: "Change store" })).toHaveText("Store");
+      } else {
+        await expect(banner.getByRole("button", { name: "New search" })).toBeVisible();
+      }
       await expectCardAspect(page);
 
-      const bestBox = await box(best);
-      const othersBox = await box(othersLabel);
       if (vp.size === "desktop") {
-        expect(othersBox.x).toBeGreaterThan(bestBox.x + bestBox.width);
+        await expect(
+          page.getByRole("heading", { name: "Your best card at Shell" }),
+        ).toBeVisible();
+        await expect(best.getByText("How you get $4.00")).toBeVisible();
+        await expect(best.getByLabel("Total back: $4.00")).toBeVisible();
+        const table = page.getByRole("table", { name: "Compare your cards for this purchase" });
+        const rows = table.getByRole("row");
+        await expect(rows).toHaveCount(3);
+        await expect(rows.nth(1)).toContainText("Triangle World Elite Mastercard");
+        await expect(rows.nth(1)).toContainText("Best");
+        await expect(rows.nth(1)).toContainText("$4.00");
+        await expect(rows.nth(2)).toContainText("Gold American Express");
+        await expect(rows.nth(2)).toContainText("1× Scene+ on gas");
+        await expect(rows.nth(2)).toContainText("$1.00");
+        const tableBox = await box(table);
+        const keep = await box(page.getByText("Keep your wallet"));
+        expect(keep.x).toBeGreaterThan(tableBox.x + tableBox.width);
       } else {
-        expect(othersBox.y).toBeGreaterThan(bestBox.y + bestBox.height);
+        await expect(best.getByLabel("Earn rate on gas: 4 pts per $1")).toBeVisible();
+        const others = page.getByText("Other cards in your wallet");
+        await expect(page.getByLabel("Gold American Express, $1.00 back")).toBeVisible();
+        const bestBox = await box(best);
+        expect((await box(others)).y).toBeGreaterThan(bestBox.y + bestBox.height);
       }
+      await expectNoForbiddenText(page);
       expect(await horizontalOverflow(page)).toEqual([]);
 
       await page.getByRole("button", { name: "Save your wallet" }).click();
@@ -184,7 +331,7 @@ for (const vp of VIEWPORTS) {
         expect(sheet.y + sheet.height).toBeLessThan(vp.height - 24);
       } else {
         expect(sheet.y + sheet.height).toBeCloseTo(vp.height, 0);
-        expect(sheet.width).toBeCloseTo(vp.size === "tablet" ? 560 : vp.width, 0);
+        expect(sheet.width).toBeCloseTo(vp.size === "tablet" ? 704 : vp.width, 0);
       }
       await dialog.getByRole("button", { name: "Maybe later" }).click();
       await expect(dialog).toBeHidden();
@@ -207,8 +354,8 @@ test.describe("no horizontal scrolling from 320px to 1920px", () => {
     await expectNoOverflowAt(page, OVERFLOW_WIDTHS);
 
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole("checkbox", { name: TRIANGLE }).click();
     await page.getByRole("checkbox", { name: SCOTIA_GOLD }).click();
-    await page.getByRole("checkbox", { name: COSTCO_MC }).click();
     await page.getByRole("button", { name: "Continue with 2 cards" }).click();
     await expect(page.getByRole("button", { name: "Allow location" })).toBeVisible();
     await expectNoOverflowAt(page, OVERFLOW_WIDTHS);
@@ -216,7 +363,7 @@ test.describe("no horizontal scrolling from 320px to 1920px", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.getByRole("button", { name: "Choose a store instead" }).click();
     await page.getByRole("button", { name: "Gas", exact: true }).click();
-    await expect(page.getByText(/Partner stores for gas/i)).toBeVisible();
+    await expect(page.getByText("Top stores for Gas")).toBeVisible();
     await expectNoOverflowAt(page, OVERFLOW_WIDTHS);
 
     await page.setViewportSize({ width: 390, height: 844 });
@@ -226,7 +373,7 @@ test.describe("no horizontal scrolling from 320px to 1920px", () => {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.getByRole("button", { name: "Skip" }).click();
-    await expect(page.getByLabel("Best card").getByText("$3.67")).toBeVisible();
+    await expect(page.getByLabel("Best card").getByText("$4.00")).toBeVisible();
     await expectNoOverflowAt(page, OVERFLOW_WIDTHS);
     for (const width of OVERFLOW_WIDTHS) {
       await page.setViewportSize({ width, height: 900 });
@@ -273,7 +420,7 @@ test.describe("keyboard", () => {
 
     await tabTo(page, page.getByRole("button", { name: "Gas", exact: true }));
     await page.keyboard.press("Enter");
-    await expect(page.getByText(/Partner stores for gas/i)).toBeVisible();
+    await expect(page.getByText("Top stores for Gas")).toBeVisible();
     await tabTo(page, page.getByRole("button", { name: /^Shell,/ }));
     await page.keyboard.press("Enter");
 

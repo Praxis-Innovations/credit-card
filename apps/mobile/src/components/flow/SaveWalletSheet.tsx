@@ -95,7 +95,7 @@ export function SaveWalletSheet({ visible, cardCount, onClose }: SaveWalletSheet
           style={[
             wide ? styles.dialog : styles.sheet,
             !wide && {
-              maxWidth: layout.columnMaxWidth,
+              maxWidth: layout.contentWidth ?? layout.columnMaxWidth,
               paddingBottom: Math.max(36, insets.bottom + 16),
             },
           ]}

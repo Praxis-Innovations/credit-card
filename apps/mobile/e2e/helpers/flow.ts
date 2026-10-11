@@ -19,18 +19,25 @@ export async function pickCards(page: Page, cardLabels: RegExp[]) {
   await expect(page.getByRole("heading", { name: /Find the store/ })).toBeVisible();
 }
 
-/** Browse → Shell → amount Skip → result. */
+/** Browse → Gas → Shell → amount Skip → result. */
 export async function browseShellAndSkip(page: Page) {
   await expect(page.getByRole("tab", { name: "Browse" })).toHaveAttribute("aria-selected", "true");
   await page.getByRole("button", { name: "Gas", exact: true }).click();
-  await expect(page.getByText(/Partner stores for gas/i)).toBeVisible();
+  await expect(page.getByText("Top stores for Gas")).toBeVisible();
   await page.getByRole("button", { name: /^Shell,/ }).click();
 
   await expect(page.getByLabel("Amount in dollars")).toBeVisible();
-  await expect(page.getByText("Optional. We'll use $100 if you skip.")).toBeVisible();
   await page.getByRole("button", { name: "Skip" }).click();
   await expect(page.getByText("Tap this card")).toBeVisible();
 }
 
+/** Copy removed with the v1 scope cut: none of it may appear anywhere. */
+export const FORBIDDEN_TEXT = /partnership|Shell Go\+|V-Power/i;
+
+export async function expectNoForbiddenText(page: Page) {
+  expect(await page.locator("body").innerText()).not.toMatch(FORBIDDEN_TEXT);
+}
+
 export const SCOTIA_GOLD = /^Scotiabank Gold American Express, Scene\+$/;
+export const TRIANGLE = /^Canadian Tire Triangle World Elite Mastercard, Triangle Rewards$/;
 export const COSTCO_MC = /^CIBC Costco Mastercard, Cash back$/;

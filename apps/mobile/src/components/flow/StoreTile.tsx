@@ -10,23 +10,21 @@ interface StoreTileProps {
   meta: string;
   logoUrl: string | null | undefined;
   logoAlt?: string | null;
-  partner: boolean;
   onPress: () => void;
 }
 
 /** One cell of the store grid. */
-export function StoreTile({ name, meta, logoUrl, logoAlt, partner, onPress }: StoreTileProps) {
+export function StoreTile({ name, meta, logoUrl, logoAlt, onPress }: StoreTileProps) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${name}, ${meta}${partner ? ", has a card partnership" : ""}`}
+      accessibilityLabel={`${name}, ${meta}`}
       style={(state) => {
         const { pressed, hovered } = pressState(state);
         return [styles.tile, hovered && styles.hovered, pressed && styles.pressed];
       }}
     >
-      {partner ? <View style={styles.dot} /> : null}
       <StoreLogo name={name} logoUrl={logoUrl} logoAlt={logoAlt} />
       <Text style={styles.name} numberOfLines={2}>
         {name}
@@ -40,7 +38,7 @@ export function StoreTile({ name, meta, logoUrl, logoAlt, partner, onPress }: St
 
 const GAP = 10;
 
-/** Lays tiles out 3 (phone), 4 (tablet) or 5 (desktop) to a row with 10px gaps. */
+/** Lays tiles out 3 (phone), 4 (tablet) or 6 (desktop) to a row with 10px gaps. */
 export function TileGrid({ children }: { children: ReactNode }) {
   const { tilesPerRow } = useLayout();
   const [width, setWidth] = useState(0);
@@ -89,15 +87,6 @@ const styles = StyleSheet.create({
   pressed: {
     borderColor: colors.primary,
     backgroundColor: colors.tint,
-  },
-  dot: {
-    position: "absolute",
-    right: 8,
-    top: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
   },
   name: {
     fontFamily: fonts.semibold,

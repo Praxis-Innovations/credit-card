@@ -2,9 +2,9 @@ import type { CreditCard } from "./api-types";
 
 /**
  * Card ids shown under "Common cards" on the pick-your-cards screen before
- * the user searches. Hand-picked, widely held Canadian cards that also cover
- * the gas / grocery partnerships the API knows about. This is editorial, not
- * usage data — hence "Common cards" rather than "Popular in Canada".
+ * the user searches. Hand-picked, widely held Canadian cards across points,
+ * store-rewards and cash-back programs. This is editorial, not usage data —
+ * hence "Common cards" rather than "Popular in Canada".
  *
  * Ids must exist in GET /v1/cards; unknown ids are silently skipped.
  */

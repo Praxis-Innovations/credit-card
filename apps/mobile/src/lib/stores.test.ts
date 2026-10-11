@@ -3,10 +3,15 @@ import type { MerchantBrand } from "./api-types";
 import type { NearbyPlace } from "./places";
 import {
   categoryForPlaceType,
+  choiceForCategory,
+  choiceFromBrand,
+  choiceFromNearby,
+  choiceFromSearch,
   formatDistance,
   matchBrand,
   normalizeName,
   orderCategories,
+  storeCategory,
   toNearbyStores,
 } from "./stores";
 
@@ -68,6 +73,87 @@ describe("categoryForPlaceType", () => {
   });
 });
 
+describe("storeCategory", () => {
+  it("uses the catalog brand's category first", () => {
+    expect(storeCategory({ brand: { category: "gas" } })).toBe("gas");
+    expect(
+      storeCategory({ brand: { category: "groceries" }, placeType: "fuel", browseCategory: "dining" }),
+    ).toBe("groceries");
+  });
+
+  it("falls back to the OSM tag mapping, then the Browse category", () => {
+    expect(storeCategory({ brand: null, placeType: "pharmacy" })).toBe("drugstore");
+    expect(storeCategory({ placeType: "fuel", browseCategory: "dining" })).toBe("gas");
+    expect(storeCategory({ placeType: "mall", browseCategory: "travel" })).toBe("travel");
+    expect(storeCategory({ browseCategory: "groceries" })).toBe("groceries");
+  });
+
+  it("is 'other' when nothing says otherwise", () => {
+    expect(storeCategory({})).toBe("other");
+    expect(storeCategory({ placeType: "mall" })).toBe("other");
+  });
+});
+
+describe("store choices", () => {
+  it("nearby: the matched brand's category and logo, else the OSM mapping", () => {
+    const [shell, corner] = toNearbyStores(
+      [
+        place("1", "Shell", 200, { placeType: "fuel", brandHints: ["Shell"] }),
+        place("2", "Harbord Convenience", 300, { placeType: "convenience" }),
+      ],
+      [{ ...BRANDS[0]!, logoUrl: "/assets/brands/shell.png", logoAlt: "Shell logo" }],
+    );
+    expect(choiceFromNearby(shell!)).toEqual({
+      name: "Shell",
+      category: "gas",
+      logoUrl: "/assets/brands/shell.png",
+      logoAlt: "Shell logo",
+      distanceMeters: 200,
+      source: "nearby",
+    });
+    expect(choiceFromNearby(corner!)).toMatchObject({ category: "groceries", logoUrl: null });
+  });
+
+  it("a nearby place's brand category wins over its OSM tag", () => {
+    const [store] = toNearbyStores(
+      [place("1", "Shoppers Drug Mart", 50, { placeType: "convenience" })],
+      BRANDS,
+    );
+    expect(choiceFromNearby(store!).category).toBe("drugstore");
+  });
+
+  it("browse brand, bare category and free-text search", () => {
+    expect(choiceFromBrand(BRANDS[2]!)).toMatchObject({
+      name: "Costco Gas",
+      category: "gas",
+      source: "browse",
+    });
+    expect(choiceForCategory("dining")).toMatchObject({
+      name: "Dining",
+      category: "dining",
+      source: "category",
+    });
+    expect(choiceFromSearch("  Joe's Diner ", "dining")).toMatchObject({
+      name: "Joe's Diner",
+      category: "dining",
+      source: "search",
+    });
+  });
+
+  it("never carries a merchant query or fuel grade", () => {
+    const choices = [
+      choiceFromBrand(BRANDS[0]!),
+      choiceForCategory("gas"),
+      choiceFromSearch("Shell", "gas"),
+    ];
+    for (const choice of choices) {
+      expect(Object.keys(choice).sort()).toEqual(
+        ["category", "logoAlt", "logoUrl", "name", "source"].sort(),
+      );
+    }
+  });
+});
+
 describe("matchBrand", () => {
   it("prefers an exact normalized match", () => {
     expect(matchBrand(["SHELL"], BRANDS)?.id).toBe("shell");
@@ -103,13 +189,13 @@ describe("toNearbyStores", () => {
     ]);
   });
 
-  it("sends the OSM brand tag as merchantQuery when present", () => {
+  it("matches the brand from the OSM brand tag", () => {
     const [store] = toNearbyStores(
       [place("1", "Shoppers Drug Mart Bloor", 50, { brandHints: ["Shoppers Drug Mart"] })],
       BRANDS,
     );
-    expect(store?.merchantQuery).toBe("Shoppers Drug Mart");
     expect(store?.brand?.id).toBe("shoppers-drug-mart");
+    expect(store?.category).toBe("drugstore");
   });
 
   it("caps the list", () => {

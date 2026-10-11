@@ -21,7 +21,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.northtap.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "NorthTap uses your location only while the app is open, to find the store you're at and use that store's card partnerships. It is never sent to NorthTap's servers."
+        "NSLocationWhenInUseUsageDescription": "NorthTap uses your location only while the app is open, to find the store you're at and the kind of purchase you're making. It is never sent to NorthTap's servers."
       }
     },
     "android": {
@@ -37,7 +37,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "NorthTap uses your location only while the app is open, to find the store you're at and use that store's card partnerships. It is never sent to NorthTap's servers."
+          "locationWhenInUsePermission": "NorthTap uses your location only while the app is open, to find the store you're at and the kind of purchase you're making. It is never sent to NorthTap's servers."
         }
       ],
       "expo-font",

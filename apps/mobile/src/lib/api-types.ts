@@ -68,14 +68,6 @@ export interface CreditCard {
   imageAlt?: string | null;
 }
 
-/** Brand / loyalty program reference nested in partnerships and recommendations. */
-export interface LogoSummary {
-  id: string;
-  name: string;
-  logoUrl: string | null;
-  logoAlt: string | null;
-}
-
 /** GET /v1/merchant-brands(/:id) */
 export interface MerchantBrand {
   id: string;
@@ -107,59 +99,31 @@ export interface CategoryInfo {
   label: string;
 }
 
-/** GET /v1/partnerships/:id (fields the app renders). */
-export interface Partnership {
-  id: string;
-  merchantBrandIds: string[];
-  brands: LogoSummary[];
-  loyaltyProgramId: string | null;
-  loyaltyProgram: LogoSummary | null;
-  cardIds: string[];
-  affiliation: string;
-  /** What the cardholder must do before paying (link accounts, scan, …). */
-  requirements: string;
-  notes: string | null;
-  sourceUrls: string[];
-  sourceUrl: string | null;
-  lastVerified: string;
-}
-
 export interface SpendToDate {
   monthly?: Partial<Record<Category, number>>;
   annual?: Partial<Record<Category, number>>;
 }
 
-export type FuelGrade = "regular" | "premium";
-
+/**
+ * v1 ranks purely by category earn rate: the app never sends the API's
+ * merchant / merchantQuery / fuelGrade inputs.
+ */
 export interface RecommendationRequest {
   amountCad: number;
   category: Category;
-  merchant?: string;
-  /** Raw free-text brand/name (e.g. OSM "Shell") — resolved server-side. */
-  merchantQuery?: string;
   ownedCardIds?: string[];
   spendToDate?: SpendToDate;
   valuations?: Partial<Record<PointCurrency, number>>;
-  /** Grade being pumped; premium unlocks grade-scoped benefits. Server default: regular. */
-  fuelGrade?: FuelGrade;
   limit?: number;
 }
-
-export type ValueBreakdownKind =
-  | "card_earn"
-  | "cents_per_litre_instant"
-  | "cents_per_litre_rewards"
-  | "points_per_litre"
-  | "points_per_dollar"
-  | "cashback_percent";
 
 /** One dollar line of a recommendation; lines sum exactly to estimatedRewardCad. */
 export interface ValueBreakdownItem {
   label: string;
-  kind: ValueBreakdownKind;
+  kind: string;
   /** Whole-cent CAD amount. */
   amountCad: number;
-  partnershipId?: string;
+  /** Points earned on this purchase, for point-denominated lines. */
   points?: number;
   pointCurrency?: PointCurrency;
   centsPerPoint?: number;
@@ -168,44 +132,26 @@ export interface ValueBreakdownItem {
   promotionalEnds?: string | null;
 }
 
-export interface ValueAssumptions {
-  /** Assumed pump price; null when no per-litre benefit applied. */
-  cadPerLitre: number | null;
-  litres: number | null;
-  /** Cents CAD per point for each currency valued in the breakdown. */
-  pointValuations: Partial<Record<PointCurrency, number>>;
-}
-
 export interface RecommendationItem {
   rank: number;
   card: CreditCard;
+  /** Points per $1 (or % cash back) in the purchase category. */
   earnRate: number;
+  /** Cents per point (1 for cash back). */
   pointValue: number;
   centsPerDollar: number;
   estimatedCentsBack: number;
   estimatedRewardCad: number;
   capExhausted: boolean;
   reason: string;
-  usedPartnership?: boolean;
-  partnershipId?: string;
-  /** Brand resolved from merchantQuery. */
-  merchantBrand?: LogoSummary | null;
-  /** Loyalty program of the partnership that drove this item. */
-  loyaltyProgram?: LogoSummary | null;
   /** Always sent by current API; optional for cached responses from older builds. */
   valueBreakdown?: ValueBreakdownItem[];
-  assumptions?: ValueAssumptions;
 }
 
 export interface RecommendationResponse {
   purchase: {
     amountCad: number;
     category: Category;
-    merchant: string | null;
-    merchantQuery?: string | null;
-    merchantBrandId?: string | null;
-    merchantBrand?: LogoSummary | null;
-    fuelGrade?: FuelGrade | null;
   };
   recommendations: RecommendationItem[];
   bestCardId: string | null;

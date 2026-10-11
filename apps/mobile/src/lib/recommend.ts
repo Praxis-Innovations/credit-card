@@ -1,15 +1,16 @@
 import { fetchRecommendation } from "./api-client";
 import {
   CATEGORIES,
+  type ApiErrorBody,
   type Category,
   type RecommendationRequest,
   type RecommendationResponse,
-  type ApiErrorBody,
 } from "./api-types";
 import {
   loadLastRecommendation,
   saveLastRecommendation,
 } from "./last-recommendation-cache";
+import type { StoreChoice } from "./stores";
 
 const CATEGORY_SET = new Set<string>(CATEGORIES);
 
@@ -18,8 +19,22 @@ export function isCategory(value: unknown): value is Category {
 }
 
 export type RecommendResult =
-  | (RecommendationResponse & { stale?: boolean })
+  | {
+      response: RecommendationResponse;
+      /** The store the response is for (the cached one when stale). */
+      store: StoreChoice | null;
+      stale: boolean;
+    }
   | { error: ApiErrorBody["error"]; status: number };
+
+/** The request for a picked store: amount, the store's category and the wallet — nothing else. */
+export function recommendationRequestFor(
+  store: Pick<StoreChoice, "category">,
+  amountCad: number,
+  ownedCardIds: string[],
+): RecommendationRequest {
+  return { amountCad, category: store.category, ownedCardIds, limit: 10 };
+}
 
 function isNetworkFailure(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
@@ -35,30 +50,21 @@ function isNetworkFailure(err: unknown): boolean {
  */
 export async function requestRecommendation(
   input: RecommendationRequest,
+  store: StoreChoice | null = null,
 ): Promise<RecommendResult> {
   const { amountCad, category, ownedCardIds } = input;
 
-  if (
-    typeof amountCad !== "number" ||
-    !(amountCad > 0) ||
-    !Number.isFinite(amountCad)
-  ) {
+  if (typeof amountCad !== "number" || !(amountCad > 0) || !Number.isFinite(amountCad)) {
     return {
       status: 400,
-      error: {
-        code: "bad_request",
-        message: "amountCad must be a number greater than 0",
-      },
+      error: { code: "bad_request", message: "amountCad must be a number greater than 0" },
     };
   }
 
   if (!isCategory(category)) {
     return {
       status: 400,
-      error: {
-        code: "bad_request",
-        message: "category must be a known spend category",
-      },
+      error: { code: "bad_request", message: "category must be a known spend category" },
     };
   }
 
@@ -73,15 +79,13 @@ export async function requestRecommendation(
   }
 
   try {
-    const result = await fetchRecommendation(input);
-    await saveLastRecommendation(result);
-    return result;
+    const response = await fetchRecommendation(input);
+    await saveLastRecommendation({ response, store });
+    return { response, store, stale: false };
   } catch (err) {
     if (isNetworkFailure(err)) {
       const cached = await loadLastRecommendation();
-      if (cached) {
-        return { ...cached, stale: true };
-      }
+      if (cached) return { ...cached, stale: true };
       return {
         status: 503,
         error: {
@@ -102,6 +106,3 @@ export async function requestRecommendation(
     };
   }
 }
-
-/** @deprecated Use requestRecommendation */
-export const buildRecommendationResponse = requestRecommendation;

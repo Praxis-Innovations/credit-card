@@ -11,34 +11,40 @@ describe("layoutFor", () => {
         size: "phone",
         wide: false,
         desktop: false,
+        contentWidth: undefined,
         columnMaxWidth: undefined,
         tilesPerRow: 3,
       });
     }
   });
 
-  it("centres a 560px column with four tiles on tablets", () => {
-    for (const width of [600, 820, 1023]) {
+  it("uses the fixed 704px tablet content width with four tiles", () => {
+    for (const width of [752, 820, 1023]) {
       expect(layoutFor(width, true)).toMatchObject({
         size: "tablet",
         wide: true,
         desktop: false,
-        columnMaxWidth: 560,
+        contentWidth: 704,
         tilesPerRow: 4,
       });
     }
   });
 
-  it("centres a 640px column with five tiles on desktop", () => {
-    for (const width of [1024, 1440, 1920]) {
+  it("uses the fixed 1040px desktop content width with six tiles", () => {
+    for (const width of [1104, 1440, 1920]) {
       expect(layoutFor(width, true)).toMatchObject({
         size: "desktop",
         wide: true,
         desktop: true,
-        columnMaxWidth: 640,
-        tilesPerRow: 5,
+        contentWidth: 1040,
+        tilesPerRow: 6,
       });
     }
+  });
+
+  it("only narrows the content when the window can't fit it", () => {
+    expect(layoutFor(600, true).contentWidth).toBe(552);
+    expect(layoutFor(1024, true).contentWidth).toBe(960);
   });
 
   it("always gives native the capped phone layout", () => {
@@ -46,6 +52,7 @@ describe("layoutFor", () => {
       expect(layoutFor(width, false)).toMatchObject({
         size: "phone",
         wide: false,
+        contentWidth: undefined,
         columnMaxWidth: 480,
         tilesPerRow: 3,
       });

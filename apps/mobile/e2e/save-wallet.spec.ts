@@ -60,7 +60,9 @@ test.describe("Save your wallet", () => {
 
     await expect(page.getByText("Wallet saved")).toBeVisible();
     await expect(page.getByText(/e2e@northtap\.test/)).toBeVisible();
-    await expect(page.getByLabel("Best card").getByText("$3.67")).toBeVisible();
+    // Back from Google: the cached result, still for Shell.
+    await expect(page.getByText("Shell · $100.00")).toBeVisible();
+    await expect(page.getByLabel("Best card").getByText("$3.00")).toBeVisible();
 
     const authorize = new URL(supabase.authorizeUrls[0]!);
     expect(authorize.searchParams.get("provider")).toBe("google");

@@ -26,6 +26,36 @@ export function SearchIcon({ size = 18, color = colors.textMuted }: IconProps) {
   );
 }
 
+const line = { strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
+
+export function ArrowRightIcon({ size = 18, color = colors.primaryFg }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M5 12h14" stroke={color} {...line} />
+      <Path d="M13 6l6 6-6 6" stroke={color} {...line} />
+    </Svg>
+  );
+}
+
+/** Outlined map pin used on "Change store" buttons. */
+export function StoreIcon({ size = 18, color = colors.text }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z" stroke={color} {...line} />
+      <Circle cx={12} cy={9.5} r={2.5} stroke={color} strokeWidth={2} />
+    </Svg>
+  );
+}
+
+export function EditIcon({ size = 18, color = colors.text }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M4 20h4l10-10-4-4L4 16v4z" stroke={color} {...line} />
+      <Path d="M13 7l4 4" stroke={color} {...line} />
+    </Svg>
+  );
+}
+
 export function CheckIcon({
   size = 20,
   color = colors.primary,
@@ -64,16 +94,6 @@ export function PinIcon({
   );
 }
 
-export function InfoIcon({ size = 20, color = colors.warnIcon }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={12} r={9} stroke={color} strokeWidth={2} />
-      <Path d="M12 8v5" stroke={color} strokeWidth={2} strokeLinecap="round" />
-      <Path d="M12 16h.01" stroke={color} strokeWidth={2} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
 export function CloseIcon({ size = 20, color = colors.textBody }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -83,8 +103,8 @@ export function CloseIcon({ size = 20, color = colors.textBody }: IconProps) {
   );
 }
 
-export function ContactlessIcon({ size = 20 }: IconProps) {
-  const stroke = "rgba(255,255,255,0.7)";
+export function ContactlessIcon({ size = 20, color = "rgba(255,255,255,0.7)" }: IconProps) {
+  const stroke = color;
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path d="M8.5 7.5a6 6 0 0 1 0 9" stroke={stroke} strokeWidth={1.8} strokeLinecap="round" />

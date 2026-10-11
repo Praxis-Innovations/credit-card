@@ -5,11 +5,13 @@ import type { CreditCard, LoyaltyProgram, RecommendationItem } from "./api-types
 import { COMMON_CARD_IDS, pickCommonCards, searchCards } from "./common-cards";
 import { initials, programForCard } from "./programs";
 import {
-  assumptionsNote,
+  breakdownRows,
+  earnSummary,
+  estimateNote,
   formatAmountShort,
   formatCad,
+  formatNumber,
   formatVerifiedDate,
-  otherCardSubtitle,
 } from "./result-copy";
 
 const card = (id: string, issuer: string, name: string, pointCurrency: string): CreditCard =>
@@ -122,49 +124,107 @@ describe("result copy", () => {
     expect(formatVerifiedDate("unknown")).toBe("unknown");
   });
 
-  it("describes fuel and point assumptions from the API", () => {
-    expect(
-      assumptionsNote({
-        assumptions: { cadPerLitre: 1.5, litres: 66.67, pointValuations: { "Scene+": 1 } },
-        category: "gas",
-        fuelGrade: "regular",
-      }),
-    ).toBe(
-      "Estimate for about 67 L at $1.50/L, with points valued at 1¢ each. Assumes regular fuel; premium-only bonuses aren't counted.",
+  it("formats points with thousands separators and at most two decimals", () => {
+    expect(formatNumber(400)).toBe("400");
+    expect(formatNumber(1.5)).toBe("1.5");
+    expect(formatNumber(12345.678)).toBe("12,345.68");
+  });
+});
+
+/** Shaped like the API's category-only answer for $100 of gas. */
+const TRIANGLE_PROGRAM = {
+  id: "triangle",
+  name: "Triangle Rewards",
+  pointCurrency: "Triangle",
+  logoUrl: null,
+} as unknown as LoyaltyProgram;
+
+const triangle = {
+  rank: 1,
+  card: { ...card("triangle-we", "Canadian Tire", "Triangle World Elite Mastercard", "Triangle"), lastVerified: "2026-09-20" },
+  earnRate: 4,
+  pointValue: 1,
+  centsPerDollar: 4,
+  estimatedCentsBack: 400,
+  estimatedRewardCad: 4,
+  capExhausted: false,
+  reason: "4× Triangle on gas",
+  valueBreakdown: [
+    {
+      label: "4× Triangle on gas",
+      kind: "card_earn",
+      amountCad: 4,
+      points: 400,
+      pointCurrency: "Triangle",
+      centsPerPoint: 1,
+    },
+  ],
+} as RecommendationItem;
+
+const costco = {
+  ...triangle,
+  card: card("cibc-costco-mc", "CIBC", "Costco Mastercard", "cashback"),
+  earnRate: 3,
+  estimatedRewardCad: 3,
+  valueBreakdown: [{ label: "3% cash back on gas", kind: "card_earn", amountCad: 3 }],
+} as RecommendationItem;
+
+describe("category-earn breakdown", () => {
+  const input = { category: "gas" as const, amountCad: 100, programs: [TRIANGLE_PROGRAM] };
+
+  it("phone/tablet: earn rate, points earned and point value", () => {
+    expect(breakdownRows(triangle, input)).toEqual([
+      { label: "Earn rate on gas", value: "4 pts per $1" },
+      { label: "Points earned", value: "400 Triangle Rewards" },
+      { label: "Point value", value: "1¢ each" },
+    ]);
+  });
+
+  it("desktop: adds the category and the total", () => {
+    expect(breakdownRows(triangle, { ...input, detailed: true })).toEqual([
+      { label: "Spending category", value: "Gas" },
+      { label: "Earn rate on gas", value: "4 Triangle Rewards per $1" },
+      { label: "Points earned on $100", value: "400" },
+      { label: "Point value", value: "1¢ each" },
+      { label: "Total back", value: "$4.00", total: true },
+    ]);
+  });
+
+  it("cash back cards show the percentage only", () => {
+    expect(breakdownRows(costco, input)).toEqual([{ label: "Cash back on gas", value: "3%" }]);
+    expect(breakdownRows(costco, { ...input, detailed: true }).at(-1)).toEqual({
+      label: "Total back",
+      value: "$3.00",
+      total: true,
+    });
+  });
+
+  it("falls back to the item's rate and point value without a breakdown", () => {
+    const old = { ...triangle, valueBreakdown: undefined, pointValue: 0.7 };
+    expect(breakdownRows(old, input)).toEqual([
+      { label: "Earn rate on gas", value: "4 pts per $1" },
+      { label: "Points earned", value: "400 Triangle Rewards" },
+      { label: "Point value", value: "0.7¢ each" },
+    ]);
+  });
+
+  it("summarises each card's category earn for the compare rows", () => {
+    expect(earnSummary(triangle, "gas", [TRIANGLE_PROGRAM])).toBe("4× Triangle Rewards on gas");
+    expect(earnSummary(costco, "gas", [])).toBe("3% cash back on gas");
+    expect(earnSummary({ ...triangle, capExhausted: true }, "groceries", [])).toBe(
+      "4× Triangle on groceries (bonus cap reached)",
     );
   });
 
-  it("lists distinct point valuations and promo end dates", () => {
-    expect(
-      assumptionsNote({
-        assumptions: {
-          cadPerLitre: null,
-          litres: null,
-          pointValuations: { "Scene+": 1, Aeroplan: 1.5 },
-        },
-        breakdown: [
-          { label: "Promo", kind: "card_earn", amountCad: 1, promotional: true, promotionalEnds: "2026-12-31" },
-        ],
-        category: "groceries",
-      }),
-    ).toBe(
-      "Estimate for points valued at 1¢ (Scene+), 1.5¢ (Aeroplan). Includes a promotional rate ending Dec 31, 2026.",
+  it("notes the category rate and the verified date", () => {
+    expect(estimateNote(triangle, "gas")).toBe(
+      "Estimate from the card's gas category rate. Rates verified Sep 20, 2026.",
     );
-  });
-
-  it("returns null when there's nothing to say", () => {
-    expect(assumptionsNote({ category: "dining" })).toBeNull();
-  });
-
-  it("uses the card-earn label for other-card rows", () => {
-    const rec = {
-      reason: "fallback reason",
-      valueBreakdown: [
-        { label: "Instant 3¢/L", kind: "cents_per_litre_instant", amountCad: 2 },
-        { label: "3% cash back on gas", kind: "card_earn", amountCad: 3 },
-      ],
-    } as unknown as RecommendationItem;
-    expect(otherCardSubtitle(rec)).toBe("3% cash back on gas");
-    expect(otherCardSubtitle({ reason: "only reason" } as RecommendationItem)).toBe("only reason");
+    expect(estimateNote(triangle, "other")).toBe(
+      "Estimate from the card's base earn rate. Rates verified Sep 20, 2026.",
+    );
+    expect(estimateNote(triangle, "gas", true)).toBe(
+      "Based on each card's published rate for the purchase category. Rates verified Sep 20, 2026.",
+    );
   });
 });

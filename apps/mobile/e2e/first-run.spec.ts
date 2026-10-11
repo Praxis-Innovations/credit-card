@@ -1,43 +1,70 @@
 import { expect, test } from "@playwright/test";
 import { installNorthtapApiMock, installOverpassMock } from "./helpers/api-mock";
-import { browseShellAndSkip, COSTCO_MC, pickCards, SCOTIA_GOLD } from "./helpers/flow";
+import {
+  browseShellAndSkip,
+  expectNoForbiddenText,
+  pickCards,
+  SCOTIA_GOLD,
+  TRIANGLE,
+} from "./helpers/flow";
 import { installSupabaseMock } from "./helpers/supabase-mock";
 
 test.describe("first-run flow (guest)", () => {
-  test("intro → cards → browse → Shell → skip amount → best card in dollars", async ({ page }) => {
+  test("intro → cards → browse → Shell → skip amount → best card by gas rate", async ({ page }) => {
     const api = await installNorthtapApiMock(page);
     await installSupabaseMock(page, { googleEnabled: true });
 
-    await pickCards(page, [SCOTIA_GOLD, COSTCO_MC]);
+    await pickCards(page, [TRIANGLE, SCOTIA_GOLD]);
     await page.getByRole("button", { name: "Choose a store instead" }).click();
     await browseShellAndSkip(page);
 
-    const best = page.getByLabel("Best card");
-    await expect(best.getByText("Gold American Express")).toBeVisible();
-    await expect(best.getByText("$3.67")).toBeVisible();
+    const summary = page.getByRole("region", { name: "Your purchase" });
+    await expect(summary.getByText("Shell · $100.00")).toBeVisible();
+    await expect(summary.getByRole("button", { name: "Change store" })).toBeVisible();
+    await expect(summary.getByRole("button", { name: "Change amount" })).toBeVisible();
+
+    const best = page.getByRole("region", { name: "Best card" });
+    await expect(best.getByText("Triangle World Elite Mastercard")).toBeVisible();
+    await expect(best.getByText("$4.00")).toBeVisible();
     await expect(best.getByText("back on your $100")).toBeVisible();
-    await expect(best.getByText("Instant 3¢/L off all fuel grades")).toBeVisible();
-    await expect(best.getByText(/Estimate for about 67 L at \$1\.50\/L/)).toBeVisible();
-    await expect(best.getByRole("alert")).toContainText(
-      "Before you pay: Link your card to Shell Go+ before you pay.",
-    );
-    await expect(best.getByText(/Verified Sep 22, 2026/)).toBeVisible();
-    await expect(best.getByRole("link", { name: "View source" })).toHaveAttribute(
-      "href",
-      /scotiabank\.com/,
-    );
+    await expect(best.getByLabel("Earn rate on gas: 4 pts per $1")).toBeVisible();
+    await expect(best.getByLabel("Points earned: 400 Triangle Rewards")).toBeVisible();
+    await expect(best.getByLabel("Point value: 1¢ each")).toBeVisible();
+    await expect(
+      best.getByText("Estimate from the card's gas category rate. Rates verified Sep 20, 2026."),
+    ).toBeVisible();
 
     await expect(page.getByText("Other cards in your wallet")).toBeVisible();
-    await expect(page.getByLabel("Costco Mastercard, $3.00 back")).toBeVisible();
+    const other = page.getByLabel("Gold American Express, $1.00 back");
+    await expect(other).toBeVisible();
+    await expect(other.getByText("1× Scene+ on gas")).toBeVisible();
     await expect(page.getByText("Keep your wallet")).toBeVisible();
+    await expect(page.getByRole("button", { name: "New search" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
+    await expectNoForbiddenText(page);
 
-    expect(api.recommendationBodies.at(-1)).toMatchObject({
-      amountCad: 100,
-      category: "gas",
-      merchantQuery: "Shell",
-      ownedCardIds: ["scotia-gold-amex", "cibc-costco-mc"],
-      fuelGrade: "regular",
-    });
+    // v1 ranks by category only: no merchant, merchantQuery or fuel grade on the wire.
+    const body = api.recommendationBodies.at(-1)!;
+    expect(Object.keys(body).sort()).toEqual(["amountCad", "category", "limit", "ownedCardIds"]);
+    expect(body).toMatchObject({ amountCad: 100, category: "gas" });
+    expect([...(body.ownedCardIds ?? [])].sort()).toEqual(["scotia-gold-amex", "triangle-we"]);
+  });
+
+  test("Not listed? Use the category's rates", async ({ page }) => {
+    const api = await installNorthtapApiMock(page);
+    await installSupabaseMock(page, { googleEnabled: true });
+
+    await pickCards(page, [TRIANGLE, SCOTIA_GOLD]);
+    await page.getByRole("button", { name: "Choose a store instead" }).click();
+    await page.getByRole("button", { name: "Groceries", exact: true }).click();
+    await expect(page.getByText("Top stores for Groceries")).toBeVisible();
+    await page.getByRole("button", { name: "Not listed? Use Groceries rates" }).click();
+    await page.getByRole("button", { name: "Skip" }).click();
+
+    const best = page.getByRole("region", { name: "Best card" });
+    await expect(best.getByText("Gold American Express")).toBeVisible();
+    await expect(best.getByText("$5.00")).toBeVisible();
+    expect(api.recommendationBodies.at(-1)).toMatchObject({ category: "groceries" });
   });
 
   test("location allowed → nearby tiles from OSM; location never reaches the API", async ({
@@ -54,19 +81,18 @@ test.describe("first-run flow (guest)", () => {
     await page.getByRole("button", { name: "Allow location" }).click();
 
     await expect(page.getByRole("tab", { name: "Nearby" })).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByRole("button", { name: /^Shell, .*has a card partnership$/ })).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: /^Shoppers Drug Mart, .*has a card partnership$/ }),
-    ).toBeVisible();
-    const local = page.getByRole("button", { name: /^Harbord Convenience, / });
-    await expect(local).toBeVisible();
-    await expect(local).not.toHaveAccessibleName(/partnership/);
+    await expect(page.getByText("Stores around you")).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Shell, \d/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Shoppers Drug Mart, \d/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Harbord Convenience, \d/ })).toBeVisible();
+    await expectNoForbiddenText(page);
     expect(overpass.bodies.length).toBeGreaterThan(0);
 
     await page.getByRole("button", { name: /^Shell, / }).click();
     await page.getByRole("button", { name: "$50" }).click();
     await page.getByRole("button", { name: "Show my best card" }).click();
     await expect(page.getByLabel("Best card").getByText("back on your $50")).toBeVisible();
+    expect(api.recommendationBodies.at(-1)).toMatchObject({ amountCad: 50, category: "gas" });
 
     for (const req of api.requests) {
       const text = `${req.url()} ${req.postData() ?? ""}`;
@@ -85,7 +111,7 @@ test.describe("first-run flow (guest)", () => {
     await expect(page.getByRole("tab", { name: "Browse" })).toHaveAttribute("aria-selected", "true");
     await expect(page.getByText("Location is off, so pick your store here.")).toBeVisible();
     await browseShellAndSkip(page);
-    await expect(page.getByLabel("Best card").getByText("$3.67")).toBeVisible();
+    await expect(page.getByLabel("Best card").getByText("$1.00")).toBeVisible();
   });
 
   test("offline → shows the last cached result, labelled as possibly out of date", async ({
@@ -94,10 +120,10 @@ test.describe("first-run flow (guest)", () => {
     const api = await installNorthtapApiMock(page);
     await installSupabaseMock(page, { googleEnabled: true });
 
-    await pickCards(page, [SCOTIA_GOLD, COSTCO_MC]);
+    await pickCards(page, [TRIANGLE, SCOTIA_GOLD]);
     await page.getByRole("button", { name: "Choose a store instead" }).click();
     await browseShellAndSkip(page);
-    await expect(page.getByLabel("Best card").getByText("$3.67")).toBeVisible();
+    await expect(page.getByLabel("Best card").getByText("$4.00")).toBeVisible();
 
     api.offline = true;
     await page.getByRole("button", { name: "New search" }).click();
@@ -110,10 +136,10 @@ test.describe("first-run flow (guest)", () => {
     await expect(page.getByRole("alert").first()).toHaveText(
       "You're offline. This is your last result and may be out of date.",
     );
+    // The cached result keeps the store it was for.
+    await expect(page.getByText("Shell · $100.00")).toBeVisible();
     const best = page.getByLabel("Best card");
-    await expect(best.getByText("$3.67")).toBeVisible();
+    await expect(best.getByText("$4.00")).toBeVisible();
     await expect(best.getByText("back on your $100")).toBeVisible();
-    await expect(best.getByRole("alert")).toContainText("Link your card to Shell Go+");
-    await expect(best.getByRole("link", { name: "View source" })).toBeVisible();
   });
 });

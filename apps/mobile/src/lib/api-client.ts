@@ -5,7 +5,6 @@ import type {
   CreditCard,
   LoyaltyProgram,
   MerchantBrand,
-  Partnership,
   RecommendationRequest,
   RecommendationResponse,
 } from "./api-types";
@@ -139,15 +138,12 @@ export async function fetchLoyaltyPrograms(): Promise<LoyaltyProgram[]> {
   return res.data;
 }
 
-export async function fetchPartnership(id: string): Promise<Partnership> {
-  return apiFetch<Partnership>(`/v1/partnerships/${encodeURIComponent(id)}`);
-}
-
 export async function fetchRecommendation(
-  body: RecommendationRequest,
+  request: RecommendationRequest,
 ): Promise<RecommendationResponse> {
+  const { amountCad, category, ownedCardIds, spendToDate, valuations, limit } = request;
   return apiFetch<RecommendationResponse>("/v1/recommendations", {
     method: "POST",
-    body: JSON.stringify(body),
+    body: JSON.stringify({ amountCad, category, ownedCardIds, spendToDate, valuations, limit }),
   });
 }

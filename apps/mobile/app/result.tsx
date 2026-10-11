@@ -1,201 +1,77 @@
 import { Redirect, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Image,
-  Linking,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { NorthTapLogo } from "../src/components/brand/NorthTapLogo";
-import { ErrorNote, InlineAction, LinkButton } from "../src/components/flow/Buttons";
+import {
+  ActionButton,
+  ErrorNote,
+  IconButton,
+  OutlineButton,
+} from "../src/components/flow/Buttons";
 import { CardArt } from "../src/components/flow/CardArt";
-import { InfoIcon } from "../src/components/flow/Icons";
+import { ContactlessIcon, EditIcon, SearchIcon, StoreIcon } from "../src/components/flow/Icons";
+import { StoreLogo } from "../src/components/flow/Logos";
 import { SaveWalletSheet } from "../src/components/flow/SaveWalletSheet";
-import { pressState } from "../src/components/flow/press-state";
 import { Screen } from "../src/components/flow/Screen";
-import { StoreSummary } from "../src/components/flow/StoreSummary";
-import { resolveAssetUrl } from "../src/lib/api-client";
 import {
   CATEGORY_LABELS,
+  type Category,
   type LoyaltyProgram,
-  type Partnership,
   type RecommendationItem,
   type RecommendationResponse,
 } from "../src/lib/api-types";
 import { loadLastRecommendation } from "../src/lib/last-recommendation-cache";
 import { markOnboardingComplete } from "../src/lib/onboarding";
-import { loadPartnership } from "../src/lib/partnerships";
-import { programForCurrency } from "../src/lib/programs";
-import { requestRecommendation } from "../src/lib/recommend";
+import { recommendationRequestFor, requestRecommendation } from "../src/lib/recommend";
 import {
-  assumptionsNote,
+  breakdownRows,
+  categoryPhrase,
+  earnSummary,
+  estimateNote,
   formatAmountShort,
   formatCad,
-  formatVerifiedDate,
-  otherCardSubtitle,
 } from "../src/lib/result-copy";
-import { useLayout } from "../src/lib/responsive";
+import { useLayout, type Layout } from "../src/lib/responsive";
+import type { StoreChoice } from "../src/lib/stores";
 import { colors, fonts } from "../src/lib/theme";
-import { useFlow } from "../src/state/flow";
-
-/** Desktop result column: best card beside "Other cards". */
-const RESULT_DESKTOP_WIDTH = 960;
+import { DEFAULT_AMOUNT, useFlow } from "../src/state/flow";
 
 type ResultState =
   | { status: "loading" }
-  | { status: "ready"; response: RecommendationResponse; stale: boolean }
+  | {
+      status: "ready";
+      response: RecommendationResponse;
+      store: StoreChoice | null;
+      stale: boolean;
+    }
   | { status: "error"; message: string }
   | { status: "empty" };
 
-function ExternalLink({ url, label }: { url: string; label: string }) {
-  const webProps =
-    Platform.OS === "web"
-      ? ({ href: url, hrefAttrs: { target: "_blank", rel: "noopener noreferrer" } } as object)
-      : {};
-  return (
-    <Text
-      accessibilityRole="link"
-      style={styles.link}
-      onPress={Platform.OS === "web" ? undefined : () => void Linking.openURL(url)}
-      {...webProps}
-    >
-      {label}
-    </Text>
-  );
-}
-
-/** Program logo beside a points line, only when the API has a real logo. */
-function BreakdownLogo({
-  currency,
-  programs,
-}: {
-  currency: string | undefined;
-  programs: LoyaltyProgram[];
-}) {
-  if (!currency) return null;
-  const program = programForCurrency(currency, programs);
-  const uri = resolveAssetUrl(program.logoUrl);
-  if (!uri) return null;
-  return (
-    <Image
-      source={{ uri }}
-      accessibilityLabel={program.logoAlt ?? program.name}
-      resizeMode="contain"
-      style={styles.breakdownLogo}
-    />
-  );
-}
-
-function BestCard({
-  rec,
-  amountCad,
-  category,
-  fuelGrade,
-  partnership,
-  programs,
-}: {
-  rec: RecommendationItem;
+interface Purchase {
+  name: string;
+  logoUrl: string | null;
+  logoAlt: string | null;
+  /** True when the user picked a category ("Use Gas rates"), not a store. */
+  categoryOnly: boolean;
+  category: Category;
   amountCad: number;
-  category: RecommendationResponse["purchase"]["category"];
-  fuelGrade: RecommendationResponse["purchase"]["fuelGrade"];
-  partnership: Partnership | null;
-  programs: LoyaltyProgram[];
-}) {
-  const note = assumptionsNote({
-    assumptions: rec.assumptions,
-    breakdown: rec.valueBreakdown,
-    category,
-    fuelGrade,
-  });
-  const verifiedDate = partnership?.lastVerified ?? rec.card.lastVerified;
-  return (
-    <View style={styles.best} accessibilityLabel="Best card" role="region">
-      <Text style={styles.eyebrow}>Tap this card</Text>
-      <View style={styles.bestCardRow}>
-        <CardArt card={rec.card} width={112} chip="gold" shadow radius={6} />
-        <View style={styles.bestCardText}>
-          <Text style={styles.bestIssuer}>{rec.card.issuer}</Text>
-          <Text style={styles.bestName} accessibilityRole="header">
-            {rec.card.name}
-          </Text>
-        </View>
-      </View>
-      <View style={styles.headline} accessibilityLiveRegion="polite">
-        <Text style={styles.headlineAmount}>{formatCad(rec.estimatedRewardCad)}</Text>
-        <Text style={styles.headlineText}>back on your {formatAmountShort(amountCad)}</Text>
-      </View>
-
-      {rec.valueBreakdown && rec.valueBreakdown.length > 0 ? (
-        <View style={styles.breakdown} accessibilityRole="list">
-          {rec.valueBreakdown.map((line, index) => (
-            <View key={`${line.kind}-${index}`} style={styles.breakdownRow}>
-              <View style={styles.breakdownLabelRow}>
-                <BreakdownLogo currency={line.pointCurrency} programs={programs} />
-                <Text style={styles.breakdownLabel}>{line.label}</Text>
-              </View>
-              <Text style={styles.breakdownAmount}>{formatCad(line.amountCad)}</Text>
-            </View>
-          ))}
-        </View>
-      ) : (
-        <Text style={styles.breakdownLabel}>{rec.reason}</Text>
-      )}
-
-      {note ? <Text style={styles.assumptions}>{note}</Text> : null}
-
-      {rec.usedPartnership && partnership?.requirements ? (
-        <View style={styles.warn} accessibilityRole="alert">
-          <InfoIcon />
-          <Text style={styles.warnText}>
-            <Text style={styles.warnStrong}>Before you pay: </Text>
-            {partnership.requirements}
-          </Text>
-        </View>
-      ) : null}
-
-      <Text style={styles.verified}>
-        Verified {formatVerifiedDate(verifiedDate)}
-        {partnership?.sourceUrl ? (
-          <>
-            {" · "}
-            <ExternalLink url={partnership.sourceUrl} label="View source" />
-          </>
-        ) : null}
-      </Text>
-    </View>
-  );
-}
-
-function OtherCard({ rec }: { rec: RecommendationItem }) {
-  return (
-    <View
-      style={styles.other}
-      accessible
-      accessibilityLabel={`${rec.card.name}, ${formatCad(rec.estimatedRewardCad)} back`}
-    >
-      <CardArt card={rec.card} width={56} chip="gold" shadow radius={4} />
-      <View style={styles.otherText}>
-        <Text style={styles.otherName}>{rec.card.name}</Text>
-        <Text style={styles.otherSub}>{otherCardSubtitle(rec)}</Text>
-      </View>
-      <View style={styles.otherValue}>
-        <Text style={styles.otherAmount}>{formatCad(rec.estimatedRewardCad)}</Text>
-        <Text style={styles.otherBack}>back</Text>
-      </View>
-    </View>
-  );
 }
 
 export default function ResultScreen() {
   const router = useRouter();
-  const { hydrated, store, amount, walletIds, programs, loadCatalog, user } = useFlow();
+  const {
+    hydrated,
+    store,
+    setStore,
+    amount,
+    setAmount,
+    walletIds,
+    programs,
+    loadCatalog,
+    user,
+  } = useFlow();
   const layout = useLayout();
   const [state, setState] = useState<ResultState>({ status: "loading" });
-  const [partnership, setPartnership] = useState<Partnership | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
@@ -207,25 +83,18 @@ export default function ResultScreen() {
     if (!store) {
       // e.g. back from the Google redirect on web: show the last result.
       const cached = await loadLastRecommendation();
-      setState(
-        cached ? { status: "ready", response: cached, stale: false } : { status: "empty" },
-      );
+      setState(cached ? { status: "ready", ...cached, stale: false } : { status: "empty" });
       return;
     }
-    const result = await requestRecommendation({
-      amountCad: amount,
-      category: store.category,
-      merchantQuery: store.merchantQuery,
-      ownedCardIds: walletIds,
-      fuelGrade: "regular",
-      limit: 10,
-    });
+    const result = await requestRecommendation(
+      recommendationRequestFor(store, amount, walletIds),
+      store,
+    );
     if ("error" in result) {
       setState({ status: "error", message: result.error.message });
       return;
     }
-    const { stale, ...response } = result;
-    setState({ status: "ready", response, stale: Boolean(stale) });
+    setState({ status: "ready", ...result });
     void markOnboardingComplete();
   }, [store, amount, walletIds]);
 
@@ -234,50 +103,120 @@ export default function ResultScreen() {
     void run();
   }, [hydrated, run]);
 
-  const best = state.status === "ready" ? state.response.recommendations[0] : undefined;
-
-  useEffect(() => {
-    if (!best?.usedPartnership || !best.partnershipId) return;
-    let cancelled = false;
-    void loadPartnership(best.partnershipId).then((p) => {
-      if (!cancelled) setPartnership(p);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [best?.usedPartnership, best?.partnershipId]);
-
   if (hydrated && walletIds.length === 0 && !user) return <Redirect href="/cards" />;
   if (state.status === "empty") return <Redirect href="/store" />;
 
-  const purchase = state.status === "ready" ? state.response.purchase : null;
-  const useLive = state.status === "ready" && !state.stale && store;
-  const storeName = useLive
-    ? store.name
-    : purchase?.merchant ?? (purchase ? CATEGORY_LABELS[purchase.category] : store?.name ?? "");
-  const storeLogo = useLive
-    ? store.logoUrl ?? purchase?.merchantBrand?.logoUrl
-    : purchase?.merchantBrand?.logoUrl;
-  const shownAmount = purchase?.amountCad ?? amount;
-  const shownCategory = purchase?.category ?? store?.category ?? "other";
-  const others = state.status === "ready" ? state.response.recommendations.slice(1) : [];
-  const twoColumns = layout.desktop && Boolean(best);
-  const keepBanner =
-    state.status === "ready" ? <KeepWallet onSave={() => setSheetOpen(true)} /> : null;
+  const ready = state.status === "ready" ? state : null;
+  const shownStore = ready ? ready.store : store;
+  const category = ready?.response.purchase.category ?? store?.category ?? "other";
+  const purchase: Purchase = {
+    name: shownStore?.name ?? CATEGORY_LABELS[category],
+    logoUrl: shownStore?.logoUrl ?? null,
+    logoAlt: shownStore?.logoAlt ?? null,
+    categoryOnly: !shownStore || shownStore.source === "category",
+    category,
+    amountCad: ready?.response.purchase.amountCad ?? amount,
+  };
+  const recs = ready?.response.recommendations ?? [];
+  const best = recs[0];
+
+  const changeStore = () => router.dismissTo("/store");
+  const changeAmount = () => {
+    if (store) {
+      if (router.canGoBack()) router.back();
+      else router.replace("/amount");
+      return;
+    }
+    if (!shownStore) return changeStore();
+    setStore(shownStore);
+    router.replace("/amount");
+  };
+  const newSearch = () => {
+    router.dismissTo("/store");
+    setAmount(DEFAULT_AMOUNT);
+  };
+
+  const newSearchButton = (
+    <OutlineButton
+      label="New search"
+      onPress={newSearch}
+      icon={<SearchIcon size={18} color={colors.text} />}
+    />
+  );
+
+  let body: ReactNode = null;
+  if (state.status === "loading") {
+    body = (
+      <View style={styles.loading}>
+        <ActivityIndicator color={colors.primary} size="large" />
+        <Text style={styles.loadingText}>Comparing your cards…</Text>
+      </View>
+    );
+  } else if (state.status === "error") {
+    body = (
+      <View style={styles.errorBox}>
+        <ErrorNote>{state.message}</ErrorNote>
+        <OutlineButton label="Try again" onPress={() => void run()} style={styles.errorAction} />
+      </View>
+    );
+  } else if (ready && !best) {
+    body = (
+      <View style={styles.errorBox}>
+        <ErrorNote>
+          None of your cards are in NorthTap's catalog yet, so we can't compare them.
+        </ErrorNote>
+        <OutlineButton
+          label="Edit your cards"
+          onPress={() => router.push("/cards")}
+          icon={<EditIcon />}
+          style={styles.errorAction}
+        />
+      </View>
+    );
+  } else if (best && layout.desktop) {
+    body = (
+      <>
+        <HeroCard rec={best} purchase={purchase} programs={programs} />
+        <View style={styles.desktopLower}>
+          <CompareTable recs={recs} category={category} programs={programs} />
+          <KeepWallet variant="card" cardCount={walletIds.length} onSave={() => setSheetOpen(true)} />
+        </View>
+      </>
+    );
+  } else if (best) {
+    body = (
+      <>
+        <BestCard rec={best} purchase={purchase} programs={programs} layout={layout} />
+        {recs.length > 1 ? (
+          <View style={styles.others} role="region" aria-label="Other cards">
+            <Text style={[styles.othersLabel, layout.wide && styles.othersLabelWide]} role="heading">
+              Other cards in your wallet
+            </Text>
+            {recs.slice(1).map((rec) => (
+              <OtherCard key={rec.card.id} rec={rec} category={category} programs={programs} />
+            ))}
+          </View>
+        ) : null}
+        <KeepWallet
+          variant={layout.wide ? "wide" : "phone"}
+          cardCount={walletIds.length}
+          onSave={() => setSheetOpen(true)}
+        />
+      </>
+    );
+  }
 
   return (
     <Screen
-      desktopMaxWidth={RESULT_DESKTOP_WIDTH}
       header={
-        <View style={[styles.header, layout.desktop && styles.headerDesktop]}>
-          {layout.desktop ? null : <NorthTapLogo size={20} accessibilityRole="image" />}
-          <InlineAction
-            label="New search"
-            onPress={() => router.dismissTo("/store")}
-            accessibilityLabel="New search"
-          />
+        <View style={styles.phoneHeader}>
+          <NorthTapLogo size={20} accessibilityRole="image" />
+          <IconButton accessibilityLabel="New search" onPress={newSearch}>
+            <SearchIcon size={20} color={colors.text} />
+          </IconButton>
         </View>
       }
+      appBarAction={newSearchButton}
       overlay={
         <SaveWalletSheet
           visible={sheetOpen}
@@ -286,96 +225,354 @@ export default function ResultScreen() {
         />
       }
     >
-      <View style={styles.main}>
-        {state.status === "ready" && state.stale ? (
+      <View style={[styles.main, layout.wide && styles.mainWide]}>
+        {ready?.stale ? (
           <View style={styles.stale} accessibilityRole="alert">
             <Text style={styles.staleText}>
-              <Text style={styles.warnStrong}>You're offline. </Text>
+              <Text style={styles.strong}>You're offline. </Text>
               This is your last result and may be out of date.
             </Text>
           </View>
         ) : null}
-
-        <StoreSummary
-          variant="plain"
-          name={storeName}
-          meta={`${CATEGORY_LABELS[shownCategory]} · ${formatCad(shownAmount)}`}
-          logoUrl={storeLogo}
-          actionLabel="Edit"
-          actionAccessibilityLabel="Edit amount"
-          onAction={() =>
-            store
-              ? router.canGoBack()
-                ? router.back()
-                : router.replace("/amount")
-              : router.dismissTo("/store")
-          }
+        <PurchaseSummary
+          purchase={purchase}
+          layout={layout}
+          onChangeStore={changeStore}
+          onChangeAmount={changeAmount}
         />
-
-        {state.status === "loading" ? (
-          <View style={styles.loading}>
-            <ActivityIndicator color={colors.primary} size="large" />
-            <Text style={styles.loadingText}>Comparing your cards…</Text>
-          </View>
-        ) : state.status === "error" ? (
-          <View style={styles.errorBox}>
-            <ErrorNote>{state.message}</ErrorNote>
-            <LinkButton label="Try again" onPress={() => void run()} />
-          </View>
-        ) : state.status === "ready" && !best ? (
-          <View style={styles.errorBox}>
-            <ErrorNote>
-              None of your cards are in NorthTap's catalog yet, so we can't compare them.
-            </ErrorNote>
-            <LinkButton label="Edit your cards" onPress={() => router.push("/cards")} />
-          </View>
-        ) : null}
-
-        <View style={twoColumns && styles.columns}>
-          {best && purchase ? (
-            <View style={twoColumns && styles.primaryColumn}>
-              <BestCard
-                rec={best}
-                amountCad={purchase.amountCad}
-                category={purchase.category}
-                fuelGrade={purchase.fuelGrade}
-                partnership={
-                  best.usedPartnership && partnership?.id === best.partnershipId
-                    ? partnership
-                    : null
-                }
-                programs={programs}
-              />
-            </View>
-          ) : null}
-          <View style={twoColumns && styles.secondaryColumn}>
-            {best && others.length > 0 ? (
-              <>
-                <Text style={[styles.othersLabel, twoColumns && styles.othersLabelBeside]}>
-                  Other cards in your wallet
-                </Text>
-                <View style={styles.othersList}>
-                  {others.map((rec) => (
-                    <OtherCard key={rec.card.id} rec={rec} />
-                  ))}
-                </View>
-              </>
-            ) : null}
-            {keepBanner}
-          </View>
-        </View>
+        {body}
       </View>
     </Screen>
   );
 }
 
-function KeepWallet({ onSave }: { onSave: () => void }) {
+function ChangeButtons({
+  onChangeStore,
+  onChangeAmount,
+  short,
+}: {
+  onChangeStore: () => void;
+  onChangeAmount: () => void;
+  /** Phone: "Store" / "Amount", sharing the card width. */
+  short?: boolean;
+}) {
+  return (
+    <View style={[styles.changeRow, short && styles.changeRowPhone]}>
+      <OutlineButton
+        label={short ? "Store" : "Change store"}
+        accessibilityLabel="Change store"
+        onPress={onChangeStore}
+        icon={<StoreIcon />}
+        style={short && styles.changeButtonPhone}
+      />
+      <OutlineButton
+        label={short ? "Amount" : "Change amount"}
+        accessibilityLabel="Change amount"
+        onPress={onChangeAmount}
+        icon={<EditIcon />}
+        style={short && styles.changeButtonPhone}
+      />
+    </View>
+  );
+}
+
+function PurchaseSummary({
+  purchase,
+  layout,
+  onChangeStore,
+  onChangeAmount,
+}: {
+  purchase: Purchase;
+  layout: Layout;
+  onChangeStore: () => void;
+  onChangeAmount: () => void;
+}) {
+  const label = CATEGORY_LABELS[purchase.category];
+  const amount = formatCad(purchase.amountCad);
+  const logo = (size: number) => (
+    <StoreLogo
+      name={purchase.name}
+      logoUrl={purchase.logoUrl}
+      logoAlt={purchase.logoAlt}
+      size={size}
+    />
+  );
+  const buttons = (
+    <ChangeButtons
+      onChangeStore={onChangeStore}
+      onChangeAmount={onChangeAmount}
+      short={!layout.wide}
+    />
+  );
+
+  if (layout.desktop) {
+    return (
+      <View style={styles.titleRow}>
+        <View style={styles.titleLeft}>
+          {logo(56)}
+          <View style={styles.flexText}>
+            <Text style={styles.title} role="heading" aria-level={1}>
+              {purchase.categoryOnly
+                ? `Your best card for ${categoryPhrase(purchase.category)}`
+                : `Your best card at ${purchase.name}`}
+            </Text>
+            <Text style={styles.titleSub}>
+              {amount} of {categoryPhrase(purchase.category)}
+            </Text>
+          </View>
+        </View>
+        {buttons}
+      </View>
+    );
+  }
+
+  if (layout.wide) {
+    return (
+      <View style={styles.purchaseRow} role="region" aria-label="Your purchase">
+        {logo(48)}
+        <View style={styles.flexText}>
+          <Text style={styles.eyebrowMuted}>Your purchase</Text>
+          <Text style={styles.purchaseRowText}>
+            {purchase.categoryOnly ? label : `${purchase.name} · ${label}`} · {amount}
+          </Text>
+        </View>
+        {buttons}
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.purchaseCard} role="region" aria-label="Your purchase">
+      <View style={styles.purchaseCardTop}>
+        {logo(44)}
+        <View style={styles.flexText}>
+          <Text style={styles.purchaseName}>
+            {purchase.name} · {amount}
+          </Text>
+          <Text style={styles.purchaseMeta}>{label}</Text>
+        </View>
+      </View>
+      {buttons}
+    </View>
+  );
+}
+
+function Breakdown({ rows, ruled }: { rows: ReturnType<typeof breakdownRows>; ruled?: boolean }) {
+  return (
+    <View style={!ruled && styles.breakdown}>
+      {rows.map((row) => (
+        <View
+          key={row.label}
+          style={[styles.breakdownRow, ruled && styles.breakdownRowRuled]}
+          accessible
+          accessibilityLabel={`${row.label}: ${row.value}`}
+        >
+          <Text style={[styles.breakdownLabel, row.total && styles.breakdownTotal]}>
+            {row.label}
+          </Text>
+          <Text style={styles.breakdownValue}>{row.value}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Phone and tablet: the best card with its earn breakdown. */
+function BestCard({
+  rec,
+  purchase,
+  programs,
+  layout,
+}: {
+  rec: RecommendationItem;
+  purchase: Purchase;
+  programs: LoyaltyProgram[];
+  layout: Layout;
+}) {
+  const rows = breakdownRows(rec, {
+    category: purchase.category,
+    amountCad: purchase.amountCad,
+    programs,
+  });
+  return (
+    <View
+      style={[styles.best, layout.wide && styles.bestWide]}
+      role="region"
+      aria-label="Best card"
+    >
+      <Text style={styles.eyebrow}>Tap this card</Text>
+      <View style={styles.bestCardRow}>
+        <CardArt card={rec.card} width={112} chip="gold" shadow radius={9} />
+        <View style={styles.flexText}>
+          <Text style={styles.bestIssuer}>{rec.card.issuer}</Text>
+          <Text style={styles.bestName} role="heading" aria-level={1}>
+            {rec.card.name}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.headline} accessibilityLiveRegion="polite">
+        <Text style={styles.headlineAmount}>{formatCad(rec.estimatedRewardCad)}</Text>
+        <Text style={styles.headlineText}>
+          back on your {formatAmountShort(purchase.amountCad)}
+        </Text>
+      </View>
+      <Breakdown rows={rows} />
+      <Text style={styles.note}>{estimateNote(rec, purchase.category)}</Text>
+    </View>
+  );
+}
+
+/** Desktop: large card on the left, "How you get $X" on the right. */
+function HeroCard({
+  rec,
+  purchase,
+  programs,
+}: {
+  rec: RecommendationItem;
+  purchase: Purchase;
+  programs: LoyaltyProgram[];
+}) {
+  const reward = formatCad(rec.estimatedRewardCad);
+  const rows = breakdownRows(rec, {
+    category: purchase.category,
+    amountCad: purchase.amountCad,
+    programs,
+    detailed: true,
+  });
+  return (
+    <View style={styles.hero} role="region" aria-label="Best card">
+      <View style={styles.heroLeft}>
+        <View style={styles.pill}>
+          <ContactlessIcon size={16} color={colors.primary} />
+          <Text style={styles.pillText}>Tap this card</Text>
+        </View>
+        <CardArt card={rec.card} width={300} chip="gold" shadow radius={18} />
+        <View>
+          <Text style={styles.heroIssuer}>{rec.card.issuer}</Text>
+          <Text style={styles.heroName} role="heading" aria-level={2}>
+            {rec.card.name}
+          </Text>
+        </View>
+        <View style={styles.headline} accessibilityLiveRegion="polite">
+          <Text style={[styles.headlineAmount, styles.heroAmount]}>{reward}</Text>
+          <Text style={[styles.headlineText, styles.heroAmountText]}>
+            back on your {formatAmountShort(purchase.amountCad)}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.heroRight}>
+        <Text style={styles.heroHow} role="heading" aria-level={2}>
+          How you get {reward}
+        </Text>
+        <Breakdown rows={rows} ruled />
+        <Text style={styles.heroNote}>{estimateNote(rec, purchase.category, true)}</Text>
+      </View>
+    </View>
+  );
+}
+
+function OtherCard({
+  rec,
+  category,
+  programs,
+}: {
+  rec: RecommendationItem;
+  category: Category;
+  programs: LoyaltyProgram[];
+}) {
+  return (
+    <View
+      style={styles.other}
+      accessible
+      accessibilityLabel={`${rec.card.name}, ${formatCad(rec.estimatedRewardCad)} back`}
+    >
+      <CardArt card={rec.card} width={56} chip="gold" shadow radius={4} />
+      <View style={styles.flexText}>
+        <Text style={styles.otherName}>{rec.card.name}</Text>
+        <Text style={styles.otherSub}>{earnSummary(rec, category, programs)}</Text>
+      </View>
+      <View style={styles.otherValue}>
+        <Text style={styles.otherAmount}>{formatCad(rec.estimatedRewardCad)}</Text>
+        <Text style={styles.otherBack}>back</Text>
+      </View>
+    </View>
+  );
+}
+
+/** Desktop: every wallet card for this purchase, the winner marked Best. */
+function CompareTable({
+  recs,
+  category,
+  programs,
+}: {
+  recs: RecommendationItem[];
+  category: Category;
+  programs: LoyaltyProgram[];
+}) {
+  return (
+    <View style={styles.compare} role="region" aria-label="Compare your cards">
+      <Text style={styles.compareCaption}>Compare your cards for this purchase</Text>
+      <View role="table" aria-label="Compare your cards for this purchase">
+        <View role="row" style={styles.compareHead}>
+          <Text role="columnheader" style={[styles.compareTh, styles.colCard]}>
+            Card
+          </Text>
+          <Text role="columnheader" style={[styles.compareTh, styles.colWhy]}>
+            Why
+          </Text>
+          <Text role="columnheader" style={[styles.compareTh, styles.colBack]}>
+            You get back
+          </Text>
+        </View>
+        {recs.map((rec, index) => (
+          <View key={rec.card.id} role="row" style={styles.compareRow}>
+            <View role="cell" style={[styles.colCard, styles.compareCard]}>
+              <CardArt card={rec.card} width={48} chip="gold" radius={4} />
+              <Text style={styles.compareName}>{rec.card.name}</Text>
+              {index === 0 ? (
+                <View style={styles.bestBadge}>
+                  <Text style={styles.bestBadgeText}>Best</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text role="cell" style={[styles.compareWhy, styles.colWhy]}>
+              {earnSummary(rec, category, programs)}
+            </Text>
+            <Text
+              role="cell"
+              style={[styles.compareBack, styles.colBack, index === 0 && styles.compareBackBest]}
+            >
+              {formatCad(rec.estimatedRewardCad)}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function KeepWallet({
+  variant,
+  cardCount,
+  onSave,
+}: {
+  variant: "phone" | "wide" | "card";
+  cardCount: number;
+  onSave: () => void;
+}) {
   const { user, walletSync, walletSyncError, signOut } = useFlow();
+  const card = variant === "card";
+  const boxStyle = [
+    styles.keep,
+    variant === "wide" && styles.keepWide,
+    card && styles.keepCard,
+  ];
+
   if (user) {
     return (
-      <View style={styles.keep}>
-        <View style={styles.keepText}>
-          <Text style={styles.keepTitle}>
+      <View style={boxStyle}>
+        <View style={styles.flexText}>
+          <Text style={[styles.keepTitle, variant !== "phone" && styles.keepTitleWide]}>
             {walletSync === "syncing"
               ? "Saving your wallet…"
               : walletSync === "error"
@@ -388,61 +585,62 @@ function KeepWallet({ onSave }: { onSave: () => void }) {
               : `Signed in as ${user.email ?? "your Google account"}.`}
           </Text>
         </View>
-        <InlineAction label="Sign out" onPress={() => void signOut()} />
+        <OutlineButton label="Sign out" onPress={() => void signOut()} />
       </View>
     );
   }
+
+  const body =
+    variant === "phone"
+      ? "Save your cards for next time."
+      : variant === "wide"
+        ? "Save your cards to use them on any device."
+        : `Save your ${cardCount === 1 ? "card" : `${cardCount} cards`} to use them on any device.`;
   return (
-    <View style={styles.keep}>
-      <View style={styles.keepText}>
-        <Text style={styles.keepTitle}>Keep your wallet</Text>
-        <Text style={styles.keepBody}>Save your cards for next time.</Text>
+    <View style={boxStyle}>
+      <View style={styles.flexText}>
+        <Text style={[styles.keepTitle, variant !== "phone" && styles.keepTitleWide]}>
+          Keep your wallet
+        </Text>
+        <Text style={styles.keepBody}>{body}</Text>
       </View>
-      <Pressable
-        onPress={onSave}
-        accessibilityRole="button"
+      <ActionButton
+        label={card ? "Save my wallet" : "Save"}
         accessibilityLabel="Save your wallet"
-        style={(state) => {
-          const { pressed, hovered } = pressState(state);
-          return [styles.saveButton, (pressed || hovered) && styles.saveButtonPressed];
-        }}
-      >
-        <Text style={styles.saveText}>Save</Text>
-      </Pressable>
+        onPress={onSave}
+        minWidth={0}
+        style={variant === "phone" ? styles.savePhone : card ? styles.saveCard : undefined}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
+  phoneHeader: {
     height: 68,
     paddingHorizontal: 24,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  headerDesktop: {
-    justifyContent: "flex-end",
-  },
   main: {
     paddingHorizontal: 24,
     paddingBottom: 32,
+    gap: 16,
   },
-  columns: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+  mainWide: {
+    paddingHorizontal: 0,
+    paddingBottom: 0,
     gap: 24,
   },
-  primaryColumn: {
-    flex: 3,
+  flexText: {
+    flex: 1,
     minWidth: 0,
   },
-  secondaryColumn: {
-    flex: 2,
-    minWidth: 0,
+  strong: {
+    fontFamily: fonts.semibold,
   },
   stale: {
-    marginBottom: 12,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 12,
@@ -457,7 +655,7 @@ const styles = StyleSheet.create({
     color: colors.warnText,
   },
   loading: {
-    marginTop: 48,
+    marginTop: 32,
     alignItems: "center",
     gap: 12,
   },
@@ -467,17 +665,105 @@ const styles = StyleSheet.create({
     color: colors.textBody,
   },
   errorBox: {
-    marginTop: 24,
+    gap: 12,
+  },
+  errorAction: {
+    alignSelf: "flex-start",
+  },
+  changeRow: {
+    flexDirection: "row",
     gap: 8,
   },
+  changeRowPhone: {
+    alignSelf: "stretch",
+  },
+  changeButtonPhone: {
+    flex: 1,
+    paddingHorizontal: 14,
+  },
+  purchaseCard: {
+    padding: 14,
+    gap: 12,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+  },
+  purchaseCardTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  purchaseName: {
+    fontFamily: fonts.semibold,
+    fontSize: 17,
+    color: colors.text,
+  },
+  purchaseMeta: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.textBody,
+  },
+  purchaseRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+  },
+  eyebrowMuted: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    color: colors.textMuted,
+  },
+  purchaseRowText: {
+    marginTop: 2,
+    fontFamily: fonts.semibold,
+    fontSize: 18,
+    color: colors.text,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 24,
+  },
+  titleLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  title: {
+    fontFamily: fonts.heading,
+    fontSize: 32,
+    lineHeight: 37,
+    letterSpacing: -0.6,
+    color: colors.text,
+  },
+  titleSub: {
+    marginTop: 4,
+    fontFamily: fonts.body,
+    fontSize: 16,
+    color: colors.textBody,
+  },
   best: {
-    marginTop: 16,
     padding: 20,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 18,
     gap: 16,
+  },
+  bestWide: {
+    padding: 24,
   },
   eyebrow: {
     fontFamily: fonts.semibold,
@@ -490,11 +776,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
-  },
-  bestCardText: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
   },
   bestIssuer: {
     fontFamily: fonts.body,
@@ -532,16 +813,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 12,
   },
-  breakdownLabelRow: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  breakdownLogo: {
-    width: 16,
-    height: 16,
-    borderRadius: 4,
+  breakdownRowRuled: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
   },
   breakdownLabel: {
     flexShrink: 1,
@@ -550,60 +825,186 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     color: colors.textBody,
   },
-  breakdownAmount: {
+  breakdownTotal: {
+    fontFamily: fonts.semibold,
+    color: colors.text,
+  },
+  breakdownValue: {
     fontFamily: fonts.semibold,
     fontSize: 15,
     lineHeight: 21,
     color: colors.text,
+    textAlign: "right",
+    fontVariant: ["tabular-nums"],
   },
-  assumptions: {
+  note: {
     fontFamily: fonts.body,
     fontSize: 13,
     lineHeight: 20,
     color: colors.textMuted,
   },
-  warn: {
+  hero: {
     flexDirection: "row",
-    gap: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    backgroundColor: colors.warnBg,
+    gap: 40,
+    padding: 32,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: colors.warnBorder,
+    borderColor: colors.border,
+    borderRadius: 20,
   },
-  warnText: {
+  heroLeft: {
+    width: 420,
+    gap: 18,
+  },
+  heroRight: {
     flex: 1,
-    fontFamily: fonts.body,
-    fontSize: 14,
-    lineHeight: 21,
-    color: colors.warnText,
+    minWidth: 0,
+    gap: 16,
   },
-  warnStrong: {
+  pill: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: colors.tint,
+  },
+  pillText: {
     fontFamily: fonts.semibold,
+    fontSize: 13,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    color: colors.primary,
   },
-  verified: {
+  heroIssuer: {
     fontFamily: fonts.body,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 15,
     color: colors.textBody,
   },
-  link: {
-    color: colors.primary,
-    textDecorationLine: "underline",
+  heroName: {
+    fontFamily: fonts.heading,
+    fontSize: 26,
+    lineHeight: 31,
+    color: colors.text,
+  },
+  heroAmount: {
+    fontSize: 56,
+    lineHeight: 60,
+  },
+  heroAmountText: {
+    fontSize: 17,
+  },
+  heroHow: {
+    fontFamily: fonts.semibold,
+    fontSize: 17,
+    color: colors.text,
+  },
+  heroNote: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    lineHeight: 22,
+    color: colors.textBody,
+  },
+  desktopLower: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 24,
+  },
+  compare: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
+  },
+  compareCaption: {
+    paddingBottom: 8,
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    color: colors.textBody,
+  },
+  compareHead: {
+    flexDirection: "row",
+    paddingVertical: 8,
+  },
+  compareTh: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  colCard: {
+    flex: 3,
+    minWidth: 0,
+  },
+  colWhy: {
+    flex: 2,
+    minWidth: 0,
+    paddingHorizontal: 12,
+  },
+  colBack: {
+    width: 110,
+    textAlign: "right",
+  },
+  compareRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+  },
+  compareCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  compareName: {
+    flexShrink: 1,
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    color: colors.text,
+  },
+  bestBadge: {
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    backgroundColor: colors.primary,
+  },
+  bestBadgeText: {
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    color: colors.primaryFg,
+  },
+  compareWhy: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.textBody,
+  },
+  compareBack: {
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    color: colors.text,
+  },
+  compareBackBest: {
+    fontFamily: fonts.heading,
+  },
+  others: {
+    gap: 8,
   },
   othersLabel: {
-    marginTop: 20,
-    marginBottom: 8,
+    marginTop: 4,
     fontFamily: fonts.semibold,
     fontSize: 14,
     color: colors.textBody,
   },
-  othersLabelBeside: {
-    marginTop: 16,
-  },
-  othersList: {
-    gap: 8,
+  othersLabelWide: {
+    marginTop: 0,
+    marginBottom: 2,
+    fontSize: 15,
   },
   other: {
     flexDirection: "row",
@@ -615,10 +1016,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 14,
-  },
-  otherText: {
-    flex: 1,
-    minWidth: 0,
   },
   otherName: {
     fontFamily: fonts.semibold,
@@ -644,7 +1041,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   keep: {
-    marginTop: 16,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 14,
@@ -653,34 +1049,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  keepText: {
-    flex: 1,
+  keepWide: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    gap: 16,
+  },
+  keepCard: {
+    width: 360,
+    paddingVertical: 24,
+    paddingHorizontal: 24,
+    borderRadius: 18,
+    flexDirection: "column",
+    alignItems: "stretch",
+    justifyContent: "space-between",
+    gap: 16,
   },
   keepTitle: {
     fontFamily: fonts.semibold,
     fontSize: 15,
     color: colors.text,
   },
+  keepTitleWide: {
+    fontSize: 16,
+  },
   keepBody: {
+    marginTop: 2,
     fontFamily: fonts.body,
     fontSize: 14,
     lineHeight: 20,
     color: colors.textBody,
   },
-  saveButton: {
+  savePhone: {
     height: 44,
     paddingHorizontal: 18,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
   },
-  saveButtonPressed: {
-    backgroundColor: colors.primaryPressed,
-  },
-  saveText: {
-    fontFamily: fonts.medium,
-    fontSize: 15,
-    color: colors.primaryFg,
+  saveCard: {
+    alignSelf: "stretch",
   },
 });

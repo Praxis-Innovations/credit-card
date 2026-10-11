@@ -1,7 +1,12 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { LinkButton, PrimaryButton } from "../src/components/flow/Buttons";
+import {
+  ActionButton,
+  LinkButton,
+  OutlineButton,
+  PrimaryButton,
+} from "../src/components/flow/Buttons";
 import { PinIcon } from "../src/components/flow/Icons";
 import { Screen } from "../src/components/flow/Screen";
 import { SearchField } from "../src/components/flow/SearchField";
@@ -19,6 +24,10 @@ import {
 import { getForegroundPosition, hasForegroundPermission } from "../src/lib/location";
 import { findNearbyPlaces } from "../src/lib/nearby";
 import {
+  choiceForCategory,
+  choiceFromBrand,
+  choiceFromNearby,
+  choiceFromSearch,
   formatDistance,
   normalizeName,
   orderCategories,
@@ -58,9 +67,13 @@ function useCategories(): CategoryInfo[] {
   return useMemo(() => orderCategories(categories ?? FALLBACK_CATEGORIES), [categories]);
 }
 
-function Tabs({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
+function Tabs({ tab, onChange, width }: { tab: Tab; onChange: (tab: Tab) => void; width?: number }) {
   return (
-    <View style={styles.tabs} accessibilityRole="tablist" aria-label="Find a store">
+    <View
+      style={[styles.tabs, width !== undefined && { width }]}
+      accessibilityRole="tablist"
+      aria-label="Find a store"
+    >
       {(["nearby", "browse"] as const).map((id) => {
         const selected = tab === id;
         return (
@@ -99,7 +112,7 @@ function ChipRow({ wrap, children }: { wrap: boolean; children: ReactNode }) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.chips}
+      contentContainerStyle={[styles.chips, styles.chipsPhone]}
       role="group"
       aria-label="Categories"
     >
@@ -121,6 +134,8 @@ export default function StoreScreen() {
   const params = useLocalSearchParams<{ tab?: string }>();
   const { brands, loadBrands, location, setLocation, setStore } = useFlow();
   const layout = useLayout();
+  const wide = layout.wide;
+  const flush = wide && styles.flush;
   const categories = useCategories();
   const [tab, setTab] = useState<Tab>(params.tab === "browse" ? "browse" : "nearby");
   const [query, setQuery] = useState("");
@@ -164,8 +179,8 @@ export default function StoreScreen() {
     };
   }, [tab, location.status, setLocation]);
 
-  // Overpass lookup straight from the device; wait for brands so the partner
-  // dot is right on first paint (fall back to no dots if brands fail).
+  // Overpass lookup straight from the device; wait for brands so known stores
+  // get their logo and catalog category on first paint.
   useEffect(() => {
     if (location.status !== "granted") return;
     if (brands.status === "loading" || brands.status === "idle") return;
@@ -201,42 +216,7 @@ export default function StoreScreen() {
     router.push("/amount");
   }
 
-  function chooseNearby(s: NearbyStore) {
-    choose({
-      name: s.name,
-      merchantQuery: s.merchantQuery,
-      category: s.brand?.category ?? s.category,
-      logoUrl: s.brand?.logoUrl ?? null,
-      logoAlt: s.brand?.logoAlt ?? null,
-      distanceMeters: s.distanceMeters,
-      partner: Boolean(s.brand),
-      source: "nearby",
-    });
-  }
-
-  function chooseBrand(b: MerchantBrand) {
-    choose({
-      name: b.name,
-      merchantQuery: b.name,
-      category: b.category,
-      logoUrl: b.logoUrl ?? null,
-      logoAlt: b.logoAlt ?? null,
-      partner: true,
-      source: "browse",
-    });
-  }
-
-  function chooseCategory(id: Category) {
-    choose({
-      name: CATEGORY_LABELS[id],
-      category: id,
-      logoUrl: null,
-      logoAlt: null,
-      partner: false,
-      source: "category",
-    });
-  }
-
+  const back = () => (router.canGoBack() ? router.back() : router.replace("/location"));
   const categoryLabel =
     categories.find((c) => c.id === category)?.label ?? CATEGORY_LABELS[category];
   const topStores = brandList.filter((b) => b.category === category);
@@ -256,29 +236,62 @@ export default function StoreScreen() {
     return { nearbyHits, brandHits };
   }, [trimmed, nearbyState, brandList]);
 
+  const nearbyTile = (s: NearbyStore) => (
+    <StoreTile
+      key={s.id}
+      name={s.name}
+      meta={formatDistance(s.distanceMeters)}
+      logoUrl={s.brand?.logoUrl}
+      logoAlt={s.brand?.logoAlt}
+      onPress={() => choose(choiceFromNearby(s))}
+    />
+  );
+  const brandTile = (b: MerchantBrand) => (
+    <StoreTile
+      key={b.id}
+      name={b.name}
+      meta={CATEGORY_LABELS[b.category]}
+      logoUrl={b.logoUrl}
+      logoAlt={b.logoAlt}
+      onPress={() => choose(choiceFromBrand(b))}
+    />
+  );
+
+  function primary(label: string, onPress: () => void, busy?: boolean) {
+    return wide ? (
+      <ActionButton label={label} onPress={onPress} busy={busy} style={styles.start} />
+    ) : (
+      <PrimaryButton label={label} onPress={onPress} busy={busy} />
+    );
+  }
+
+  function secondary(label: string, onPress: () => void) {
+    return wide ? (
+      <OutlineButton label={label} onPress={onPress} height={48} style={styles.start} />
+    ) : (
+      <LinkButton label={label} onPress={onPress} height={44} />
+    );
+  }
+
   function renderNearby() {
     const nearby = nearbyState;
     if (!point) {
       const denied = location.status !== "unknown";
       return (
-        <View style={styles.stateBox}>
+        <View style={[styles.stateBox, flush]}>
           <Text style={styles.stateText}>
             {denied
               ? "Location is off, so we can't see stores around you. You can allow it in your settings, or browse instead."
               : "Allow location to see stores around you. It's only used while the app is open."}
           </Text>
-          <PrimaryButton
-            label={denied ? "Try location again" : "Use my location"}
-            onPress={() => void locate()}
-            busy={locating}
-          />
-          <LinkButton label="Browse stores instead" onPress={() => setTab("browse")} />
+          {primary(denied ? "Try location again" : "Use my location", () => void locate(), locating)}
+          {secondary("Browse stores instead", () => setTab("browse"))}
         </View>
       );
     }
     if (nearby.status === "loading" || nearby.status === "idle") {
       return (
-        <View style={styles.stateBox}>
+        <View style={[styles.stateBox, flush]}>
           <ActivityIndicator color={colors.primary} />
           <Text style={styles.stateText}>Looking around you…</Text>
         </View>
@@ -286,38 +299,24 @@ export default function StoreScreen() {
     }
     if (nearby.status === "error" || nearby.stores.length === 0) {
       return (
-        <View style={styles.stateBox}>
+        <View style={[styles.stateBox, flush]}>
           <Text style={styles.stateText}>
             {nearby.status === "error"
               ? "We couldn't look up stores around you right now."
               : "We didn't find any shops or gas stations close by."}{" "}
             Browse or search for your store instead.
           </Text>
-          <LinkButton label="Browse stores" onPress={() => setTab("browse")} />
+          {secondary("Browse stores", () => setTab("browse"))}
         </View>
       );
     }
     return (
-      <View style={styles.section}>
+      <View style={[styles.section, flush]}>
         <View style={styles.aroundRow}>
           <PinIcon />
-          <Text style={styles.aroundText}>Around you · </Text>
-          <View style={styles.legendDot} />
-          <Text style={styles.aroundText}>has a card partnership</Text>
+          <Text style={styles.aroundText}>Stores around you</Text>
         </View>
-        <TileGrid>
-          {nearby.stores.map((s) => (
-            <StoreTile
-              key={s.id}
-              name={s.name}
-              meta={formatDistance(s.distanceMeters)}
-              logoUrl={s.brand?.logoUrl}
-              logoAlt={s.brand?.logoAlt}
-              partner={Boolean(s.brand)}
-              onPress={() => chooseNearby(s)}
-            />
-          ))}
-        </TileGrid>
+        <TileGrid>{nearby.stores.map(nearbyTile)}</TileGrid>
       </View>
     );
   }
@@ -326,11 +325,11 @@ export default function StoreScreen() {
     return (
       <View style={styles.browse}>
         {location.status !== "unknown" && location.status !== "granted" ? (
-          <View style={styles.padded}>
+          <View style={[styles.padded, flush]}>
             <Notice>Location is off, so pick your store here.</Notice>
           </View>
         ) : null}
-        <ChipRow wrap={layout.wide}>
+        <ChipRow wrap={wide}>
           {categories.map((c) => {
             const on = c.id === category;
             return (
@@ -352,39 +351,27 @@ export default function StoreScreen() {
           })}
         </ChipRow>
         {brands.status === "loading" ? (
-          <View style={styles.stateBox}>
+          <View style={[styles.stateBox, flush]}>
             <ActivityIndicator color={colors.primary} />
           </View>
         ) : topStores.length > 0 ? (
           <>
-            <Text style={styles.sectionLabel}>Partner stores for {categoryLabel}</Text>
-            <View style={styles.padded}>
-              <TileGrid>
-                {topStores.map((b) => (
-                  <StoreTile
-                    key={b.id}
-                    name={b.name}
-                    meta={CATEGORY_LABELS[b.category]}
-                    logoUrl={b.logoUrl}
-                    logoAlt={b.logoAlt}
-                    partner
-                    onPress={() => chooseBrand(b)}
-                  />
-                ))}
-              </TileGrid>
+            <Text style={[styles.sectionLabel, flush]} role="heading" aria-level={2}>
+              Top stores for {categoryLabel}
+            </Text>
+            <View style={[styles.padded, flush]}>
+              <TileGrid>{topStores.map(brandTile)}</TileGrid>
             </View>
             <LinkButton
               label={`Not listed? Use ${categoryLabel} rates`}
-              onPress={() => chooseCategory(category)}
+              onPress={() => choose(choiceForCategory(category))}
               height={44}
+              style={wide ? styles.notListedWide : styles.notListed}
             />
           </>
         ) : (
-          <View style={styles.padded}>
-            <PrimaryButton
-              label={`Use ${categoryLabel} rates`}
-              onPress={() => chooseCategory(category)}
-            />
+          <View style={[styles.padded, flush]}>
+            {primary(`Use ${categoryLabel} rates`, () => choose(choiceForCategory(category)))}
           </View>
         )}
       </View>
@@ -395,75 +382,65 @@ export default function StoreScreen() {
     if (!search) return null;
     const { nearbyHits, brandHits } = search;
     return (
-      <View style={styles.section}>
+      <View style={[styles.section, flush]}>
         {nearbyHits.length + brandHits.length > 0 ? (
           <TileGrid>
-            {nearbyHits.map((s) => (
-              <StoreTile
-                key={s.id}
-                name={s.name}
-                meta={formatDistance(s.distanceMeters)}
-                logoUrl={s.brand?.logoUrl}
-                logoAlt={s.brand?.logoAlt}
-                partner={Boolean(s.brand)}
-                onPress={() => chooseNearby(s)}
-              />
-            ))}
-            {brandHits.map((b) => (
-              <StoreTile
-                key={b.id}
-                name={b.name}
-                meta={CATEGORY_LABELS[b.category]}
-                logoUrl={b.logoUrl}
-                logoAlt={b.logoAlt}
-                partner
-                onPress={() => chooseBrand(b)}
-              />
-            ))}
+            {nearbyHits.map(nearbyTile)}
+            {brandHits.map(brandTile)}
           </TileGrid>
         ) : (
-          <Text style={styles.stateText}>No partner stores match “{trimmed}”.</Text>
+          <Text style={styles.stateText}>No stores match “{trimmed}”.</Text>
         )}
         <LinkButton
           label={`Use “${trimmed}” with ${categoryLabel} rates`}
-          onPress={() =>
-            choose({
-              name: trimmed,
-              merchantQuery: trimmed,
-              category,
-              logoUrl: null,
-              logoAlt: null,
-              partner: false,
-              source: "search",
-            })
-          }
+          onPress={() => choose(choiceFromSearch(trimmed, category))}
+          height={44}
+          style={wide && styles.start}
         />
       </View>
     );
   }
 
+  const searchField = (
+    <SearchField
+      value={query}
+      onChangeText={setQuery}
+      placeholder="Search any store"
+      accessibilityLabel="Search stores"
+    />
+  );
+
   return (
     <Screen
-      header={
-        <StepHeader
-          step={3}
-          onBack={() => (router.canGoBack() ? router.back() : router.replace("/cards"))}
-        />
-      }
+      header={<StepHeader step={3} onBack={back} />}
+      step={3}
+      actions={{ onBack: back, note: "Choose a store to continue" }}
     >
-      <View style={styles.top}>
-        <Text style={styles.h1} accessibilityRole="header">
-          Where are you shopping?
-        </Text>
-        <SearchField
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search any store"
-          accessibilityLabel="Search stores"
-        />
-        <Tabs tab={tab} onChange={setTab} />
+      <View style={[styles.top, wide && styles.topWide]}>
+        <View style={wide && styles.titleBlock}>
+          <Text
+            style={[styles.h1, wide && styles.h1Wide, layout.desktop && styles.h1Desktop]}
+            accessibilityRole="header"
+          >
+            Where are you shopping?
+          </Text>
+          {wide ? (
+            <Text style={styles.lead}>Pick a nearby store, or browse by category.</Text>
+          ) : null}
+        </View>
+        {layout.desktop ? (
+          <View style={styles.searchRow}>
+            <View style={styles.flex}>{searchField}</View>
+            <Tabs tab={tab} onChange={setTab} width={320} />
+          </View>
+        ) : (
+          <View style={styles.searchStack}>
+            {searchField}
+            <Tabs tab={tab} onChange={setTab} />
+          </View>
+        )}
       </View>
-      <View style={styles.body}>
+      <View style={[styles.body, wide && styles.bodyWide]}>
         {search ? renderSearch() : tab === "nearby" ? renderNearby() : renderBrowse()}
       </View>
     </Screen>
@@ -471,10 +448,28 @@ export default function StoreScreen() {
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+  flush: {
+    paddingHorizontal: 0,
+    marginHorizontal: 0,
+  },
+  start: {
+    alignSelf: "flex-start",
+  },
   top: {
     paddingTop: 4,
     paddingHorizontal: 20,
     gap: 14,
+  },
+  topWide: {
+    paddingTop: 0,
+    paddingHorizontal: 0,
+    gap: 24,
+  },
+  titleBlock: {
+    gap: 8,
   },
   h1: {
     marginHorizontal: 4,
@@ -483,6 +478,31 @@ const styles = StyleSheet.create({
     lineHeight: 31,
     letterSpacing: -0.52,
     color: colors.text,
+  },
+  h1Wide: {
+    marginHorizontal: 0,
+    fontSize: 30,
+    lineHeight: 35,
+    letterSpacing: -0.6,
+  },
+  h1Desktop: {
+    fontSize: 36,
+    lineHeight: 41,
+    letterSpacing: -0.72,
+  },
+  lead: {
+    fontFamily: fonts.body,
+    fontSize: 17,
+    lineHeight: 27,
+    color: colors.textBody,
+  },
+  searchStack: {
+    gap: 14,
+  },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
   },
   tabs: {
     flexDirection: "row",
@@ -521,6 +541,10 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 32,
   },
+  bodyWide: {
+    paddingTop: 24,
+    paddingBottom: 0,
+  },
   section: {
     paddingHorizontal: 20,
     gap: 10,
@@ -538,20 +562,15 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 13,
     color: colors.textMuted,
-    marginRight: -2,
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
   },
   browse: {
     gap: 14,
   },
   chips: {
-    paddingHorizontal: 20,
     gap: 8,
+  },
+  chipsPhone: {
+    paddingHorizontal: 20,
   },
   chipsWrap: {
     flexDirection: "row",
@@ -587,6 +606,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontSize: 13,
     color: colors.textMuted,
+  },
+  notListed: {
+    marginHorizontal: 24,
+  },
+  notListedWide: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 0,
   },
   stateBox: {
     paddingHorizontal: 24,

@@ -122,31 +122,10 @@ const PROGRAMS = [
   },
 ];
 
-export const SHELL_PARTNERSHIP = {
-  id: "shell-scene-scotia-scene-cards",
-  brandIds: ["shell"],
-  merchantBrandIds: ["shell"],
-  brands: [{ id: "shell", name: "Shell", logoUrl: null, logoAlt: null }],
-  loyaltyProgramId: "scene-plus",
-  loyaltyProgram: { id: "scene-plus", name: "Scene+", logoUrl: null, logoAlt: null },
-  cardIds: ["scotia-gold-amex"],
-  affiliation: "linked",
-  requirements: "Link your card to Shell Go+ before you pay.",
-  benefits: [],
-  stacksWithCardCategoryRewards: true,
-  notes: null,
-  sourceUrls: ["https://www.scotiabank.com/ca/en/personal/programs-services/shell.html"],
-  sourceUrl: "https://www.scotiabank.com/ca/en/personal/programs-services/shell.html",
-  lastVerified: "2026-09-22",
-  status: "verified",
-};
-
-type RecommendationBody = {
+type RecommendationBody = Record<string, unknown> & {
   amountCad: number;
   category: string;
-  merchantQuery?: string;
   ownedCardIds?: string[];
-  fuelGrade?: string;
 };
 
 function json(body: unknown, status = 200) {
@@ -154,80 +133,45 @@ function json(body: unknown, status = 200) {
 }
 
 /**
- * Mirrors the API's Shell math for the fixtures: Scotia Gold wins at Shell
- * via the Scene+ partnership; the others earn their card gas rate.
+ * Mirrors the API's v1 category ranking for the fixtures: each card earns its
+ * rate for the requested category (or its base rate), points worth 1¢. At $100
+ * of gas: Triangle $4.00, Costco $3.00, Gold Amex $1.00.
  */
 function recommend(body: RecommendationBody) {
   const owned = new Set(body.ownedCardIds ?? []);
-  const atShell = /shell/i.test(body.merchantQuery ?? "");
-  const category = atShell ? "gas" : body.category;
-  const litres = Math.round((body.amountCad / 1.5) * 100) / 100;
+  const category = body.category;
   const items = E2E_CARDS.filter((c) => owned.has(c.id)).map((card) => {
     const rate =
       card.rewardCategories.find((r) => r.category === category)?.earnRate ??
       card.rewardCategories.find((r) => r.category === "other")?.earnRate ??
       0;
-    const earn = Math.round(body.amountCad * rate) / 100;
-    const earnLabel =
-      card.pointCurrency === "cashback"
-        ? `${rate}% cash back on ${category}`
-        : `${rate}× ${card.pointCurrency} on ${category}`;
-    const breakdown: Array<Record<string, unknown>> = [
-      { label: earnLabel, kind: "card_earn", amountCad: earn },
-    ];
-    const partner = atShell && card.id === "scotia-gold-amex";
-    if (partner) {
-      breakdown.push(
-        {
-          label: "Instant 3¢/L off all fuel grades",
-          kind: "cents_per_litre_instant",
-          amountCad: Math.round(litres * 3) / 100,
-          partnershipId: SHELL_PARTNERSHIP.id,
-        },
-        {
-          label: "1 Scene+ point per litre on all fuel as a Scene+ member",
-          kind: "points_per_litre",
-          amountCad: Math.round(litres) / 100,
-          partnershipId: SHELL_PARTNERSHIP.id,
-          pointCurrency: "Scene+",
-        },
-      );
+    const cashback = card.pointCurrency === "cashback";
+    const reward = Math.round(body.amountCad * rate) / 100;
+    const label = cashback
+      ? `${rate}% cash back on ${category}`
+      : `${rate}× ${card.pointCurrency} on ${category}`;
+    const line: Record<string, unknown> = { label, kind: "card_earn", amountCad: reward };
+    if (!cashback) {
+      line.points = rate * body.amountCad;
+      line.pointCurrency = card.pointCurrency;
+      line.centsPerPoint = 1;
     }
-    const total =
-      Math.round(breakdown.reduce((sum, l) => sum + Number(l.amountCad), 0) * 100) / 100;
     return {
       card,
       earnRate: rate,
       pointValue: 1,
-      centsPerDollar: (total / body.amountCad) * 100,
-      estimatedCentsBack: total * 100,
-      estimatedRewardCad: total,
+      centsPerDollar: rate,
+      estimatedCentsBack: Math.round(reward * 100),
+      estimatedRewardCad: reward,
       capExhausted: false,
-      reason: earnLabel,
-      usedPartnership: partner,
-      partnershipId: partner ? SHELL_PARTNERSHIP.id : undefined,
-      merchantBrand: atShell ? { id: "shell", name: "Shell", logoUrl: null, logoAlt: null } : null,
-      loyaltyProgram: partner ? SHELL_PARTNERSHIP.loyaltyProgram : null,
-      valueBreakdown: breakdown,
-      assumptions: {
-        cadPerLitre: partner ? 1.5 : null,
-        litres: partner ? litres : null,
-        pointValuations: card.pointCurrency === "cashback" ? {} : { [card.pointCurrency]: 1 },
-      },
+      reason: label,
+      valueBreakdown: [line],
     };
   });
   items.sort((a, b) => b.estimatedRewardCad - a.estimatedRewardCad);
   const recommendations = items.map((item, i) => ({ rank: i + 1, ...item }));
   return {
-    purchase: {
-      amountCad: body.amountCad,
-      category,
-      merchant: atShell ? "Shell" : body.merchantQuery ?? null,
-      merchantQuery: body.merchantQuery ?? null,
-      merchantBrandId: atShell ? "shell" : null,
-      merchantBrand: atShell ? { id: "shell", name: "Shell", logoUrl: null, logoAlt: null } : null,
-      fuelGrade: category === "gas" ? body.fuelGrade ?? "regular" : null,
-    },
+    purchase: { amountCad: body.amountCad, category },
     recommendations,
     bestCardId: recommendations[0]?.card.id ?? null,
   };
@@ -291,9 +235,6 @@ export async function installNorthtapApiMock(page: Page): Promise<ApiMock> {
       const category = url.searchParams.get("category");
       const data = category ? E2E_BRANDS.filter((b) => b.category === category) : E2E_BRANDS;
       return route.fulfill(json({ data, meta: { total: data.length, limit: 200, offset: 0 } }));
-    }
-    if (path === `/v1/partnerships/${SHELL_PARTNERSHIP.id}`) {
-      return route.fulfill(json(SHELL_PARTNERSHIP));
     }
     if (path === "/v1/recommendations" && method === "POST") {
       const body = req.postDataJSON() as RecommendationBody;

@@ -7,8 +7,8 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { useLayout } from "../../lib/responsive";
 import { colors, fonts, TOUCH } from "../../lib/theme";
+import { ArrowRightIcon } from "./Icons";
 import { pressState } from "./press-state";
 
 interface ButtonProps {
@@ -20,6 +20,7 @@ interface ButtonProps {
   style?: StyleProp<ViewStyle>;
 }
 
+/** Phone primary: full width, 52px. */
 export function PrimaryButton({
   label,
   onPress,
@@ -28,7 +29,6 @@ export function PrimaryButton({
   accessibilityLabel,
   style,
 }: ButtonProps) {
-  const { wide } = useLayout();
   const inactive = disabled || busy;
   return (
     <Pressable
@@ -41,7 +41,6 @@ export function PrimaryButton({
         const { pressed, hovered } = pressState(state);
         return [
           styles.primary,
-          wide && styles.primaryWide,
           (pressed || hovered) && !inactive && styles.primaryPressed,
           disabled && styles.disabled,
           style,
@@ -57,6 +56,113 @@ export function PrimaryButton({
   );
 }
 
+/** Tablet/desktop primary: 48px, sized to its label with a minimum width. */
+export function ActionButton({
+  label,
+  onPress,
+  disabled,
+  busy,
+  accessibilityLabel,
+  style,
+  minWidth = 180,
+  arrow,
+}: ButtonProps & { minWidth?: number; arrow?: boolean }) {
+  const inactive = disabled || busy;
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={inactive}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ disabled: !!inactive, busy: !!busy }}
+      style={(state) => {
+        const { pressed, hovered } = pressState(state);
+        return [
+          styles.action,
+          { minWidth },
+          (pressed || hovered) && !inactive && styles.primaryPressed,
+          disabled && styles.disabled,
+          style,
+        ];
+      }}
+    >
+      {busy ? (
+        <ActivityIndicator color={colors.primaryFg} />
+      ) : (
+        <>
+          <Text style={styles.actionText}>{label}</Text>
+          {arrow ? <ArrowRightIcon /> : null}
+        </>
+      )}
+    </Pressable>
+  );
+}
+
+/** White button with a grey outline and an optional leading icon. */
+export function OutlineButton({
+  label,
+  onPress,
+  disabled,
+  accessibilityLabel,
+  style,
+  icon,
+  height = 44,
+}: ButtonProps & { icon?: ReactNode; height?: number }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ disabled: !!disabled }}
+      style={(state) => {
+        const { pressed, hovered } = pressState(state);
+        return [
+          styles.outline,
+          { height: Math.max(TOUCH, height) },
+          hovered && !disabled && styles.outlineHover,
+          pressed && !disabled && styles.outlinePressed,
+          disabled && styles.disabled,
+          style,
+        ];
+      }}
+    >
+      {icon}
+      <Text style={styles.outlineText}>{label}</Text>
+    </Pressable>
+  );
+}
+
+/** Round 44px outlined icon button (phone "New search"). */
+export function IconButton({
+  accessibilityLabel,
+  onPress,
+  children,
+}: {
+  accessibilityLabel: string;
+  onPress: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      style={(state) => {
+        const { pressed, hovered } = pressState(state);
+        return [
+          styles.iconButton,
+          hovered && styles.outlineHover,
+          pressed && styles.outlinePressed,
+        ];
+      }}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
+/** Teal text action: phone secondary actions, tablet/desktop tertiary actions. */
 export function LinkButton({
   label,
   onPress,
@@ -64,8 +170,8 @@ export function LinkButton({
   accessibilityLabel,
   style,
   height = 48,
-}: ButtonProps & { height?: number }) {
-  const { wide } = useLayout();
+  strong,
+}: ButtonProps & { height?: number; strong?: boolean }) {
   return (
     <Pressable
       onPress={onPress}
@@ -75,7 +181,6 @@ export function LinkButton({
       accessibilityState={{ disabled: !!disabled }}
       style={({ pressed }) => [
         styles.link,
-        wide && styles.linkWide,
         { height: Math.max(TOUCH, height) },
         pressed && styles.linkPressed,
         disabled && styles.disabled,
@@ -84,7 +189,11 @@ export function LinkButton({
     >
       {(state) => (
         <Text
-          style={[styles.linkText, pressState(state).hovered && !disabled && styles.hoverText]}
+          style={[
+            styles.linkText,
+            strong && styles.linkTextStrong,
+            pressState(state).hovered && !disabled && styles.hoverText,
+          ]}
         >
           {label}
         </Text>
@@ -93,7 +202,7 @@ export function LinkButton({
   );
 }
 
-/** Small inline text action ("Change", "Edit", "New search") with a 44px target. */
+/** Small inline text action ("Change") with a 44px target. */
 export function InlineAction({
   label,
   onPress,
@@ -136,11 +245,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 16,
   },
-  primaryWide: {
-    width: "100%",
-    maxWidth: 400,
-    alignSelf: "center",
-  },
   primaryPressed: {
     backgroundColor: colors.primaryPressed,
   },
@@ -148,6 +252,53 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: 17,
     color: colors.primaryFg,
+  },
+  action: {
+    height: 48,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  actionText: {
+    fontFamily: fonts.semibold,
+    fontSize: 16,
+    color: colors.primaryFg,
+  },
+  outline: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.borderInput,
+  },
+  outlineHover: {
+    borderColor: colors.primary,
+  },
+  outlinePressed: {
+    backgroundColor: colors.tint,
+  },
+  outlineText: {
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    color: colors.text,
+  },
+  iconButton: {
+    width: TOUCH,
+    height: TOUCH,
+    borderRadius: TOUCH / 2,
+    borderWidth: 1,
+    borderColor: colors.borderInput,
+    backgroundColor: colors.card,
+    alignItems: "center",
+    justifyContent: "center",
   },
   disabled: {
     opacity: 0.5,
@@ -157,9 +308,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 12,
   },
-  linkWide: {
-    alignSelf: "center",
-  },
   linkPressed: {
     opacity: 0.7,
   },
@@ -167,6 +315,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: 15,
     color: colors.primary,
+  },
+  linkTextStrong: {
+    fontFamily: fonts.semibold,
   },
   hoverText: {
     color: colors.primaryPressed,

@@ -12,6 +12,7 @@ import { StepHeader } from "../src/components/flow/StepHeader";
 import type { CreditCard } from "../src/lib/api-types";
 import { COMMON_CARDS_LABEL, pickCommonCards, searchCards } from "../src/lib/common-cards";
 import { programForCard } from "../src/lib/programs";
+import { useLayout } from "../src/lib/responsive";
 import { colors, fonts } from "../src/lib/theme";
 import { useFlow } from "../src/state/flow";
 
@@ -19,10 +20,12 @@ function CardRow({
   card,
   checked,
   onToggle,
+  width,
 }: {
   card: CreditCard;
   checked: boolean;
   onToggle: () => void;
+  width?: number;
 }) {
   const { programs } = useFlow();
   const program = programForCard(card, programs);
@@ -35,6 +38,7 @@ function CardRow({
       accessibilityLabel={`${card.issuer} ${card.name}, ${program.name}`}
       style={(state) => [
         styles.row,
+        width !== undefined && { width },
         pressState(state).hovered && !checked && styles.rowHover,
         checked && styles.rowOn,
       ]}
@@ -59,6 +63,11 @@ export default function CardsScreen() {
   const router = useRouter();
   const { catalog, loadCatalog, walletIds, toggleCard, programs, location } = useFlow();
   const [query, setQuery] = useState("");
+  const layout = useLayout();
+  const rowWidth =
+    layout.wide && layout.contentWidth !== undefined
+      ? Math.floor((layout.contentWidth - GRID_GAP) / 2)
+      : undefined;
 
   useEffect(() => {
     loadCatalog();
@@ -90,25 +99,30 @@ export default function CardsScreen() {
     router.push(location.status === "granted" ? "/store?tab=nearby" : "/location");
   }
 
+  const back = () => (router.canGoBack() ? router.back() : router.replace("/welcome"));
+
   return (
     <Screen
-      header={
-        <StepHeader
-          step={1}
-          onBack={() => (router.canGoBack() ? router.back() : router.replace("/welcome"))}
-        />
-      }
+      header={<StepHeader step={1} onBack={back} />}
       footerDivider
       footer={<PrimaryButton label={cta} onPress={next} disabled={count === 0} />}
+      step={1}
+      actions={{
+        onBack: back,
+        primary: { label: cta, onPress: next, disabled: count === 0, minWidth: 220 },
+      }}
     >
-      <View style={styles.main}>
-        <Text style={styles.h1} accessibilityRole="header">
+      <View style={[styles.main, layout.wide && styles.mainWide]}>
+        <Text
+          style={[styles.h1, layout.wide && styles.h1Wide, layout.desktop && styles.h1Desktop]}
+          accessibilityRole="header"
+        >
           Which cards do you carry?
         </Text>
-        <Text style={styles.lead}>
+        <Text style={[styles.lead, layout.wide && styles.leadWide]}>
           Pick them from the list. No card numbers, no bank linking.
         </Text>
-        <View style={styles.search}>
+        <View style={[styles.search, layout.wide && styles.searchWide]}>
           <SearchField
             value={query}
             onChangeText={setQuery}
@@ -130,20 +144,23 @@ export default function CardsScreen() {
         ) : (
           sections.map((section) => (
             <View key={section.title}>
-              <Text style={styles.sectionLabel}>{section.title}</Text>
+              <Text style={[styles.sectionLabel, layout.wide && styles.sectionLabelWide]}>
+                {section.title}
+              </Text>
               {section.cards.length === 0 ? (
                 <Text style={styles.stateText}>
                   No cards match “{query.trim()}”. Try the bank name or the card's
                   rewards program.
                 </Text>
               ) : (
-                <View style={styles.list}>
+                <View style={[styles.list, layout.wide && styles.grid]}>
                   {section.cards.map((card) => (
                     <CardRow
                       key={card.id}
                       card={card}
                       checked={owned.has(card.id)}
                       onToggle={() => toggleCard(card.id)}
+                      width={rowWidth}
                     />
                   ))}
                 </View>
@@ -156,11 +173,18 @@ export default function CardsScreen() {
   );
 }
 
+const GRID_GAP = 10;
+
 const styles = StyleSheet.create({
   main: {
     paddingTop: 8,
     paddingHorizontal: 24,
     paddingBottom: 24,
+  },
+  mainWide: {
+    paddingTop: 0,
+    paddingHorizontal: 0,
+    paddingBottom: 0,
   },
   h1: {
     fontFamily: fonts.heading,
@@ -169,6 +193,16 @@ const styles = StyleSheet.create({
     letterSpacing: -0.56,
     color: colors.text,
   },
+  h1Wide: {
+    fontSize: 30,
+    lineHeight: 35,
+    letterSpacing: -0.6,
+  },
+  h1Desktop: {
+    fontSize: 36,
+    lineHeight: 41,
+    letterSpacing: -0.72,
+  },
   lead: {
     marginTop: 10,
     fontFamily: fonts.body,
@@ -176,8 +210,16 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     color: colors.textBody,
   },
+  leadWide: {
+    marginTop: 8,
+    fontSize: 17,
+    lineHeight: 27,
+  },
   search: {
     marginTop: 20,
+  },
+  searchWide: {
+    marginTop: 24,
   },
   sectionLabel: {
     marginTop: 20,
@@ -186,8 +228,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
   },
+  sectionLabelWide: {
+    marginTop: 24,
+  },
   list: {
     gap: 8,
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: GRID_GAP,
   },
   row: {
     flexDirection: "row",
