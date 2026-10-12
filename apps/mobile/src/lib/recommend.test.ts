@@ -16,8 +16,9 @@ vi.mock("./ssr-safe-storage", () => ({
   },
 }));
 
-import { requestRecommendation } from "./recommend";
+import { recommendationRequestFor, requestRecommendation } from "./recommend";
 import { loadLastRecommendation } from "./last-recommendation-cache";
+import { choiceFromBrand } from "./stores";
 
 const API_KEY = "test-api-key-not-a-production-secret";
 
@@ -38,9 +39,6 @@ const onlineResponse = {
   purchase: {
     amountCad: 100,
     category: "dining" as const,
-    merchant: "Cactus Club",
-    merchantQuery: null,
-    merchantBrandId: null,
   },
   recommendations: [
     {
@@ -53,10 +51,17 @@ const onlineResponse = {
       estimatedRewardCad: 12,
       capExhausted: false,
       reason: "Cobalt gives 5× Amex MR on dining — best for this $100.00 purchase",
-      usedPartnership: false,
     },
   ],
   bestCardId: "amex-cobalt",
+};
+
+const STORE = {
+  name: "Joe's",
+  category: "dining" as const,
+  logoUrl: null,
+  logoAlt: null,
+  source: "search" as const,
 };
 
 beforeEach(() => {
@@ -79,98 +84,92 @@ describe("requestRecommendation", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("posts to the API and caches the last successful response", async () => {
+  it("posts to the API and caches the last successful response with its store", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify(onlineResponse), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       }),
     );
+    const cactus = { ...STORE, name: "Cactus Club", category: "dining" as const };
 
-    const result = await requestRecommendation({
-      amountCad: 100,
-      category: "dining",
-      merchant: "Cactus Club",
-      ownedCardIds: ["amex-cobalt"],
-    });
+    const result = await requestRecommendation(
+      { amountCad: 100, category: "dining", ownedCardIds: ["amex-cobalt"] },
+      cactus,
+    );
     expect("error" in result).toBe(false);
     if ("error" in result) return;
-    expect(result.bestCardId).toBe("amex-cobalt");
+    expect(result.response.bestCardId).toBe("amex-cobalt");
+    expect(result.stale).toBe(false);
 
     const cached = await loadLastRecommendation();
-    expect(cached?.bestCardId).toBe("amex-cobalt");
+    expect(cached?.response.bestCardId).toBe("amex-cobalt");
+    expect(cached?.store?.name).toBe("Cactus Club");
   });
 
-  it("forwards merchantQuery for server-side brand resolution", async () => {
+  it("sends only amount, category and wallet — no merchant query or fuel grade", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          ...onlineResponse,
-          purchase: {
-            amountCad: 60,
-            category: "gas",
-            merchant: "Shell",
-            merchantQuery: "Shell",
-            merchantBrandId: "shell",
-          },
-          bestCardId: "scotia-scene-vi",
-          recommendations: [
-            {
-              ...onlineResponse.recommendations[0],
-              usedPartnership: true,
-              reason: "Shell partnership",
-            },
-          ],
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
+      new Response(JSON.stringify(onlineResponse), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
     );
-
-    const result = await requestRecommendation({
+    const shell = choiceFromBrand({
+      id: "shell",
+      name: "Shell",
+      category: "gas",
+      operator: null,
+      notes: null,
+      sourceUrl: "https://example.test",
+      lastVerified: "2026-09-22",
+    });
+    const request = recommendationRequestFor(shell, 60, ["triangle-we", "scotia-gold-amex"]);
+    expect(request).toEqual({
       amountCad: 60,
       category: "gas",
-      merchantQuery: "Shell",
-      ownedCardIds: ["scotia-scene-vi"],
+      ownedCardIds: ["triangle-we", "scotia-gold-amex"],
+      limit: 10,
     });
-    expect("error" in result).toBe(false);
-    if ("error" in result) return;
-    expect(result.purchase.merchantQuery).toBe("Shell");
-    const body = JSON.parse(
-      String((fetchSpy.mock.calls[0]![1] as RequestInit).body),
+
+    // Extra keys from an untyped caller are dropped before the request leaves.
+    await requestRecommendation(
+      { ...request, merchantQuery: "Shell", fuelGrade: "premium" } as typeof request,
+      shell,
     );
-    expect(body.merchantQuery).toBe("Shell");
-    expect(body.merchantBrandId).toBeUndefined();
+    const body = JSON.parse(String((fetchSpy.mock.calls[0]![1] as RequestInit).body));
+    expect(body).toEqual({
+      amountCad: 60,
+      category: "gas",
+      ownedCardIds: ["triangle-we", "scotia-gold-amex"],
+      limit: 10,
+    });
   });
 
-  it("shows last successful response as stale when offline", async () => {
+  it("shows last successful response (and its store) as stale when offline", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify(onlineResponse), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       }),
     );
-    await requestRecommendation({
-      amountCad: 100,
-      category: "dining",
-      ownedCardIds: ["amex-cobalt"],
-    });
-
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(
-      new TypeError("Failed to fetch"),
+    await requestRecommendation(
+      { amountCad: 100, category: "dining", ownedCardIds: ["amex-cobalt"] },
+      STORE,
     );
 
-    const result = await requestRecommendation({
-      amountCad: 40,
-      category: "gas",
-      merchantQuery: "Shell",
-      ownedCardIds: ["amex-cobalt"],
-    });
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
+
+    const result = await requestRecommendation(
+      { amountCad: 40, category: "gas", ownedCardIds: ["amex-cobalt"] },
+      { ...STORE, name: "Esso", category: "gas" },
+    );
     expect("error" in result).toBe(false);
     if ("error" in result) return;
     expect(result.stale).toBe(true);
-    expect(result.bestCardId).toBe("amex-cobalt");
+    expect(result.response.bestCardId).toBe("amex-cobalt");
     // Stale payload is the previous success — not recomputed for the new query.
-    expect(result.purchase.category).toBe("dining");
+    expect(result.response.purchase.category).toBe("dining");
+    expect(result.store?.name).toBe("Joe's");
   });
 
   it("errors when offline with no cached response", async () => {

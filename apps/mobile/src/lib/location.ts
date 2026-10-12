@@ -9,6 +9,16 @@ export type LocationLookupResult =
       message: string;
     };
 
+/** True when foreground location was already granted (never prompts). */
+export async function hasForegroundPermission(): Promise<boolean> {
+  try {
+    const { status } = await Location.getForegroundPermissionsAsync();
+    return status === "granted";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Foreground, on-demand position. Never starts background updates.
  * Works on native and Expo web (browser geolocation).

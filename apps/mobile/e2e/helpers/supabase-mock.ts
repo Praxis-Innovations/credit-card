@@ -5,59 +5,65 @@ const USER = {
   email: "e2e@northtap.test",
   aud: "authenticated",
   role: "authenticated",
-  app_metadata: { provider: "email" },
+  app_metadata: { provider: "google", providers: ["google"] },
   user_metadata: {},
   created_at: "2026-01-01T00:00:00.000Z",
 };
 
-type OwnedRow = { id: string; card_id: string; added_at: string };
+export interface SupabaseMock {
+  /** URLs of every /auth/v1/authorize request (the Google redirect). */
+  authorizeUrls: string[];
+  /** Rows POSTed to user_cards. */
+  inserted: Array<{ user_id: string; card_id: string }>;
+}
 
 /**
- * Intercept Supabase Auth + PostgREST so signed-in E2E works without Docker.
- * Wallet state is in-memory for the lifetime of the page routes.
+ * Supabase Auth + PostgREST stand-in. `googleEnabled` drives
+ * /auth/v1/settings; with `completeOAuth` the authorize request redirects
+ * straight back with an implicit-flow session, as Google + Supabase would.
  */
 export async function installSupabaseMock(
   page: Page,
-  options?: { initialCardIds?: string[] },
-) {
-  const owned: OwnedRow[] = (options?.initialCardIds ?? []).map((cardId, i) => ({
-    id: `row-${i}-${cardId}`,
-    card_id: cardId,
-    added_at: new Date(Date.UTC(2026, 0, 1 + i)).toISOString(),
-  }));
-
-  let accessToken: string | null = null;
+  options: { googleEnabled: boolean; completeOAuth?: boolean; remoteCardIds?: string[] },
+): Promise<SupabaseMock> {
+  const mock: SupabaseMock = { authorizeUrls: [], inserted: [] };
+  const owned = [...(options.remoteCardIds ?? [])];
 
   await page.route("**/auth/v1/**", async (route) => {
     const req = route.request();
     const url = new URL(req.url());
     const path = url.pathname;
-    const method = req.method();
 
-    if (path.endsWith("/token") && method === "POST") {
-      accessToken = "e2e-access-token";
+    if (path.endsWith("/settings")) {
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({
-          access_token: accessToken,
-          token_type: "bearer",
-          expires_in: 3600,
-          expires_at: Math.floor(Date.now() / 1000) + 3600,
-          refresh_token: "e2e-refresh-token",
-          user: USER,
-        }),
+        body: JSON.stringify({ external: { google: options.googleEnabled, email: true } }),
       });
     }
 
-    if (path.endsWith("/user") && method === "GET") {
-      if (!accessToken) {
-        return route.fulfill({
-          status: 401,
-          contentType: "application/json",
-          body: JSON.stringify({ message: "not authenticated" }),
-        });
+    if (path.endsWith("/authorize")) {
+      mock.authorizeUrls.push(req.url());
+      const redirectTo = url.searchParams.get("redirect_to") ?? "/";
+      if (!options.completeOAuth) {
+        return route.fulfill({ status: 200, contentType: "text/html", body: "<p>Google</p>" });
       }
+      const expiresAt = Math.floor(Date.now() / 1000) + 3600;
+      const hash = new URLSearchParams({
+        access_token: "e2e-access-token",
+        refresh_token: "e2e-refresh-token",
+        expires_in: "3600",
+        expires_at: String(expiresAt),
+        token_type: "bearer",
+        provider_token: "google-token",
+      });
+      return route.fulfill({
+        status: 302,
+        headers: { location: `${redirectTo}#${hash.toString()}` },
+      });
+    }
+
+    if (path.endsWith("/user")) {
       return route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -65,82 +71,35 @@ export async function installSupabaseMock(
       });
     }
 
-    if (path.endsWith("/logout") && method === "POST") {
-      accessToken = null;
-      return route.fulfill({ status: 204, body: "" });
-    }
+    if (path.endsWith("/logout")) return route.fulfill({ status: 204, body: "" });
 
-    if (path.includes("/signup") && method === "POST") {
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ user: USER, session: null }),
-      });
-    }
-
-    return route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({}),
-    });
+    return route.fulfill({ status: 404, contentType: "application/json", body: "{}" });
   });
 
   await page.route("**/rest/v1/user_cards*", async (route) => {
     const req = route.request();
     const method = req.method();
-
     if (method === "GET") {
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        headers: {
-          "content-range": `0-${Math.max(owned.length - 1, 0)}/${owned.length}`,
-        },
-        body: JSON.stringify(
-          owned.map((row) => ({
-            id: row.id,
-            card_id: row.card_id,
-            added_at: row.added_at,
-          })),
-        ),
+        body: JSON.stringify(owned.map((card_id, i) => ({ card_id, added_at: `2026-01-0${i + 1}` }))),
       });
     }
-
     if (method === "POST") {
-      const raw = req.postData() ?? "[]";
-      const payload = JSON.parse(raw) as
-        | { card_id: string; user_id?: string }
-        | Array<{ card_id: string; user_id?: string }>;
+      const payload = JSON.parse(req.postData() ?? "[]") as
+        | { user_id: string; card_id: string }
+        | Array<{ user_id: string; card_id: string }>;
       const rows = Array.isArray(payload) ? payload : [payload];
       for (const row of rows) {
-        if (!owned.some((o) => o.card_id === row.card_id)) {
-          owned.push({
-            id: `row-${owned.length}-${row.card_id}`,
-            card_id: row.card_id,
-            added_at: new Date().toISOString(),
-          });
-        }
+        mock.inserted.push(row);
+        if (!owned.includes(row.card_id)) owned.push(row.card_id);
       }
-      return route.fulfill({
-        status: 201,
-        contentType: "application/json",
-        body: JSON.stringify(rows),
-      });
+      return route.fulfill({ status: 201, contentType: "application/json", body: "[]" });
     }
-
-    if (method === "DELETE") {
-      const url = new URL(req.url());
-      const filter = url.searchParams.get("card_id") ?? "";
-      if (filter.startsWith("eq.")) {
-        const cardId = filter.slice(3);
-        const idx = owned.findIndex((o) => o.card_id === cardId);
-        if (idx >= 0) owned.splice(idx, 1);
-      } else if (filter.startsWith("neq.")) {
-        owned.splice(0, owned.length);
-      }
-      return route.fulfill({ status: 204, body: "" });
-    }
-
+    if (method === "DELETE") return route.fulfill({ status: 204, body: "" });
     return route.fulfill({ status: 405, body: "method not allowed" });
   });
+
+  return mock;
 }

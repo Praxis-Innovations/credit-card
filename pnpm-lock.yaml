@@ -76,6 +76,9 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@expo-google-fonts/dm-sans':
+        specifier: ^0.4.2
+        version: 0.4.2
       '@expo-google-fonts/syne':
         specifier: ^0.4.2
         version: 0.4.2
@@ -115,6 +118,9 @@ importers:
       expo-system-ui:
         specifier: ^5.0.11
         version: 5.0.11(expo@53.0.27(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0)))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))(react-native-web@0.20.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0))
+      expo-web-browser:
+        specifier: ~14.2.0
+        version: 14.2.0(expo@53.0.27(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0)))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0))
       query-string:
         specifier: 7.1.3
         version: 7.1.3
@@ -899,6 +905,9 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@expo-google-fonts/dm-sans@0.4.2':
+    resolution: {integrity: sha512-e/fLH5aCJzkEenz7axvEn8N7IJAKhUwNjIxS75h9j+Ip1M9S7d22M19gJN3A7QW4egVkBJRyQh1hQFhngQn9yA==}
 
   '@expo-google-fonts/syne@0.4.2':
     resolution: {integrity: sha512-H8VJqvbZRfbfhzAcBa0N++j/2b//RuadZE+VhZ6hzUUtlCw4CyTBrQN7G2UZ+w5DCkFQyRgZ17pmFYy6b0or4Q==}
@@ -2545,6 +2554,12 @@ packages:
     peerDependenciesMeta:
       react-native-web:
         optional: true
+
+  expo-web-browser@14.2.0:
+    resolution: {integrity: sha512-6S51d8pVlDRDsgGAp8BPpwnxtyKiMWEFdezNz+5jVIyT+ctReW42uxnjRgtsdn5sXaqzhaX+Tzk/CWaKCyC0hw==}
+    peerDependencies:
+      expo: '*'
+      react-native: '*'
 
   expo@53.0.27:
     resolution: {integrity: sha512-iQwe2uWLb88opUY4vBYEW1d2GUq3lsa43gsMBEdDV+6pw0Oek93l/4nDLe0ODDdrBRjIJm/rdhKqJC/ehHCUqw==}
@@ -5144,6 +5159,8 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
+  '@expo-google-fonts/dm-sans@0.4.2': {}
+
   '@expo-google-fonts/syne@0.4.2': {}
 
   '@expo/cli@0.24.24':
@@ -7033,6 +7050,11 @@ snapshots:
       react-native-web: 0.20.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
     transitivePeerDependencies:
       - supports-color
+
+  expo-web-browser@14.2.0(expo@53.0.27(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0)))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0)):
+    dependencies:
+      expo: 53.0.27(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0)))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0)
+      react-native: 0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0)
 
   expo@53.0.27(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0)))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0):
     dependencies:
