@@ -13,6 +13,7 @@ rank descending. Merchant partnerships can boost or replace category rates.
 | `apps/api` | Next.js — standalone public catalog + recommendation API (`/v1/*`). Owns the domain engine under `src/domain` and the Big Six data pipeline under `src/data-pipeline` (CI/CLI only, never imported by routes). Never reads wallets. |
 | `apps/web` | Next.js — marketing site (no domain package dependency) |
 | `apps/mobile` | Expo — HTTP client of `apps/api` for catalog + recommendations; wallet via Supabase Auth+RLS only |
+| `apps/admin` | Next.js — internal admin console (Google sign-in, allow-listed admins). Talks to Supabase as the signed-in admin under RLS; owns all admin write paths. Imports nothing from `apps/web` or `apps/mobile`. |
 | `docs/api` | OpenAPI 3.1 contract (implemented by `apps/api`) |
 | `supabase` | Auth, `user_cards` (wallet), catalog tables, `api_keys` |
 
@@ -25,6 +26,7 @@ pnpm install
 pnpm --filter api test              # domain + route unit tests
 pnpm --filter api dev               # http://localhost:8787
 pnpm --filter web dev               # http://localhost:3000
+pnpm --filter admin dev             # http://localhost:3100 (copy apps/admin/.env.example to .env.local)
 pnpm --filter mobile start          # Expo (set EXPO_PUBLIC_NORTHTAP_* in .env.local)
 pnpm --filter mobile test
 ```

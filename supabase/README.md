@@ -55,6 +55,24 @@ Card catalog data lives in the frontend `apps/api/src/domain` dataset — there 
 
 Optional snapshot for humans: [`schema.sql`](./schema.sql).
 
+### Admin console tables
+
+Used by `apps/admin` only (migration `*_admin_console.sql`):
+
+| Table | Purpose |
+| --- | --- |
+| `admin_users` | Allow-list: `email` (citext), `role` (`admin` / `validator` / `viewer`), `active`. |
+| `admin_audit` | Append-only log written by a trigger on every `crawl_sources` create, update, pause, resume and robots check. |
+| `crawl_sources` | One row per issuer compare page (seeded with the 16 catalog issuers). |
+| `discovered_card_urls` | Card pages the crawler finds on a compare page. |
+
+`public.is_admin(min_role)` (SECURITY DEFINER) checks the JWT email, with a
+linked Google identity, against active `admin_users`. RLS on all four tables:
+no anon grants, and reads/writes only where `is_admin(...)` holds (`admin` for
+writes). A normal app user's JWT sees zero rows. The admin app always uses the
+signed-in user's session, never the service role. Tests:
+`apps/admin/src/db/rls.test.ts`.
+
 Catalog images (card art, brand and program logos) are stored in the public
 Storage bucket `brand-assets`, which only the service role can write to. The
 `*_url` columns on `cards`, `merchant_brands` and `loyalty_programs` are null

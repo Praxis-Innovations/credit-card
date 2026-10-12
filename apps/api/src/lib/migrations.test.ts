@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PGlite } from "@electric-sql/pglite";
+import { citext } from "@electric-sql/pglite/contrib/citext";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CARDS, LOYALTY_PROGRAMS, MERCHANT_BRANDS } from "@/domain";
 
@@ -12,17 +13,22 @@ const MIGRATIONS_DIR = path.resolve(
 
 /**
  * The subset of what a Supabase project provides before user migrations run:
- * API roles, auth.users + auth.uid(), and the storage schema.
+ * API roles, auth.users + auth.uid()/auth.jwt(), and the extensions and
+ * storage schemas.
  */
 const SUPABASE_SHIM = `
   create role anon nologin;
   create role authenticated nologin;
   create role service_role nologin bypassrls;
 
+  create schema extensions;
+
   create schema auth;
   create table auth.users (id uuid primary key default gen_random_uuid());
   create function auth.uid() returns uuid language sql stable
     as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+  create function auth.jwt() returns jsonb language sql stable
+    as $$ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
 
   create schema storage;
   create table storage.buckets (
@@ -50,7 +56,7 @@ let db: PGlite;
 let migrationFiles: string[];
 
 beforeAll(async () => {
-  db = new PGlite();
+  db = new PGlite({ extensions: { citext } });
   await db.exec(SUPABASE_SHIM);
   migrationFiles = (await readdir(MIGRATIONS_DIR))
     .filter((f) => f.endsWith(".sql"))
