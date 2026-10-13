@@ -46,28 +46,24 @@ async function affected(tx: Transaction, sql: string): Promise<number> {
 const scotiaId = `(select id from public.crawl_sources where issuer_name = 'Scotiabank')`;
 
 describe("seed", () => {
-  it("allow-lists the owner as admin and seeds the 16 catalog issuers", async () => {
+  it("allow-lists the owner as admin and seeds Scotiabank as the only source", async () => {
     const admins = await db.query<{ role: string; active: boolean }>(
       "select role, active from public.admin_users where email = 'info.praxisinnovations@gmail.com'",
     );
     expect(admins.rows).toEqual([{ role: "admin", active: true }]);
 
-    const { rows } = await db.query<{ issuer_name: string; compare_url: string | null; status: string }>(
-      "select issuer_name, compare_url, status from public.crawl_sources order by issuer_name",
+    const { rows } = await db.query(
+      "select issuer_name, compare_url, url_pattern, schedule, status from public.crawl_sources",
     );
-    expect(rows).toHaveLength(16);
-    const byName = new Map(rows.map((r) => [r.issuer_name, r]));
-    expect(byName.get("Scotiabank")).toMatchObject({
-      compare_url: "https://www.scotiabank.com/ca/en/personal/credit-cards/compare-cards.html",
-      status: "active",
-    });
-    expect(byName.get("BMO")?.status).toBe("blocked");
-    for (const name of ["RBC", "TD", "CIBC", "National Bank"]) {
-      expect(byName.get(name)?.compare_url).toMatch(/^https:\/\//);
-    }
-    const notSetUp = rows.filter((r) => r.status === "not_set_up");
-    expect(notSetUp).toHaveLength(10);
-    expect(notSetUp.every((r) => r.compare_url === null)).toBe(true);
+    expect(rows).toEqual([
+      {
+        issuer_name: "Scotiabank",
+        compare_url: "https://www.scotiabank.com/ca/en/personal/credit-cards/compare-cards.html",
+        url_pattern: "/credit-cards/",
+        schedule: "monthly",
+        status: "active",
+      },
+    ]);
   });
 
   it("enables RLS on every admin table", async () => {
@@ -177,7 +173,7 @@ describe("console roles", () => {
       await count(tx, "crawl_sources"),
       await affected(tx, "update public.crawl_sources set notes = 'x'"),
     ]);
-    expect(n).toBe(16);
+    expect(n).toBe(1);
     expect(updated).toBe(0);
   });
 
@@ -197,7 +193,7 @@ describe("console roles", () => {
       urls: await count(tx, "discovered_card_urls"),
       admins: await count(tx, "admin_users"),
     }));
-    expect(counts).toEqual({ sources: 16, urls: 1, admins: 4 });
+    expect(counts).toEqual({ sources: 1, urls: 1, admins: 4 });
   });
 
   it("rejects a duplicate issuer name regardless of case", async () => {

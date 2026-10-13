@@ -63,7 +63,7 @@ Used by `apps/admin` only (migration `*_admin_console.sql`):
 | --- | --- |
 | `admin_users` | Allow-list: `email` (citext), `role` (`admin` / `validator` / `viewer`), `active`. |
 | `admin_audit` | Append-only log written by a trigger on every `crawl_sources` create, update, pause, resume and robots check. |
-| `crawl_sources` | One row per issuer compare page (seeded with the 16 catalog issuers). |
+| `crawl_sources` | One row per issuer compare page (seeded with Scotiabank only; admins add the rest). |
 | `discovered_card_urls` | Card pages the crawler finds on a compare page. |
 
 `public.is_admin(min_role)` (SECURITY DEFINER) checks the JWT email, with a

@@ -192,34 +192,14 @@ revoke all on function public.audit_crawl_source() from public, anon, authentica
 revoke all on function public.set_updated_at() from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------------
--- Seed: the 16 catalog issuers. The Big Six URLs match
--- apps/api/src/data-pipeline/sources.ts (Scotiabank uses its compare page).
--- Inserted before the audit trigger so the log starts with human actions.
+-- Seed: start the scrape list with Scotiabank only; admins add other issuers
+-- from the console. Inserted before the audit trigger so the log starts with
+-- human actions.
 -- ---------------------------------------------------------------------------
 insert into public.crawl_sources (issuer_name, compare_url, url_pattern, schedule, status, notes)
 values
-  ('RBC', 'https://www.rbcroyalbank.com/credit-cards/', '/credit-cards/', 'monthly', 'active', null),
-  ('TD', 'https://www.td.com/ca/en/personal-banking/products/credit-cards',
-    '/ca/en/personal-banking/products/credit-cards/', 'monthly', 'active', null),
   ('Scotiabank', 'https://www.scotiabank.com/ca/en/personal/credit-cards/compare-cards.html',
-    '/ca/en/personal/credit-cards/', 'monthly', 'active', null),
-  ('BMO', 'https://www.bmo.com/en-ca/main/personal/credit-cards/',
-    '/en-ca/main/personal/credit-cards/', 'monthly', 'blocked',
-    'Network errors: BMO''s edge network has blocked or hung automated fetches. Update these cards by hand.'),
-  ('CIBC', 'https://www.cibc.com/en/personal-banking/credit-cards.html',
-    '/en/personal-banking/credit-cards/', 'monthly', 'active', null),
-  ('National Bank', 'https://www.nbc.ca/en/personal/credit-cards.html',
-    '/en/personal/credit-cards/', 'monthly', 'active', null),
-  ('American Express', null, null, 'monthly', 'not_set_up', null),
-  ('Canadian Tire', null, null, 'monthly', 'not_set_up', null),
-  ('Desjardins', null, null, 'monthly', 'not_set_up', null),
-  ('HSBC', null, null, 'monthly', 'not_set_up', null),
-  ('MBNA', null, null, 'monthly', 'not_set_up', null),
-  ('Neo', null, null, 'monthly', 'not_set_up', null),
-  ('PC Financial', null, null, 'monthly', 'not_set_up', null),
-  ('Rogers', null, null, 'monthly', 'not_set_up', null),
-  ('Simplii', null, null, 'monthly', 'not_set_up', null),
-  ('Tangerine', null, null, 'monthly', 'not_set_up', null)
+    '/credit-cards/', 'monthly', 'active', null)
 on conflict (issuer_name) do nothing;
 
 drop trigger if exists crawl_sources_audit on public.crawl_sources;
