@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import type Anthropic from "@anthropic-ai/sdk";
 import { MAX_CARD_TEXT_CHARS, MAX_COMPARE_LINKS, MAX_COMPARE_TEXT_CHARS } from "../config";
 import type { CardLink, PageLink, Usage } from "../types";
 import { CARD_TOOL_SCHEMA, coerceExtraction, LINKS_TOOL_SCHEMA, type CardExtraction } from "./schema";
@@ -61,15 +61,12 @@ function toolInput(msg: Anthropic.Message, tool: string): unknown {
   return block.input;
 }
 
+/** Build with `createClaudeClient()` from ../auth so credentials stay in one place. */
 export class ClaudeExtractor implements Extractor {
   constructor(
     private readonly client: MessagesClient,
     readonly model: string,
   ) {}
-
-  static fromApiKey(apiKey: string, model: string): ClaudeExtractor {
-    return new ClaudeExtractor(new Anthropic({ apiKey, maxRetries: 2 }), model);
-  }
 
   async discoverCardLinks(input: { issuer: string; pageUrl: string; pageText: string; links: PageLink[] }) {
     const list = input.links

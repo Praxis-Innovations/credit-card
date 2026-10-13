@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Extractor } from "./extract/claude";
 import type { FetchResult } from "./fetcher";
 import { nullOutput } from "./output";
-import { MissingApiKeyError, runCrawl, type RunDeps } from "./run";
+import { MissingClaudeCredentialsError, runCrawl, type RunDeps } from "./run";
 import { LocalCache, ReadOnlyStore, type DiscoveredUpsert, type FindingRow, type RunPatch, type Store } from "./store";
 import { CATALOG, GOLD_PAGE_TEXT, goldExtraction } from "./test/fixtures";
 import type { CrawlSource } from "./types";
@@ -94,8 +94,8 @@ function deps(over: Partial<RunDeps> = {}): RunDeps {
 
 describe("runCrawl", () => {
   it("fails fast with a clear message when there is no Claude extractor", async () => {
-    await expect(runCrawl({ source: "scotiabank", dryRun: true }, deps({ extractor: null }))).rejects.toThrow(MissingApiKeyError);
-    await expect(runCrawl({ source: "scotiabank", dryRun: true }, deps({ extractor: null }))).rejects.toThrow(/ANTHROPIC_API_KEY.*--no-llm/);
+    await expect(runCrawl({ source: "scotiabank", dryRun: true }, deps({ extractor: null }))).rejects.toThrow(MissingClaudeCredentialsError);
+    await expect(runCrawl({ source: "scotiabank", dryRun: true }, deps({ extractor: null }))).rejects.toThrow(/Workload Identity Federation.*--no-llm/);
   });
 
   it("refuses unknown and inactive sources", async () => {

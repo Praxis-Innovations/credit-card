@@ -86,11 +86,12 @@ function emptyCounts(): RunCounts {
   };
 }
 
-export class MissingApiKeyError extends Error {
+export class MissingClaudeCredentialsError extends Error {
   constructor() {
     super(
-      "ANTHROPIC_API_KEY is not set. Add it to apps/crawler/.env.local to extract card data, " +
-        "or pass --no-llm to only fetch the compare page, discover card links and save cleaned page text.",
+      "No Claude credentials: set up Workload Identity Federation (ANTHROPIC_ORGANIZATION_ID, " +
+        "ANTHROPIC_FEDERATION_RULE_ID, ANTHROPIC_SERVICE_ACCOUNT_ID and CRAWLER_WIF_IDENTITY; see apps/crawler/README.md). " +
+        "Without them only --dry-run / --no-llm work: fetch the compare page, collect card links and save cleaned page text.",
     );
   }
 }
@@ -103,7 +104,7 @@ export async function runCrawl(opts: RunOptions, deps: RunDeps): Promise<RunSumm
   const log = deps.log ?? (() => {});
   const now = deps.now ?? (() => new Date());
   const noLlm = !!opts.noLlm;
-  if (!noLlm && !deps.extractor) throw new MissingApiKeyError();
+  if (!noLlm && !deps.extractor) throw new MissingClaudeCredentialsError();
 
   const source = await deps.store.getSource(opts.source);
   if (!source) throw new Error(`No crawl source named "${opts.source}". Add it on the admin Sources page.`);

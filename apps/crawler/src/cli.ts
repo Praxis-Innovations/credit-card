@@ -1,34 +1,29 @@
-import { existsSync } from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
+import { createClaudeClient, resolveAuth } from "./auth";
 import { createPlaywrightLoader } from "./browser";
 import { DEFAULT_MODEL } from "./config";
+import { loadEnv } from "./env";
 import { ClaudeExtractor } from "./extract/claude";
 import { PoliteFetcher } from "./fetcher";
 import { fileOutput, OUTPUT_ROOT } from "./output";
 import { RobotsGate } from "./robots";
-import { MissingApiKeyError, runCrawl, type RunSummary } from "./run";
+import { MissingClaudeCredentialsError, runCrawl, type RunSummary } from "./run";
 import { LocalCache, OfflineStore, ReadOnlyStore, SupabaseStore, type Store } from "./store";
 
 const HELP = `Usage: pnpm --filter crawler crawl --source <issuer> [options]
 
   --source <name>   crawl_sources.issuer_name, e.g. scotiabank (required)
-  --dry-run         read from the database if configured, write nothing to it
+  --dry-run         read from the database if configured, write nothing to it;
+                    without Claude credentials this implies --no-llm
   --limit <n>       only fetch the first n card pages
   --model <id>      Claude model (default $CRAWLER_MODEL or ${DEFAULT_MODEL})
   --no-llm          no Claude: fetch the compare page, pick card links
                     heuristically and save cleaned page text only
   -h, --help        show this help
 
+Claude is reached only through Workload Identity Federation (see README).
 Output goes to apps/crawler/output/<run-id>/ (gitignored).`;
-
-function loadEnv() {
-  const root = path.resolve(OUTPUT_ROOT, "..");
-  for (const name of [".env.local", ".env"]) {
-    const file = path.join(root, name);
-    if (existsSync(file)) process.loadEnvFile(file);
-  }
-}
 
 async function chooseStore(dryRun: boolean, log: (m: string) => void): Promise<Store> {
   const url = process.env.SUPABASE_URL;
@@ -114,13 +109,23 @@ async function main(): Promise<number> {
   loadEnv();
   const log = (m: string) => console.log(m);
   const dryRun = values["dry-run"];
-  const noLlm = values["no-llm"];
-  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
-  if (!noLlm && !apiKey) {
-    console.error(`Error: ${new MissingApiKeyError().message}`);
+  let noLlm = values["no-llm"];
+  const auth = resolveAuth(process.env);
+  for (const w of auth.warnings) log(`warning: ${w}`);
+  if (!noLlm && auth.status === "invalid") {
+    console.error(`Error: ${auth.error}`);
     return 2;
   }
+  if (!noLlm && auth.status === "none") {
+    if (!dryRun) {
+      console.error(`Error: ${new MissingClaudeCredentialsError().message}`);
+      return 2;
+    }
+    log("no Claude credentials: dry run limited to fetching and link collection (same as --no-llm)");
+    noLlm = true;
+  }
   const model = values.model ?? process.env.CRAWLER_MODEL?.trim() ?? DEFAULT_MODEL;
+  if (!noLlm && auth.status === "configured") log(`Claude auth: workload identity federation via ${auth.config.source}`);
 
   const store = await chooseStore(dryRun, log);
   const loader = await createPlaywrightLoader(log);
@@ -130,7 +135,7 @@ async function main(): Promise<number> {
       {
         store,
         fetcher: new PoliteFetcher(loader, new RobotsGate(), { log }),
-        extractor: noLlm ? null : ClaudeExtractor.fromApiKey(apiKey!, model),
+        extractor: !noLlm && auth.status === "configured" ? new ClaudeExtractor(createClaudeClient(auth.config), model) : null,
         cache: await new LocalCache(path.join(OUTPUT_ROOT, "cache.json")).load(),
         output: (runId) => fileOutput(path.join(OUTPUT_ROOT, runId)),
         log,
