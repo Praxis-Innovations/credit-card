@@ -53,7 +53,7 @@ export const FALLBACK_SOURCES = [
     id: null,
     issuer_name: "Scotiabank",
     compare_url: "https://www.scotiabank.com/ca/en/personal/credit-cards/compare-cards.html",
-    url_pattern: "/ca/en/personal/credit-cards/",
+    url_pattern: "/credit-cards/",
     status: "active",
   },
 ] as const;
