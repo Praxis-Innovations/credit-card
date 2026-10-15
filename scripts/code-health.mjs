@@ -200,12 +200,21 @@ function collectKnip() {
     "--no-progress",
     "--no-config-hints",
   ]);
-  // knip exits non-zero when it finds issues; stdout is still JSON.
+  // knip exits 1 when it finds issues (stdout is still JSON). Status ≥2 or
+  // empty stdout means a crash/config error — do not treat as "no findings".
+  const stdout = (result.stdout ?? "").trim();
+  if (result.status >= 2 || !stdout) {
+    throw new Error(
+      `knip failed (exit ${result.status}):\n${result.stderr || result.stdout || "(no output)"}`,
+    );
+  }
   let data;
   try {
-    data = JSON.parse(result.stdout || "{}");
+    data = JSON.parse(stdout);
   } catch {
-    throw new Error(`knip produced non-JSON output:\n${result.stdout}\n${result.stderr}`);
+    throw new Error(
+      `knip produced non-JSON output:\n${result.stdout}\n${result.stderr}`,
+    );
   }
   const findings = [];
 
