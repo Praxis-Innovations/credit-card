@@ -99,7 +99,8 @@ async function lookupKey(keyHash: string): Promise<ApiKeyRecord | null> {
       .select("id, owner_label, tier, rate_limit_per_minute, active")
       .eq("key_hash", keyHash)
       .maybeSingle());
-  } catch {
+  } catch (cause) {
+    console.error("Auth unavailable (table=api_keys)", cause);
     throw new ApiError(
       503,
       "service_unavailable",
@@ -108,6 +109,7 @@ async function lookupKey(keyHash: string): Promise<ApiKeyRecord | null> {
   }
 
   if (error) {
+    console.error("Auth unavailable (table=api_keys)", error);
     throw new ApiError(
       503,
       "service_unavailable",

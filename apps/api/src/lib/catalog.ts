@@ -172,7 +172,8 @@ function paginate<T>(items: T[], limit: number, offset: number): {
   };
 }
 
-function catalogUnavailable(): never {
+function catalogUnavailable(table: string, cause?: unknown): never {
+  console.error(`Catalog unavailable (table=${table})`, cause);
   throw new ApiError(
     503,
     "service_unavailable",
@@ -182,12 +183,14 @@ function catalogUnavailable(): never {
 
 function requireClient(): SupabaseClient {
   const client = getClient();
-  if (!client) catalogUnavailable();
+  if (!client) {
+    catalogUnavailable("(client)", new Error("Supabase not configured"));
+  }
   return client;
 }
 
-function throwIfDbError(error: unknown): void {
-  if (error) catalogUnavailable();
+function throwIfDbError(table: string, error: unknown): void {
+  if (error) catalogUnavailable(table, error);
 }
 
 async function loadCardsFromDb(): Promise<CreditCard[]> {
@@ -201,10 +204,10 @@ async function loadCardsFromDb(): Promise<CreditCard[]> {
       .eq("status", "verified")
       .order("issuer", { ascending: true })
       .order("name", { ascending: true }));
-  } catch {
-    catalogUnavailable();
+  } catch (cause) {
+    catalogUnavailable("cards", cause);
   }
-  throwIfDbError(error);
+  throwIfDbError("cards", error);
   return (data ?? []).map((row) => mapCard(row as Record<string, unknown>));
 }
 
@@ -218,10 +221,10 @@ async function loadBrandsFromDb(): Promise<MerchantBrand[]> {
       .select("*")
       .eq("status", "verified")
       .order("name", { ascending: true }));
-  } catch {
-    catalogUnavailable();
+  } catch (cause) {
+    catalogUnavailable("merchant_brands", cause);
   }
-  throwIfDbError(error);
+  throwIfDbError("merchant_brands", error);
   return (data ?? []).map((row) => mapBrand(row as Record<string, unknown>));
 }
 
@@ -235,10 +238,10 @@ async function loadProgramsFromDb(): Promise<LoyaltyProgram[]> {
       .select("*")
       .eq("status", "verified")
       .order("name", { ascending: true }));
-  } catch {
-    catalogUnavailable();
+  } catch (cause) {
+    catalogUnavailable("loyalty_programs", cause);
   }
-  throwIfDbError(error);
+  throwIfDbError("loyalty_programs", error);
   return (data ?? []).map((row) => mapProgram(row as Record<string, unknown>));
 }
 
@@ -254,10 +257,10 @@ async function loadPartnershipsFromDb(
       query = query.eq("status", "verified");
     }
     ({ data, error } = await query.order("id", { ascending: true }));
-  } catch {
-    catalogUnavailable();
+  } catch (cause) {
+    catalogUnavailable("merchant_partnerships", cause);
   }
-  throwIfDbError(error);
+  throwIfDbError("merchant_partnerships", error);
   return (data ?? []).map((row) =>
     mapPartnership(row as Record<string, unknown>),
   );
@@ -321,10 +324,10 @@ export async function getCard(id: string): Promise<CreditCard | null> {
       .eq("id", id)
       .eq("status", "verified")
       .maybeSingle());
-  } catch {
-    catalogUnavailable();
+  } catch (cause) {
+    catalogUnavailable("cards", cause);
   }
-  throwIfDbError(error);
+  throwIfDbError("cards", error);
   return row ? mapCard(row) : null;
 }
 
@@ -384,10 +387,10 @@ export async function getMerchantBrand(
       .eq("id", id)
       .eq("status", "verified")
       .maybeSingle());
-  } catch {
-    catalogUnavailable();
+  } catch (cause) {
+    catalogUnavailable("merchant_brands", cause);
   }
-  throwIfDbError(error);
+  throwIfDbError("merchant_brands", error);
   return data ? mapBrand(data) : null;
 }
 
