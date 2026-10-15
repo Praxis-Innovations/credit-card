@@ -14,11 +14,20 @@
     "dev:mobile": "pnpm --filter mobile start",
     "dev:api": "pnpm --filter api dev",
     "dev:admin": "pnpm --filter admin dev",
-    "seed:catalog": "node --experimental-strip-types scripts/generate-catalog-seed.ts"
+    "seed:catalog": "node --experimental-strip-types scripts/generate-catalog-seed.ts",
+    "code-health": "node scripts/code-health.mjs",
+    "code-health:report": "node scripts/code-health.mjs --report",
+    "code-health:baseline": "node scripts/code-health.mjs --update-baseline"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "dependency-cruiser": "^18.6.0",
+    "eslint": "^9.30.0",
+    "jscpd": "^5.4.1",
+    "knip": "^6.41.0",
     "turbo": "^2.5.4",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.46.0"
   },
   "pnpm": {
     "overrides": {

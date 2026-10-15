@@ -74,10 +74,26 @@ jobs:
           path: apps/api/coverage/coverage-summary.json
           if-no-files-found: error
 
+  code-health:
+    name: code-health
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          turbo-cache-key: code-health
+
+      - name: Code-health (new violations vs baseline)
+        run: pnpm code-health
+
   ci-gate:
     name: CI gate
     if: always()
-    needs: [unit, api-coverage]
+    needs: [unit, api-coverage, code-health]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

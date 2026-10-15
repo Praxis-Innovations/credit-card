@@ -11,6 +11,7 @@ request, every push to `main`, merge-queue builds and manual dispatch.
 | `lint` | `pnpm turbo run lint` for the same apps |
 | `test` | `pnpm turbo run test` (Vitest unit tests) for the same apps |
 | `api coverage` | `pnpm --filter api test:coverage` — prints a text report and uploads `coverage-summary.json` |
+| `code-health` | `pnpm code-health` — ESLint size/complexity, knip, jscpd, dependency-cruiser; fails only on findings not in `code-health/baselines/` |
 | `CI gate` | Fails unless every job above succeeded |
 
 Each job installs with `pnpm install --frozen-lockfile` via the shared
@@ -25,14 +26,17 @@ To reproduce locally:
 pnpm install --frozen-lockfile
 pnpm typecheck && pnpm lint && pnpm test
 pnpm --filter api test:coverage
+pnpm code-health:report    # full findings (including baselined)
+pnpm code-health           # same gate as CI (new violations only)
 ```
 
 No secrets are needed; unit tests must not depend on network services or
-`.env` files.
+`.env` files. Refresh committed baselines after deliberately accepting debt with
+`pnpm code-health:baseline`.
 
 ## Adding jobs
 
-Later checks (code health, e2e) go in the same workflow as new jobs:
+Later checks (e2e, …) go in the same workflow as new jobs:
 
 1. Start the job with `actions/checkout` and `uses: ./.github/actions/setup`
    (pick a unique `turbo-cache-key`).
