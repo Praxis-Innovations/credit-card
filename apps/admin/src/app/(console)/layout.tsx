@@ -14,7 +14,7 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
       >
         Skip to content
       </a>
-      <Sidebar email={email} role={role} current="/sources" />
+      <Sidebar email={email} role={role} />
       <main
         id="main"
         tabIndex={-1}

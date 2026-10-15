@@ -352,3 +352,153 @@ describe("crawler tables", () => {
     ).rejects.toThrow(/crawl_runs_failed_has_error/);
   });
 });
+
+describe("finding review", () => {
+  const VALIDATOR = jwtClaims({ email: "validator@example.com" });
+  const VIEWER = jwtClaims({ email: "viewer@example.com" });
+  const RUN = "'00000000-0000-4000-8000-0000000000aa'";
+  const pending = `where run_id = ${RUN} and review_status = 'pending'`;
+
+  type Audit = {
+    actor_email: string;
+    action: string;
+    entity: string;
+    before: Record<string, unknown>;
+    after: Record<string, unknown>;
+  };
+  async function findingAudit(tx: Transaction): Promise<Audit[]> {
+    const { rows } = await tx.query<Audit>(
+      `select actor_email, action, entity, before, after from public.admin_audit
+       where entity = 'card_findings' order by id`,
+    );
+    return rows;
+  }
+
+  it("denies anon any review", async () => {
+    await expect(
+      asRole(db, "anon", null, (tx) =>
+        tx.query(`update public.card_findings set review_status = 'approved' ${pending}`),
+      ),
+    ).rejects.toThrow(/permission denied/);
+  });
+
+  it("reviews nothing for an app user or a deactivated admin", async () => {
+    for (const claims of [APP_USER, jwtClaims({ email: "former@example.com" })]) {
+      const n = await asRole(db, "authenticated", claims, (tx) =>
+        affected(tx, `update public.card_findings set review_status = 'approved' ${pending}`),
+      );
+      expect(n).toBe(0);
+    }
+  });
+
+  it("lets a viewer read findings but not review them", async () => {
+    const [seen, reviewed] = await asRole(db, "authenticated", VIEWER, async (tx) => [
+      await count(tx, "card_findings"),
+      await affected(
+        tx,
+        `update public.card_findings set review_status = 'rejected', review_note = 'no' ${pending}`,
+      ),
+    ]);
+    expect([seen, reviewed]).toEqual([1, 0]);
+    const { rows } = await db.query<{ n: number }>("select count(*)::int as n from public.admin_audit where entity = 'card_findings'");
+    expect(rows[0]!.n).toBe(0);
+  });
+
+  it("lets a validator approve once, stamps the reviewer from the JWT, and audits it", async () => {
+    const out = await db.transaction(async (tx) => {
+      await tx.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify(VALIDATOR)]);
+      await tx.exec("set local role authenticated");
+      const first = await affected(
+        tx,
+        `update public.card_findings
+         set review_status = 'approved', reviewed_by = 'someone.else@example.com', reviewed_at = '2000-01-01'
+         ${pending}`,
+      );
+      const second = await affected(
+        tx,
+        `update public.card_findings set review_status = 'rejected', review_note = 'changed my mind' ${pending}`,
+      );
+      await tx.exec("reset role");
+      const { rows } = await tx.query<{ review_status: string; reviewed_by: string; reviewed_at: Date }>(
+        `select review_status, reviewed_by, reviewed_at from public.card_findings where run_id = ${RUN}`,
+      );
+      const audit = await findingAudit(tx);
+      await tx.rollback();
+      return { first, second, finding: rows[0]!, audit };
+    });
+
+    expect(out.first).toBe(1);
+    expect(out.second).toBe(0);
+    expect(out.finding.review_status).toBe("approved");
+    expect(out.finding.reviewed_by).toBe("validator@example.com");
+    expect(new Date(out.finding.reviewed_at).getFullYear()).toBeGreaterThan(2020);
+    expect(out.audit).toHaveLength(1);
+    expect(out.audit[0]).toMatchObject({
+      actor_email: "validator@example.com",
+      action: "finding.approve",
+      entity: "card_findings",
+      before: { review_status: "pending" },
+      after: {
+        review_status: "approved",
+        reviewed_by: "validator@example.com",
+        card_name: "Scotiabank Gold American Express Card",
+        linked_card_id: "scotia-gold-amex",
+      },
+    });
+    // The extraction payload stays on card_findings, not in the log.
+    expect(out.audit[0]!.after).not.toHaveProperty("extracted");
+  });
+
+  it("requires a note to reject, and audits the rejection with it", async () => {
+    for (const note of ["", "'  '"]) {
+      await expect(
+        asRole(db, "authenticated", VALIDATOR, (tx) =>
+          tx.query(
+            `update public.card_findings set review_status = 'rejected'${note ? `, review_note = ${note}` : ""} ${pending}`,
+          ),
+        ),
+      ).rejects.toThrow(/card_findings_rejected_has_note/);
+    }
+
+    const audit = await asRole(db, "authenticated", ADMIN, async (tx) => {
+      await tx.query(
+        `update public.card_findings set review_status = 'rejected', review_note = 'Fee is wrong' ${pending}`,
+      );
+      return findingAudit(tx);
+    });
+    expect(audit).toHaveLength(1);
+    expect(audit[0]).toMatchObject({
+      actor_email: "info.praxisinnovations@gmail.com",
+      action: "finding.reject",
+      after: { review_status: "rejected", review_note: "Fee is wrong" },
+    });
+  });
+
+  it("only allows approved or rejected, and only the decision columns", async () => {
+    for (const status of ["ignored", "pending"]) {
+      await expect(
+        asRole(db, "authenticated", VALIDATOR, (tx) =>
+          tx.query(`update public.card_findings set review_status = '${status}' ${pending}`),
+        ),
+      ).rejects.toThrow(/row-level security/);
+    }
+    await expect(
+      asRole(db, "authenticated", VALIDATOR, (tx) =>
+        tx.query(`update public.card_findings set diff_kind = 'new' ${pending}`),
+      ),
+    ).rejects.toThrow(/permission denied/);
+  });
+
+  it("does not let a validator read the audit log", async () => {
+    expect(await asRole(db, "authenticated", VALIDATOR, (tx) => count(tx, "admin_audit"))).toBe(0);
+  });
+
+  it("never touches the cards table", async () => {
+    const cards = () => db.query<{ n: number }>("select count(*)::int as n from public.cards");
+    const before = (await cards()).rows[0]!.n;
+    await asRole(db, "authenticated", VALIDATOR, (tx) =>
+      tx.query(`update public.card_findings set review_status = 'approved' ${pending}`),
+    );
+    expect((await cards()).rows[0]!.n).toBe(before);
+  });
+});
