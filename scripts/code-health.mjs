@@ -76,27 +76,80 @@ function ensureDirs() {
   mkdirSync(TMP_DIR, { recursive: true });
 }
 
+function countMap(items) {
+  const map = new Map();
+  for (const item of items) {
+    map.set(item, (map.get(item) || 0) + 1);
+  }
+  return map;
+}
+
+function baselineToCountMap(baseline) {
+  // Prefer { fingerprint: count }. Legacy unique-string arrays count as 1 each.
+  if (Array.isArray(baseline)) return countMap(baseline);
+  if (baseline && typeof baseline === "object") {
+    return new Map(
+      Object.entries(baseline).map(([k, v]) => [k, Number(v) || 0]),
+    );
+  }
+  return new Map();
+}
+
 function readBaseline(name) {
   const file = path.join(BASELINE_DIR, name);
-  if (!existsSync(file)) return [];
+  if (!existsSync(file)) return {};
   return JSON.parse(readFileSync(file, "utf8"));
 }
 
 function writeBaseline(name, fingerprints) {
-  const sorted = [...new Set(fingerprints)].sort();
+  const counts = countMap(fingerprints);
+  const obj = Object.fromEntries(
+    [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0])),
+  );
   writeFileSync(
     path.join(BASELINE_DIR, name),
-    `${JSON.stringify(sorted, null, 2)}\n`,
+    `${JSON.stringify(obj, null, 2)}\n`,
   );
-  return sorted;
+  return obj;
 }
 
-function diffAgainstBaseline(tool, fingerprints, baseline) {
-  const known = new Set(baseline);
-  const current = new Set(fingerprints);
-  const novel = [...current].filter((f) => !known.has(f)).sort();
-  const resolved = [...known].filter((f) => !current.has(f)).sort();
-  return { novel, resolved, total: fingerprints.length, known: baseline.length };
+/**
+ * Fail only when a fingerprint's count increases vs baseline.
+ * Line shifts / complexity 24→23 with the same (file, rule) stay green.
+ */
+function diffAgainstBaseline(fingerprints, baseline) {
+  const current = countMap(fingerprints);
+  const known = baselineToCountMap(baseline);
+  const novel = [];
+  const resolved = [];
+  for (const [fp, count] of [...current.entries()].sort((a, b) =>
+    a[0].localeCompare(b[0]),
+  )) {
+    const base = known.get(fp) || 0;
+    if (count > base) {
+      novel.push({
+        fingerprint: fp,
+        current: count,
+        baseline: base,
+        excess: count - base,
+      });
+    }
+  }
+  for (const [fp, base] of [...known.entries()].sort((a, b) =>
+    a[0].localeCompare(b[0]),
+  )) {
+    const count = current.get(fp) || 0;
+    if (count < base) {
+      resolved.push({ fingerprint: fp, current: count, baseline: base });
+    }
+  }
+  const knownTotal = [...known.values()].reduce((sum, n) => sum + n, 0);
+  return {
+    novel,
+    resolved,
+    total: fingerprints.length,
+    known: knownTotal,
+  };
 }
 
 // --- collectors -------------------------------------------------------------
@@ -126,9 +179,13 @@ function collectEslint() {
   for (const file of raw) {
     for (const msg of file.messages ?? []) {
       if (msg.severity < 2) continue;
+      const filePath = rel(file.filePath);
+      const ruleId = msg.ruleId ?? "unknown";
+      // Location-independent: count per (file, rule). Line shifts and
+      // complexity 24→23 do not create a "new" fingerprint.
       findings.push({
-        fingerprint: `eslint|${rel(file.filePath)}|${msg.ruleId ?? "unknown"}|${msg.line}:${msg.column}|${msg.message}`,
-        summary: `${rel(file.filePath)}:${msg.line} ${msg.ruleId} — ${msg.message}`,
+        fingerprint: `eslint|${filePath}|${ruleId}`,
+        summary: `${filePath}:${msg.line} ${ruleId} — ${msg.message}`,
       });
     }
   }
@@ -326,40 +383,52 @@ function main() {
 
     if (UPDATE) {
       const written = writeBaseline(tool.baseline, fingerprints);
-      console.log(`  baseline ← ${written.length} finding(s)\n`);
-      summaryRows.push({ tool: tool.id, status: "updated", novel: 0, total: written.length });
+      const total = Object.values(written).reduce((sum, n) => sum + n, 0);
+      console.log(
+        `  baseline ← ${total} finding(s) across ${Object.keys(written).length} key(s)\n`,
+      );
+      summaryRows.push({ tool: tool.id, status: "updated", novel: 0, total });
       continue;
     }
 
     const baseline = readBaseline(tool.baseline);
     const { novel, resolved, total, known } = diffAgainstBaseline(
-      tool.id,
       fingerprints,
       baseline,
     );
-    const novelSet = new Set(novel);
+    const novelByFp = new Map(novel.map((n) => [n.fingerprint, n]));
+    const novelExcess = novel.reduce((sum, n) => sum + n.excess, 0);
 
     if (REPORT) {
       if (findings.length === 0) {
         console.log("  (no findings)\n");
       } else {
         for (const f of findings) {
-          const tag = novelSet.has(f.fingerprint) ? "NEW" : "base";
+          const tag = novelByFp.has(f.fingerprint) ? "NEW" : "base";
           console.log(`  [${tag}] ${f.summary}`);
         }
         console.log("");
       }
     } else if (novel.length > 0) {
-      console.log(`  ${novel.length} new violation(s) (${total} total, ${known} baselined):`);
-      for (const f of findings.filter((x) => novelSet.has(x.fingerprint))) {
-        console.log(`  [NEW] ${f.summary}`);
+      console.log(
+        `  ${novelExcess} new violation(s) across ${novel.length} key(s) (${total} total, ${known} baselined):`,
+      );
+      for (const n of novel) {
+        console.log(
+          `  [NEW] ${n.fingerprint} — count ${n.current} (baseline ${n.baseline}, +${n.excess})`,
+        );
+        for (const f of findings.filter((x) => x.fingerprint === n.fingerprint)) {
+          console.log(`         ${f.summary}`);
+        }
       }
       console.log("");
       exitCode = 1;
     } else {
       console.log(
         `  ok — ${total} finding(s), all baselined` +
-          (resolved.length ? ` (${resolved.length} resolved since baseline)` : "") +
+          (resolved.length
+            ? ` (${resolved.length} key(s) below baseline)`
+            : "") +
           "\n",
       );
     }
@@ -367,7 +436,7 @@ function main() {
     summaryRows.push({
       tool: tool.id,
       status: novel.length ? "fail" : "ok",
-      novel: novel.length,
+      novel: novelExcess,
       total,
     });
   }
