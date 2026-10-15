@@ -1,0 +1,71 @@
+name: CI
+
+# Test gate for every PR and every push to main. See docs/ci.md.
+#
+# Adding a job (code health, e2e, ...): give it a `uses: ./.github/actions/setup`
+# step and append its id to `ci-gate.needs`. Branch protection only requires
+# "CI gate", so new jobs become blocking without touching repo settings.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  TURBO_TELEMETRY_DISABLED: "1"
+  TURBO_CACHE_DIR: .turbo/cache
+
+jobs:
+  unit:
+    name: ${{ matrix.task }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [typecheck, lint, test]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          turbo-cache-key: ${{ matrix.task }}
+
+      - name: Run ${{ matrix.task }}
+        run: >-
+          pnpm turbo run ${{ matrix.task }}
+          --filter=api
+          --filter=admin
+          --filter=crawler
+          --filter=mobile
+          --filter=web
+
+  ci-gate:
+    name: CI gate
+    if: always()
+    needs: [unit]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check required jobs
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in
+              success|skipped) ;;
+              *) echo "::error::A required CI job did not succeed ($result)."; exit 1 ;;
+            esac
+          done
