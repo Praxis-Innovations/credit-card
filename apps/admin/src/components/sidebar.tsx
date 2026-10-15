@@ -1,10 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { signOut } from "@/app/auth/actions";
 import { ROLE_LABELS, type AdminRole } from "@/lib/auth/roles";
 import { BrandLogo } from "./brand-logo";
 
 const NAV_ITEMS = [
-  { label: "Review queue", href: null },
+  { label: "Review queue", href: "/review" },
   { label: "Cards", href: null },
   { label: "Sources", href: "/sources" },
   { label: "Crawl runs", href: null },
@@ -13,7 +16,8 @@ const NAV_ITEMS = [
 const itemBase =
   "relative flex min-h-10 items-center justify-between gap-3 whitespace-nowrap rounded-lg px-3 text-[15px] lg:min-h-11";
 
-export function Sidebar({ email, role, current }: { email: string; role: AdminRole; current: string }) {
+export function Sidebar({ email, role }: { email: string; role: AdminRole }) {
+  const current = usePathname();
   return (
     <aside className="flex flex-col gap-4 border-b border-line bg-surface px-4 py-4 lg:sticky lg:top-0 lg:h-dvh lg:w-[264px] lg:shrink-0 lg:gap-7 lg:border-r lg:border-b-0 lg:py-6">
       <div className="px-2">
