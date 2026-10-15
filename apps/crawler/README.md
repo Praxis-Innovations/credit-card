@@ -252,13 +252,19 @@ to re-exchange, so long runs outlive GitHub's roughly 5-minute token lifetime.
     `--limit` is used). Matching uses `discovered_card_urls.linked_card_id`
     first, then a normalised name.
 11. **Record**: `crawl_runs` (status, counts, tokens, cost estimate, skipped
-    pages), `card_findings` (`review_status = 'pending'`), and
+    pages), `card_findings`, and
     `discovered_card_urls`. Each run is also saved to
     `apps/crawler/output/<run-id>/`:
     - `compare/`: page text, links, picked card links
     - `pages/NN-slug.txt`: cleaned card page text
     - `extractions/NN-slug.json`: extraction, checks and diff
     - `summary.json`
+
+    `new`, `changed` and `possibly_discontinued` findings are stored with
+    `review_status = 'pending'` and appear in the admin Review queue.
+    `unchanged` findings are stored as `'checked'` and never queued.
+    `checked_at` records when each finding was diffed against `cards`, so the
+    newest `checked_at` per `linked_card_id` is when that card was last checked.
 
 `runCrawl()` in `src/run.ts` takes all side effects as arguments, so a
 scheduled workflow can call it with the same stores and fetcher the CLI uses.

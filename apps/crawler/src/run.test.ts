@@ -135,11 +135,54 @@ describe("runCrawl", () => {
       flagged_count: 0,
       reused_extraction: false,
       input_tokens: 20_000,
+      review_status: "pending",
+      checked_at: expect.any(String),
     });
-    expect(gone).toMatchObject({ diff_kind: "possibly_discontinued", linked_card_id: "scotia-scene-visa", product_url: null });
+    expect(gone).toMatchObject({
+      diff_kind: "possibly_discontinued",
+      linked_card_id: "scotia-scene-visa",
+      product_url: null,
+      review_status: "pending",
+    });
     expect((gone!.diff as { note: string }).note).toMatch(/could not be fetched or extracted/);
     expect(mem.runs.get(summary.run_id)).toMatchObject({ status: "done", compare_page_hash: expect.stringMatching(/^sha256:/) });
     expect(mem.store.markSourceCrawled).toHaveBeenCalledWith("src-1", expect.any(String));
+  });
+
+  it("stores a card with no changes as checked, with the check time, and keeps new cards pending", async () => {
+    const mem = memoryStore();
+    const gold = CATALOG[0]!;
+    vi.mocked(mem.store.getCatalog).mockResolvedValue([
+      {
+        ...gold,
+        reward_categories: gold.reward_categories.map((r) => (r.category === "groceries" ? { ...r, earnRate: 6 } : r)),
+        welcome_offer: { summary: "50,000 Scene+ points in the first year", estimatedValueCad: 500 },
+      },
+    ]);
+    const extractor = mockExtractor();
+    extractor.extractCard.mockImplementation(async ({ pageUrl }: { pageUrl: string }) => ({
+      extraction:
+        pageUrl === SCENE
+          ? goldExtraction({ card_name: { value: "Scotiabank Platinum Amex Card", quote: "Scotiabank Gold American Express® Card" } })
+          : goldExtraction(),
+      usage: { inputTokens: 1, outputTokens: 1 },
+    }));
+    const at = new Date("2026-10-14T12:00:00.000Z");
+    const summary = await runCrawl(
+      { source: "scotiabank", dryRun: false },
+      deps({ store: mem.store, extractor, now: () => at }),
+    );
+
+    expect(summary.counts).toMatchObject({ findings_unchanged: 1, findings_new: 1, findings_possibly_discontinued: 0 });
+    const byUrl = new Map(mem.findings.map((f) => [f.product_url, f]));
+    expect(byUrl.get(GOLD)).toMatchObject({
+      diff_kind: "unchanged",
+      review_status: "checked",
+      checked_at: at.toISOString(),
+      linked_card_id: "scotia-gold-amex",
+    });
+    expect(byUrl.get(SCENE)).toMatchObject({ diff_kind: "new", review_status: "pending", checked_at: at.toISOString() });
+    expect(mem.findings.filter((f) => f.review_status === "pending").map((f) => f.diff_kind)).toEqual(["new"]);
   });
 
   it("skips Claude for pages whose content hash is unchanged", async () => {

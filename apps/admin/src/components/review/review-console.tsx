@@ -212,8 +212,9 @@ export function ReviewConsole({
       <div className="flex max-w-3xl flex-col gap-1.5">
         <h1 className="font-display text-[30px] leading-tight font-semibold">Review queue</h1>
         <p className="text-[15px] text-body">
-          What the crawler found, waiting for a human. Approving records your decision only; nothing here changes the
-          card catalog.
+          New, changed and possibly discontinued cards the crawler found, waiting for a human. Cards that match the
+          catalog are recorded as checked and don&apos;t appear here. Approving records your decision only; nothing here
+          changes the card catalog.
         </p>
       </div>
 

@@ -146,6 +146,17 @@ export function diffCard(
   };
 }
 
+export type FindingReviewStatus = "pending" | "checked";
+
+/**
+ * Review status a finding is stored with. Only new, changed and possibly
+ * discontinued cards go to the admin review queue; a card with no changes is
+ * recorded as checked. Without a catalog (kind null) a human has to look.
+ */
+export function reviewStatusFor(kind: DiffKind | null): FindingReviewStatus {
+  return kind === "unchanged" ? "checked" : "pending";
+}
+
 /** Catalog cards for this issuer that no extracted page matched. */
 export function findPossiblyDiscontinued(catalog: CatalogCard[], matchedIds: Set<string>): CatalogCard[] {
   return catalog.filter((c) => !matchedIds.has(c.id));

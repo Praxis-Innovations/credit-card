@@ -81,7 +81,7 @@ Written by `apps/crawler` with its own server-side key (migration
 | Table | Purpose |
 | --- | --- |
 | `crawl_runs` | One crawl run: scope, trigger, status (`requested` → `running` → `done` / `failed`), counts, tokens, cost estimate, skipped pages, error. |
-| `card_findings` | Per-card output of a run: page hash, extraction (each value with a verbatim quote), check results, diff vs `cards` (`new` / `changed` / `unchanged` / `possibly_discontinued`), linked card, `review_status` (default `pending`). |
+| `card_findings` | Per-card output of a run: page hash, extraction (each value with a verbatim quote), check results, diff vs `cards` (`new` / `changed` / `unchanged` / `possibly_discontinued`), linked card, `review_status` (`pending` for new / changed / possibly discontinued; `checked` for unchanged, which never enter the review queue), `checked_at` (when the crawler diffed it). |
 
 RLS matches the admin tables: console roles read; only admins insert or
 delete (admins may only insert runs as `requested`); validators may update a
