@@ -121,8 +121,8 @@ describe("runCrawl", () => {
       findings_possibly_discontinued: 1,
     });
     expect(summary.skipped).toEqual([{ url: SCENE, reason: "extraction_failed", detail: "Claude did not call record_card" }]);
-    // 30k in / 1.5k out at $3 / $15 per MTok
-    expect(summary.cost_estimate_usd).toBeCloseTo(0.1125, 6);
+    // 30k in / 1.5k out at $2 / $10 per MTok
+    expect(summary.cost_estimate_usd).toBeCloseTo(0.075, 6);
 
     const [gold, gone] = mem.findings;
     expect(gold).toMatchObject({

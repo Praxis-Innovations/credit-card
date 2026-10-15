@@ -17,8 +17,8 @@ export const DEFAULT_MODEL = "claude-sonnet-5-5";
 
 /** USD per million tokens. Override with CRAWLER_PRICE_*_PER_MTOK when list prices change. */
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
-  "claude-sonnet-5-5": { input: 3, output: 15 },
-  "claude-haiku-4-5-20251001": { input: 1, output: 5 },
+  "claude-sonnet-5-5": { input: 2, output: 10 },
+  "claude-haiku-5-5": { input: 0.1, output: 0.5 },
   "claude-haiku-4-5": { input: 1, output: 5 },
 };
 

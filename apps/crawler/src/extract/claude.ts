@@ -32,7 +32,8 @@ Rules:
 - Include no-annual-fee and no-rewards cards. Student versions are separate cards; include them.
 - Exclude hub or category pages (e.g. "travel cards", "cash back cards", "no annual fee cards"), comparison tools, calculators, application flows, offers pages, help/FAQ, benefit guides, rewards-program pages and business cards.
 - Only use URLs from the provided link list, copied exactly. Never construct or guess a URL.
-- card_name is the product's name as the page or link text gives it.`;
+- card_name is the product's name as the page or link text gives it.
+- Answer only by calling report_card_pages. Write no other text.`;
 
 const CARD_SYSTEM = `You extract facts about one credit card from the text of its official product page.
 
@@ -44,7 +45,8 @@ Rules:
 - APRs: standard rates only, not promotional or introductory rates.
 - annual_fee: the regular primary-card fee, even if the first year is waived.
 - earn_rates: ongoing earn rates only (not welcome or limited-time bonuses). Map each to the closest category; the base rate on all other purchases is "other". Cash back is percent_cashback.
-- welcome_bonus: the current sign-up offer; points is the maximum total bonus if stated.`;
+- welcome_bonus: the current sign-up offer; points is the maximum total bonus if stated.
+- Answer only by calling record_card. Write no other text.`;
 
 function truncate(text: string, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max)}\n[...truncated]`;
@@ -84,7 +86,9 @@ export class ClaudeExtractor implements Extractor {
           input_schema: LINKS_TOOL_SCHEMA as Anthropic.Tool.InputSchema,
         },
       ],
-      tool_choice: { type: "tool", name: "report_card_pages" },
+      // Forced tool use (tool_choice "tool"/"any") is rejected on Sonnet 5.5 and the
+      // Opus 5 family, so ask for the call in the prompt and check it happened.
+      tool_choice: { type: "auto" },
       messages: [
         {
           role: "user",
@@ -113,7 +117,8 @@ export class ClaudeExtractor implements Extractor {
           input_schema: CARD_TOOL_SCHEMA as Anthropic.Tool.InputSchema,
         },
       ],
-      tool_choice: { type: "tool", name: "record_card" },
+      // See discoverCardLinks: forced tool use is rejected on the current models.
+      tool_choice: { type: "auto" },
       messages: [
         {
           role: "user",

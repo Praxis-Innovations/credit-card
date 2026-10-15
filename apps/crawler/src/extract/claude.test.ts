@@ -40,7 +40,7 @@ describe("ClaudeExtractor.extractCard", () => {
 
     const params = (create.mock.calls[0] as unknown as [Anthropic.MessageCreateParamsNonStreaming])[0];
     expect(params.model).toBe("claude-sonnet-5-5");
-    expect(params.tool_choice).toEqual({ type: "tool", name: "record_card" });
+    expect(params.tool_choice).toEqual({ type: "auto" });
     expect(params.messages[0]!.content).toContain("<page_text>\nGold Card\n</page_text>");
 
     expect(usage).toEqual({ inputTokens: 1200, outputTokens: 300 });
@@ -75,7 +75,7 @@ describe("ClaudeExtractor.discoverCardLinks", () => {
       links: [{ url: "https://b.example/gold.html", text: "Gold card" }],
     });
     const params = (create.mock.calls[0] as unknown as [Anthropic.MessageCreateParamsNonStreaming])[0];
-    expect(params.tool_choice).toEqual({ type: "tool", name: "report_card_pages" });
+    expect(params.tool_choice).toEqual({ type: "auto" });
     expect(params.messages[0]!.content).toContain("1. Gold card | https://b.example/gold.html");
     expect(res.cards).toEqual([{ card_name: "Gold", url: "https://b.example/gold.html" }]);
   });

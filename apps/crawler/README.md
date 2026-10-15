@@ -30,7 +30,7 @@ pnpm --filter crawler crawl --source scotiabank --dry-run --no-llm
 ```
 
 Options: `--limit N` (first N card pages only), `--model <id>` (default
-`$CRAWLER_MODEL`, else `claude-sonnet-5-5`; `claude-haiku-4-5-20251001` for a
+`$CRAWLER_MODEL`, else `claude-sonnet-5-5`; `claude-haiku-5-5` for a
 cheaper comparison), `--no-llm`, `--dry-run`.
 
 ### Environment (`apps/crawler/.env.local`, gitignored)
