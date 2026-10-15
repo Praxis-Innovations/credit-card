@@ -73,6 +73,20 @@ writes). A normal app user's JWT sees zero rows. The admin app always uses the
 signed-in user's session, never the service role. Tests:
 `apps/admin/src/db/rls.test.ts`.
 
+### Crawler tables
+
+Written by `apps/crawler` with its own server-side key (migration
+`*_crawler_runs_findings.sql`):
+
+| Table | Purpose |
+| --- | --- |
+| `crawl_runs` | One crawl run: scope, trigger, status (`requested` → `running` → `done` / `failed`), counts, tokens, cost estimate, skipped pages, error. |
+| `card_findings` | Per-card output of a run: page hash, extraction (each value with a verbatim quote), check results, diff vs `cards` (`new` / `changed` / `unchanged` / `possibly_discontinued`), linked card, `review_status` (default `pending`). |
+
+RLS matches the admin tables: console roles read; only admins insert or
+delete (admins may only insert runs as `requested`); validators may update a
+finding's `review_status` / `reviewed_by` / `reviewed_at` and no other column.
+
 Catalog images (card art, brand and program logos) are stored in the public
 Storage bucket `brand-assets`, which only the service role can write to. The
 `*_url` columns on `cards`, `merchant_brands` and `loyalty_programs` are null

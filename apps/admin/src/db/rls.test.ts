@@ -7,6 +7,8 @@ const ADMIN_TABLES = [
   "admin_audit",
   "crawl_sources",
   "discovered_card_urls",
+  "crawl_runs",
+  "card_findings",
 ] as const;
 
 const ADMIN = jwtClaims({ email: "info.praxisinnovations@gmail.com" });
@@ -25,6 +27,15 @@ beforeAll(async () => {
     insert into public.discovered_card_urls (source_id, card_name, product_url)
       select id, 'Passport Visa Infinite',
         'https://www.scotiabank.com/ca/en/personal/credit-cards/visa/passport-infinite-card.html'
+      from public.crawl_sources where issuer_name = 'Scotiabank';
+    insert into public.crawl_runs (id, source_id, source_scope, trigger, status, started_at)
+      select '00000000-0000-4000-8000-0000000000aa', id, 'Scotiabank', 'cli', 'running', now()
+      from public.crawl_sources where issuer_name = 'Scotiabank';
+    insert into public.card_findings (run_id, source_id, product_url, card_name, extracted, diff_kind, linked_card_id)
+      select '00000000-0000-4000-8000-0000000000aa', id,
+        'https://www.scotiabank.com/ca/en/personal/credit-cards/american-express/gold-card.html',
+        'Scotiabank Gold American Express Card', '{"annual_fee": {"value": 120, "quote": "$120"}}', 'changed',
+        'scotia-gold-amex'
       from public.crawl_sources where issuer_name = 'Scotiabank';
   `);
 }, 60_000);
@@ -260,5 +271,84 @@ describe("admin_audit", () => {
     await expect(
       asRole(db, "authenticated", ADMIN, (tx) => tx.query("update public.admin_audit set action = 'x'")),
     ).rejects.toThrow(/permission denied/);
+  });
+});
+
+describe("crawler tables", () => {
+  const VALIDATOR = jwtClaims({ email: "validator@example.com" });
+  const VIEWER = jwtClaims({ email: "viewer@example.com" });
+  const RUN = "'00000000-0000-4000-8000-0000000000aa'";
+
+  it("lets every console role read runs and findings", async () => {
+    for (const claims of [ADMIN, VALIDATOR, VIEWER]) {
+      const counts = await asRole(db, "authenticated", claims, async (tx) => [
+        await count(tx, "crawl_runs"),
+        await count(tx, "card_findings"),
+      ]);
+      expect(counts).toEqual([1, 1]);
+    }
+  });
+
+  it("lets an admin request a run but not fabricate a finished one", async () => {
+    await asRole(db, "authenticated", ADMIN, (tx) =>
+      tx.query(`insert into public.crawl_runs (source_id, source_scope, status) values (${scotiaId}, 'Scotiabank', 'requested')`),
+    );
+    await expect(
+      asRole(db, "authenticated", ADMIN, (tx) =>
+        tx.query(`insert into public.crawl_runs (source_id, source_scope, status) values (${scotiaId}, 'Scotiabank', 'done')`),
+      ),
+    ).rejects.toThrow(/row-level security/);
+  });
+
+  it("does not let validators or viewers request runs", async () => {
+    for (const claims of [VALIDATOR, VIEWER]) {
+      await expect(
+        asRole(db, "authenticated", claims, (tx) =>
+          tx.query(`insert into public.crawl_runs (source_scope) values ('Scotiabank')`),
+        ),
+      ).rejects.toThrow(/row-level security/);
+    }
+  });
+
+  it("lets a validator record a review decision and nothing else", async () => {
+    const reviewed = await asRole(db, "authenticated", VALIDATOR, (tx) =>
+      affected(
+        tx,
+        `update public.card_findings set review_status = 'approved', reviewed_by = 'validator@example.com', reviewed_at = now()
+         where run_id = ${RUN}`,
+      ),
+    );
+    expect(reviewed).toBe(1);
+    await expect(
+      asRole(db, "authenticated", VALIDATOR, (tx) =>
+        tx.query(`update public.card_findings set extracted = '{}'::jsonb where run_id = ${RUN}`),
+      ),
+    ).rejects.toThrow(/permission denied/);
+  });
+
+  it("does not let a viewer review findings", async () => {
+    const n = await asRole(db, "authenticated", VIEWER, (tx) =>
+      affected(tx, `update public.card_findings set review_status = 'rejected' where run_id = ${RUN}`),
+    );
+    expect(n).toBe(0);
+  });
+
+  it("requires a page URL unless the card is possibly discontinued, and a catalog card if it is", async () => {
+    await expect(
+      db.query(
+        `insert into public.card_findings (run_id, source_id, diff_kind) values (${RUN}, ${scotiaId}, 'new')`,
+      ),
+    ).rejects.toThrow(/card_findings_page_or_discontinued/);
+    await expect(
+      db.query(
+        `insert into public.card_findings (run_id, source_id, diff_kind) values (${RUN}, ${scotiaId}, 'possibly_discontinued')`,
+      ),
+    ).rejects.toThrow(/card_findings_discontinued_links_card/);
+  });
+
+  it("requires an error message on failed runs", async () => {
+    await expect(
+      db.query(`insert into public.crawl_runs (source_scope, status) values ('Scotiabank', 'failed')`),
+    ).rejects.toThrow(/crawl_runs_failed_has_error/);
   });
 });
