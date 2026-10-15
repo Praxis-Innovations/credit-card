@@ -305,14 +305,12 @@ function collectJscpd() {
     const aStart = a?.start ?? a?.startLoc?.line ?? 0;
     const bStart = b?.start ?? b?.startLoc?.line ?? 0;
     const lines = dup.lines ?? dup.fragment?.split?.("\n")?.length ?? 0;
-    // Order paths so the same clone pair fingerprints stably.
-    const [left, right] =
-      `${aPath}:${aStart}` <= `${bPath}:${bStart}`
-        ? [`${aPath}:${aStart}`, `${bPath}:${bStart}`]
-        : [`${bPath}:${bStart}`, `${aPath}:${aStart}`];
+    // Location-independent: count per ordered file pair. Line shifts and
+    // clone length churn do not create a "new" fingerprint.
+    const [left, right] = [aPath, bPath].sort();
     findings.push({
-      fingerprint: `jscpd|${left}|${right}|${lines}`,
-      summary: `clone (${lines} lines): ${left} ↔ ${right}`,
+      fingerprint: `jscpd|${left}|${right}`,
+      summary: `clone (${lines} lines): ${aPath}:${aStart} ↔ ${bPath}:${bStart}`,
     });
   }
   return findings;
