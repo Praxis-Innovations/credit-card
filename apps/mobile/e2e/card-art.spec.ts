@@ -3,6 +3,8 @@ import { installNorthtapApiMock } from "./helpers/api-mock";
 import { browseShellAndSkip, COSTCO_MC, pickCards, SCOTIA_GOLD } from "./helpers/flow";
 import { installSupabaseMock } from "./helpers/supabase-mock";
 
+const GENERATED_SCOTIA = "/cards/generated/scotia-gold-amex-0123456789ab.png";
+
 async function expectCardShape(art: Locator, width: number) {
   const box = await art.boundingBox();
   expect(box?.width).toBeCloseTo(width, 0);
@@ -29,10 +31,13 @@ test("renders API card art at 1.586:1 and falls back when an image fails", async
   await page.getByRole("button", { name: "Get started" }).click();
   await expect(page.getByText("Common cards")).toBeVisible();
 
+  // Gold Amex has a generated illustration from the brand-assets bucket.
   const pickerScotia = page.getByTestId("card-art-scotia-gold-amex").first();
-  await expectRealArt(pickerScotia, "/assets/cards/scotia-gold-amex.png");
+  await expectRealArt(pickerScotia, GENERATED_SCOTIA);
   await expectCardShape(pickerScotia, 64);
-  await expect(pickerScotia).toHaveAccessibleName("Scotiabank Gold American Express card");
+  await expect(pickerScotia).toHaveAccessibleName(
+    "Scotiabank Gold American Express card (illustration)",
+  );
   await expectFallback(page.getByTestId("card-art-cibc-costco-mc").first());
   await expectFallback(page.getByTestId("card-art-triangle-we").first());
   expect(api.imageRequests).toContain("/assets/cards/cibc-costco-mc-missing.png");
@@ -47,6 +52,6 @@ test("renders API card art at 1.586:1 and falls back when an image fails", async
   await expectCardShape(best, 112);
 
   const other = page.getByTestId("card-art-scotia-gold-amex").last();
-  await expectRealArt(other, "/assets/cards/scotia-gold-amex.png");
+  await expectRealArt(other, GENERATED_SCOTIA);
   await expectCardShape(other, 56);
 });
