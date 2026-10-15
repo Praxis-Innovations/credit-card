@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
+import { RankedCardRow } from "@/components/ranked-card-row";
 import {
   CATEGORIES,
   DEFAULT_CATEGORY,
@@ -106,39 +107,20 @@ export function TryItWidget({ className = "" }: { className?: string }) {
         className="flex flex-col gap-4 pt-1.5"
       >
         {ranked.map((card) => (
-          <li
+          <RankedCardRow
             key={card.id}
-            data-card={card.id}
-            className={`relative flex items-center gap-2.5 rounded-xl p-3 md:gap-3.5 md:px-4 md:py-3.5 ${
-              card.best
-                ? "border-2 border-highlight-border bg-highlight"
-                : "border border-divider bg-surface"
-            }`}
-          >
-            {card.best && (
-              <span className="absolute -top-2.5 left-3.5 rounded-full bg-pill px-2 py-0.5 text-[11px] leading-4 font-bold tracking-[0.04em] text-pill-foreground uppercase">
-                Tap this
-              </span>
-            )}
-            <CardArt id={card.id} label={card.fullName} />
-            <div className="flex min-w-0 grow flex-col gap-0.5">
-              <span className="truncate text-sm leading-[1.3] font-semibold text-foreground md:text-[15px]">
-                {card.name}
-              </span>
-              <span className="text-[13px] text-muted">
+            dataCard={card.id}
+            best={card.best}
+            art={<CardArt id={card.id} label={card.fullName} />}
+            name={card.name}
+            detail={
+              <>
                 <span className="md:hidden">{card.whyCompact}</span>
                 <span className="hidden md:inline">{card.why}</span>
-              </span>
-            </div>
-            <span
-              className={`shrink-0 font-display text-xl font-semibold md:text-[22px] ${
-                card.best ? "text-accent" : "text-foreground"
-              }`}
-            >
-              {card.amount}
-              <span className="sr-only"> back</span>
-            </span>
-          </li>
+              </>
+            }
+            amount={card.amount}
+          />
         ))}
       </ol>
 

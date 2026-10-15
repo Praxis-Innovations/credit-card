@@ -1,5 +1,6 @@
 import { OpenAppLink } from "@/components/open-app-link";
 import { TryItWidget } from "@/components/try-it-widget";
+import { HOME_H1 } from "@/lib/home";
 import { CONTAINER } from "@/lib/styles";
 
 /**
@@ -18,11 +19,12 @@ export function Hero() {
           For Canadian cardholders
         </p>
         <h1 className="font-display text-[38px] leading-[1.08] font-semibold tracking-[-0.02em] text-foreground md:text-5xl md:leading-[1.05] lg:col-start-1 lg:row-start-3 lg:mt-6 lg:text-[clamp(40px,4.45vw,64px)]">
-          The right card for every purchase.
+          {HOME_H1}
         </h1>
         <p className="text-[17px] leading-[1.6] text-body md:text-lg lg:col-start-1 lg:row-start-4 lg:mt-6 lg:max-w-[520px] lg:text-xl">
-          The best card changes with what you buy. NorthTap tells you which one
-          to tap, and how much you get back.
+          Not sure which credit card to use? The best card changes with what
+          you buy. NorthTap tells you which one to tap, and how much you get
+          back.
         </p>
         <TryItWidget className="mt-2 lg:col-start-2 lg:row-span-full lg:mt-0 lg:self-center" />
         <OpenAppLink

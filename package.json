@@ -12,7 +12,8 @@
     "dev:web": "pnpm --filter web dev",
     "dev:mobile": "pnpm --filter mobile start",
     "dev:api": "pnpm --filter api dev",
-    "seed:catalog": "node --experimental-strip-types scripts/generate-catalog-seed.ts"
+    "seed:catalog": "node --experimental-strip-types scripts/generate-catalog-seed.ts",
+    "snapshot:catalog": "node --experimental-strip-types scripts/export-catalog-snapshot.ts"
   },
   "devDependencies": {
     "turbo": "^2.5.4",

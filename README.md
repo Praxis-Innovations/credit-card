@@ -11,7 +11,7 @@ rank descending. Merchant partnerships can boost or replace category rates.
 | Package | Role |
 |---------|------|
 | `apps/api` | Next.js — standalone public catalog + recommendation API (`/v1/*`). Owns the domain engine under `src/domain` and the Big Six data pipeline under `src/data-pipeline` (CI/CLI only, never imported by routes). Never reads wallets. |
-| `apps/web` | Next.js — marketing site (no domain package dependency) |
+| `apps/web` | Next.js — marketing site (no domain package dependency; category pages render a committed catalog snapshot) |
 | `apps/mobile` | Expo — HTTP client of `apps/api` for catalog + recommendations; wallet via Supabase Auth+RLS only |
 | `docs/api` | OpenAPI 3.1 contract (implemented by `apps/api`) |
 | `supabase` | Auth, `user_cards` (wallet), catalog tables, `api_keys` |
@@ -38,3 +38,17 @@ Regenerate catalog SQL seed (requires `NORTHTAP_SEED_API_KEY` in the environment
 ```bash
 pnpm seed:catalog
 ```
+
+The marketing site's category pages (`/gas`, `/groceries`, `/dining`) read
+`apps/web/src/data/catalog-snapshot.json`, exported from `apps/api/src/domain`
+(`cards.ts` + `valuations.ts`). After changing either file, regenerate and commit
+it; `pnpm --filter web test` fails while the snapshot is stale:
+
+```bash
+pnpm snapshot:catalog
+```
+
+`apps/web` reads `SITE_URL` (default `https://northtap.vercel.app`) for
+canonicals, the sitemap and OG URLs. Category pages stay `noindex,follow` and
+out of the sitemap until `CATEGORY_PAGES_INDEXABLE` in `apps/web/src/lib/site.ts`
+is set to `true` (the catalog is unverified seed data).
