@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start --port 8787",
     "lint": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "pipeline:run": "tsx src/data-pipeline/run.ts",

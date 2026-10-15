@@ -42,3 +42,10 @@ Regenerate catalog SQL seed (requires `NORTHTAP_SEED_API_KEY` in the environment
 ```bash
 pnpm seed:catalog
 ```
+
+## CI
+
+Every PR and push to `main` runs typecheck, lint and unit tests for api, admin,
+crawler, mobile and web ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)).
+Make the **`CI gate`** check required on `main` to block merges on failures —
+see [`docs/ci.md`](./docs/ci.md).
