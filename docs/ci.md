@@ -10,6 +10,7 @@ request, every push to `main`, merge-queue builds and manual dispatch.
 | `typecheck` | `pnpm turbo run typecheck` for api, admin, crawler, mobile, web |
 | `lint` | `pnpm turbo run lint` for the same apps |
 | `test` | `pnpm turbo run test` (Vitest unit tests) for the same apps |
+| `api coverage` | `pnpm --filter api test:coverage` — prints a text report and uploads `coverage-summary.json` |
 | `CI gate` | Fails unless every job above succeeded |
 
 Each job installs with `pnpm install --frozen-lockfile` via the shared
@@ -23,6 +24,7 @@ To reproduce locally:
 ```bash
 pnpm install --frozen-lockfile
 pnpm typecheck && pnpm lint && pnpm test
+pnpm --filter api test:coverage
 ```
 
 No secrets are needed; unit tests must not depend on network services or

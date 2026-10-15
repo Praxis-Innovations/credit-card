@@ -91,14 +91,28 @@ async function lookupKey(keyHash: string): Promise<ApiKeyRecord | null> {
     return STATIC_KEYS[keyHash] ?? null;
   }
 
-  const { data, error } = await client
-    .from("api_keys")
-    .select("id, owner_label, tier, rate_limit_per_minute, active")
-    .eq("key_hash", keyHash)
-    .maybeSingle();
+  let data: Record<string, unknown> | null;
+  let error: { message?: string } | null;
+  try {
+    ({ data, error } = await client
+      .from("api_keys")
+      .select("id, owner_label, tier, rate_limit_per_minute, active")
+      .eq("key_hash", keyHash)
+      .maybeSingle());
+  } catch {
+    throw new ApiError(
+      503,
+      "service_unavailable",
+      "Auth service temporarily unavailable",
+    );
+  }
 
   if (error) {
-    throw new ApiError(500, "internal_error", "Failed to validate API key");
+    throw new ApiError(
+      503,
+      "service_unavailable",
+      "Auth service temporarily unavailable",
+    );
   }
   if (!data || data.active !== true) return null;
 

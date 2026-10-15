@@ -6,6 +6,7 @@ export type ErrorCode =
   | "rate_limited"
   | "empty_wallet"
   | "conflict"
+  | "service_unavailable"
   | "internal_error";
 
 export interface ApiErrorBody {

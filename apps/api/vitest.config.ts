@@ -8,6 +8,17 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json-summary"],
+      reportsDirectory: "./coverage",
+      include: ["src/lib/**/*.ts", "src/app/**/*.ts", "src/domain/**/*.ts"],
+      exclude: [
+        "src/**/*.test.ts",
+        "src/data-pipeline/**",
+        "src/assets/**",
+      ],
+    },
   },
   resolve: {
     alias: {
