@@ -25,7 +25,9 @@ for arg in "$@"; do
     --copy) MODE=copy ;;
     --link) MODE=link ;;
     -h|--help)
-      sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
+      # Header comments only — stop at the first non-comment line so the
+      # range does not drift when the header changes.
+      sed -n '2,/^[^#]/{/^#/p;}' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
