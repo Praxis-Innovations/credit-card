@@ -163,9 +163,12 @@ additional_redirect_urls = [
   "https://127.0.0.1:3000",
   "http://localhost:8081/result",
   "http://127.0.0.1:8081/result",
+  "http://localhost:8082/**",
+  "http://127.0.0.1:8082/**",
   "northtap://auth/callback",
   "exp://**",
   "http://localhost:3100/**",
+  "http://127.0.0.1:3100/**",
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600

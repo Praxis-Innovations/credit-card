@@ -17,7 +17,9 @@
     "seed:catalog": "node --experimental-strip-types scripts/generate-catalog-seed.ts",
     "code-health": "node scripts/code-health.mjs",
     "code-health:report": "node scripts/code-health.mjs --report",
-    "code-health:baseline": "node scripts/code-health.mjs --update-baseline"
+    "code-health:baseline": "node scripts/code-health.mjs --update-baseline",
+    "e2e": "pnpm --filter e2e test:e2e",
+    "e2e:smoke": "pnpm --filter e2e test:smoke"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
