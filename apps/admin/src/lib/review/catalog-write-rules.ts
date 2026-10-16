@@ -164,40 +164,13 @@ function finalizeCap(row: RewardCategory): void {
   }
 }
 
-function assignIf<T>(row: RewardCategory, key: keyof RewardCategory, value: T | null | undefined, when: boolean): void {
-  if (when && value != null) (row as Record<string, unknown>)[key as string] = value;
-}
-
-function copyExtractionExtras(row: RewardCategory, e: ExtractedEarnRate): void {
-  assignIf(row, "mccs", e.mccs ? [...e.mccs] : undefined, Boolean(e.mccs?.length));
-  assignIf(row, "merchants", e.merchants ? [...e.merchants] : undefined, Boolean(e.merchants?.length));
-  assignIf(row, "mccSource", e.mcc_source, Boolean(e.mcc_source));
-  assignIf(row, "exclusions", e.exclusions ? [...e.exclusions] : undefined, Boolean(e.exclusions?.length));
-  assignIf(row, "capGroup", e.cap_group, Boolean(e.cap_group));
-  assignIf(row, "rateAfterCap", e.rate_after_cap, e.rate_after_cap != null);
-  assignIf(row, "tierThreshold", e.tier_threshold, e.tier_threshold != null);
-  assignIf(row, "validFrom", e.valid_from, Boolean(e.valid_from));
-  assignIf(row, "validTo", e.valid_to, Boolean(e.valid_to));
-  assignIf(row, "quote", e.quote, Boolean(e.quote));
-  assignIf(row, "sourceUrl", e.source_url, Boolean(e.source_url));
-  if (e.cap_amount == null) return;
-  if (e.cap_period === "annual") row.capAnnual = e.cap_amount;
-  else row.capMonthly = e.cap_amount;
-}
-
-function fromExtraction(e: ExtractedEarnRate): RewardCategory {
-  const row: RewardCategory = { category: e.category, earnRate: e.rate };
-  copyExtractionExtras(row, e);
-  return row;
-}
-
-function collectIndices(decisions: Map<string, FieldDecision>, extracted: ExtractedEarnRate[]): number[] {
+/** Indices that appear in saved `earn_rates[i].*` decisions only (not every extraction row). */
+function collectTouchedIndices(decisions: Map<string, FieldDecision>): number[] {
   const indices = new Set<number>();
   for (const key of decisions.keys()) {
     const m = key.match(INDEXED_EARN);
     if (m) indices.add(Number(m[1]));
   }
-  if (indices.size > 0) extracted.forEach((_, i) => indices.add(i));
   return [...indices].sort((a, b) => a - b);
 }
 
@@ -226,32 +199,86 @@ function applyRatesByCategory(base: RewardCategory[], overrides: Map<string, num
   return categories;
 }
 
-function buildIndexedRow(
-  ext: ExtractedEarnRate,
-  i: number,
-  decisions: Map<string, FieldDecision>,
-  overrides: Map<string, number>,
-  maxByCategory: Map<string, number>,
-): Result<RewardCategory> {
-  const row = fromExtraction(ext);
-  const override = overrides.get(ext.category);
-  if (override != null && ext.rate === maxByCategory.get(ext.category)) {
-    row.earnRate = override;
+function rowMatchesExtraction(row: RewardCategory, e: ExtractedEarnRate): boolean {
+  if (row.category !== e.category) return false;
+  if (e.cap_group && row.capGroup && row.capGroup !== e.cap_group) return false;
+  if (e.tier_threshold != null && row.tierThreshold != null && row.tierThreshold !== e.tier_threshold) {
+    return false;
   }
+  return true;
+}
+
+/** Prefer category + cap group / tier; fall back to category alone among unclaimed rows. */
+function findBaseIndex(rows: RewardCategory[], e: ExtractedEarnRate, claimed: Set<number>): number {
+  let categoryOnly = -1;
+  for (let i = 0; i < rows.length; i++) {
+    if (claimed.has(i)) continue;
+    const row = rows[i]!;
+    if (!rowMatchesExtraction(row, e)) continue;
+    const tight =
+      (e.cap_group ? row.capGroup === e.cap_group : true) &&
+      (e.tier_threshold != null ? row.tierThreshold === e.tier_threshold : true);
+    if (tight) return i;
+    if (categoryOnly < 0) categoryOnly = i;
+  }
+  return categoryOnly;
+}
+
+function applySavedIndexedFields(
+  row: RewardCategory,
+  index: number,
+  decisions: Map<string, FieldDecision>,
+): Err | null {
   for (const [key, d] of decisions) {
     const m = key.match(INDEXED_EARN);
-    if (!m || Number(m[1]) !== i) continue;
+    if (!m || Number(m[1]) !== index) continue;
     const err = applyIndexedField(row, m[2]!, d.value);
     if (err) return err;
   }
   finalizeCap(row);
-  return { ok: true, value: row };
+  return null;
+}
+
+function mergeTouchedIndex(args: {
+  rows: RewardCategory[];
+  claimed: Set<number>;
+  index: number;
+  ext: ExtractedEarnRate;
+  decisions: Map<string, FieldDecision>;
+  overrides: Map<string, number>;
+}): Err | null {
+  const { rows, claimed, index, ext, decisions, overrides } = args;
+  let idx = findBaseIndex(rows, ext, claimed);
+  if (idx < 0) {
+    rows.push({ category: ext.category, earnRate: overrides.get(ext.category) ?? ext.rate });
+    idx = rows.length - 1;
+  }
+  claimed.add(idx);
+  const row = rows[idx]!;
+  const err = applySavedIndexedFields(row, index, decisions);
+  if (err) return err;
+  if (overrides.has(ext.category)) row.earnRate = overrides.get(ext.category)!;
+  return null;
+}
+
+function applyRemainingRateOverrides(
+  rows: RewardCategory[],
+  claimed: Set<number>,
+  overrides: Map<string, number>,
+): void {
+  for (const [category, rate] of overrides) {
+    if ([...claimed].some((i) => rows[i]?.category === category)) continue;
+    const hit = rows.find((r) => r.category === category);
+    if (hit) hit.earnRate = rate;
+    else rows.push({ category, earnRate: rate });
+  }
 }
 
 /**
  * Builds catalog `reward_categories` from approve decisions.
- * Indexed `earn_rates[i].*` fields rebuild from extraction (multiple rates per category);
- * plain `earn_rate.<category>` still updates the highest rate for that category.
+ * Indexed `earn_rates[i].*` updates merge onto matching existing rows (or add a
+ * minimal new row); only saved keys are applied. Untouched base rows are kept.
+ * Plain `earn_rate.<category>` still updates the rate for that category.
  */
 export function applyEarnRates(
   base: RewardCategory[],
@@ -261,8 +288,8 @@ export function applyEarnRates(
   const overrides = rateOverrides(decisions);
   if (!overrides.ok) return overrides;
 
-  const indices = collectIndices(decisions, extracted ?? []);
-  if (indices.length === 0) {
+  const touched = collectTouchedIndices(decisions);
+  if (touched.length === 0) {
     if (overrides.value.size === 0) return { ok: true, value: base };
     return { ok: true, value: applyRatesByCategory(base, overrides.value) };
   }
@@ -271,21 +298,24 @@ export function applyEarnRates(
     return { ok: false, message: "Card-rule fields need the original extraction. Refresh and try again." };
   }
 
-  const maxByCategory = new Map<string, number>();
-  for (const e of extracted) {
-    maxByCategory.set(e.category, Math.max(maxByCategory.get(e.category) ?? 0, e.rate));
-  }
-
-  const categories: RewardCategory[] = [];
-  for (const i of indices) {
+  const rows = base.map((r) => ({ ...r }));
+  const claimed = new Set<number>();
+  for (const i of touched) {
     const ext = extracted[i];
     if (!ext) return { ok: false, message: `Missing extraction for earn rate #${i + 1}.` };
-    const built = buildIndexedRow(ext, i, decisions, overrides.value, maxByCategory);
-    if (!built.ok) return built;
-    categories.push(built.value);
+    const err = mergeTouchedIndex({
+      rows,
+      claimed,
+      index: i,
+      ext,
+      decisions,
+      overrides: overrides.value,
+    });
+    if (err) return err;
   }
-  if (categories.length === 0) categories.push({ category: "other", earnRate: 1 });
-  return { ok: true, value: categories };
+  applyRemainingRateOverrides(rows, claimed, overrides.value);
+  if (rows.length === 0) rows.push({ category: "other", earnRate: 1 });
+  return { ok: true, value: rows };
 }
 
 export function hasEarnRuleDecisions(decisions: Map<string, FieldDecision>): boolean {

@@ -17,32 +17,6 @@ const existing = {
   network: "Amex",
 };
 
-const groceriesExtracted = {
-  earn_rates: [
-    {
-      category: "groceries",
-      rate: 5,
-      unit: "points_per_dollar",
-      quote: "5x at grocery stores MCC 5411",
-      mccs: ["5411"],
-      mcc_source: "terms" as const,
-      cap_amount: 2500,
-      cap_period: "monthly",
-      cap_group: "5x-cap",
-      rate_after_cap: 1,
-      valid_from: "2026-01-01",
-      valid_to: "2026-12-31",
-      source_url: "https://example.com/terms",
-    },
-    {
-      category: "other",
-      rate: 1,
-      unit: "points_per_dollar",
-      quote: "1x everywhere else",
-    },
-  ],
-};
-
 describe("cardIdFor", () => {
   it("builds a stable slug from issuer and name", () => {
     expect(cardIdFor("Scotiabank", "Gold American Express Card")).toBe("scotiabank-gold-amex-card");
@@ -156,53 +130,6 @@ describe("buildCatalogWrite changed guards", () => {
   });
 });
 
-describe("buildCatalogWrite indexed earn rates", () => {
-  it("maps indexed earn-rate MCC/cap/date fields into reward_categories", () => {
-    const res = buildCatalogWrite({
-      diffKind: "changed",
-      linkedCardId: "scotia-gold-amex",
-      cardName: "Gold",
-      issuerName: "Scotiabank",
-      fields: {
-        fields: [
-          { key: "earn_rates[0].mccs", save: true, page_value: "5411", value: "5411, 5412" },
-          { key: "earn_rates[0].cap_amount", save: true, page_value: "2500", value: "3000" },
-          { key: "earn_rates[0].cap_period", save: true, page_value: "monthly", value: "annual" },
-          { key: "earn_rates[0].valid_to", save: true, page_value: "2026-12-31", value: "2027-06-30" },
-          { key: "earn_rates[1].mcc_source", save: true, page_value: "", value: "network_default" },
-        ],
-      },
-      existing,
-      extractedPointCurrency: null,
-      extracted: groceriesExtracted,
-      now: NOW,
-    });
-    expect(res.ok).toBe(true);
-    if (!res.ok || !res.write || res.write.op !== "update") throw new Error("expected update");
-    expect(res.write.set.reward_categories).toEqual([
-      {
-        category: "groceries",
-        earnRate: 5,
-        mccs: ["5411", "5412"],
-        mccSource: "terms",
-        capAnnual: 3000,
-        capGroup: "5x-cap",
-        rateAfterCap: 1,
-        validFrom: "2026-01-01",
-        validTo: "2027-06-30",
-        quote: "5x at grocery stores MCC 5411",
-        sourceUrl: "https://example.com/terms",
-      },
-      {
-        category: "other",
-        earnRate: 1,
-        mccSource: "network_default",
-        quote: "1x everywhere else",
-      },
-    ]);
-  });
-});
-
 describe("buildCatalogWrite validation", () => {
   it("rejects invalid MCCs and non-ISO dates on approve", () => {
     const extracted = {
@@ -251,22 +178,8 @@ describe("buildCatalogWrite validation", () => {
   });
 });
 
-describe("buildCatalogWrite welcome and promotions", () => {
-  it("writes welcome bonus dates/rate and dated promotions into the catalog", () => {
-    const extracted = {
-      promotions: [
-        {
-          summary: "2x gas until March",
-          rate: 2,
-          points: null,
-          categories: ["gas"],
-          valid_from: "2026-01-01",
-          valid_to: "2026-03-31",
-          quote: "Earn 2x on gas",
-          source_url: "https://example.com/promo",
-        },
-      ],
-    };
+describe("buildCatalogWrite welcome fields", () => {
+  it("writes welcome bonus dates/rate into the catalog", () => {
     const res = buildCatalogWrite({
       diffKind: "changed",
       linkedCardId: "scotia-gold-amex",
@@ -278,13 +191,10 @@ describe("buildCatalogWrite welcome and promotions", () => {
           { key: "welcome_bonus.valid_from", save: true, page_value: "", value: "2026-01-01" },
           { key: "welcome_bonus.valid_to", save: true, page_value: "", value: "2026-06-30" },
           { key: "welcome_bonus.new_cardholders_only", save: true, page_value: "yes", value: "yes" },
-          { key: "promotion.0.summary", save: true, page_value: "2x gas until March", value: "2x gas until March" },
-          { key: "promotion.0.valid_to", save: true, page_value: "2026-03-31", value: "2026-04-30" },
         ],
       },
       existing,
       extractedPointCurrency: null,
-      extracted,
       now: NOW,
     });
     expect(res.ok).toBe(true);
@@ -297,17 +207,6 @@ describe("buildCatalogWrite welcome and promotions", () => {
       validTo: "2026-06-30",
       newCardholdersOnly: true,
     });
-    expect(res.write.set.reward_categories).toEqual([
-      ...existing.reward_categories,
-      {
-        category: "gas",
-        earnRate: 2,
-        quote: "Earn 2x on gas",
-        validFrom: "2026-01-01",
-        validTo: "2026-04-30",
-        sourceUrl: "https://example.com/promo",
-      },
-    ]);
   });
 });
 

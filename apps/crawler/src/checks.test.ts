@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { checkExtraction, normaliseForMatch, numberInQuote, numbersIn, quoteInText, stringInQuote } from "./checks";
+import {
+  checkExtraction,
+  dateInQuote,
+  normaliseForMatch,
+  numberInQuote,
+  numbersIn,
+  quoteInText,
+  stringInQuote,
+} from "./checks";
 import { GOLD_PAGE_TEXT, goldExtraction } from "./test/fixtures";
 
 const page = normaliseForMatch(GOLD_PAGE_TEXT);
@@ -57,6 +65,14 @@ describe("value-in-quote", () => {
     expect(stringInQuote("National Bank", "National Bank of Canada")).toBe(true);
     expect(stringInQuote("Scotiabank", "Issued by Royal Bank of Canada", { issuerAliases: true })).toBe(false);
     expect(stringInQuote("Scotiabank", "Bank of Nova Scotia", { issuerAliases: false })).toBe(false);
+  });
+
+  it("matches ISO dates by year or year-plus day/month forms in the quote", () => {
+    expect(dateInQuote("2026-03-31", "Offer ends March 31, 2026.")).toBe(true);
+    expect(dateInQuote("2026-03-31", "Valid through 2026-03-31")).toBe(true);
+    expect(dateInQuote("2026-03-31", "Offer ends in 2026")).toBe(true);
+    expect(dateInQuote("2026-03-31", "Offer ends March 31, 2025.")).toBe(false);
+    expect(dateInQuote("not-a-date", "Offer ends March 31, 2026.")).toBe(false);
   });
 });
 
@@ -137,5 +153,65 @@ describe("checkExtraction", () => {
       GOLD_PAGE_TEXT,
     );
     expect(result.fields.filter((f) => !f.ok).map((f) => f.field)).toEqual(["card_name", "welcome_bonus"]);
+  });
+});
+
+describe("checkExtraction card rules", () => {
+  it("flags rate_after_cap when the number is not in its quote", () => {
+    const groceries = goldExtraction().earn_rates.find((e) => e.category === "groceries")!;
+    const quote = "Earn 5 Scene+ points on groceries, then 2x after the cap.";
+    const text = `${GOLD_PAGE_TEXT}\n${quote}`;
+    const result = checkExtraction(
+      goldExtraction({
+        earn_rates: [{ ...groceries, rate_after_cap: 1, quote }],
+      }),
+      text,
+    );
+    expect(result.fields.find((f) => f.field === "earn_rates[0] groceries.rate_after_cap")).toMatchObject({
+      ok: false,
+      value_in_quote: false,
+      issues: ["rate after cap does not appear in its quote"],
+    });
+  });
+
+  it("flags earn-rate, welcome, and promotion dates whose year is missing from the quote", () => {
+    const groceries = goldExtraction().earn_rates.find((e) => e.category === "groceries")!;
+    const wb = goldExtraction().welcome_bonus!;
+    const earnQuote = "Earn 5 Scene+ points on groceries until the offer ends.";
+    const welcomeQuote = "Earn up to 50,000 Scene+ points as a welcome bonus.";
+    const promoQuote = "Earn 10x on gas for a limited time.";
+    const text = `${GOLD_PAGE_TEXT}\n${earnQuote}\n${welcomeQuote}\n${promoQuote}`;
+    const result = checkExtraction(
+      goldExtraction({
+        earn_rates: [{ ...groceries, valid_to: "2026-12-31", quote: earnQuote }],
+        welcome_bonus: {
+          value: { ...wb.value, valid_from: "2026-01-01", valid_to: "2026-03-31" },
+          quote: welcomeQuote,
+        },
+        promotions: [
+          {
+            summary: "Gas bonus",
+            rate: 10,
+            points: null,
+            categories: ["gas"],
+            valid_from: "2026-03-01",
+            valid_to: "2026-03-31",
+            quote: promoQuote,
+            source_url: null,
+          },
+        ],
+      }),
+      text,
+    );
+    const bad = result.fields.filter((f) => !f.ok).map((f) => f.field);
+    expect(bad).toEqual(
+      expect.arrayContaining([
+        "earn_rates[0] groceries.valid_to",
+        "welcome_bonus.valid_from",
+        "welcome_bonus.valid_to",
+        "promotions[0].valid_from",
+        "promotions[0].valid_to",
+      ]),
+    );
   });
 });

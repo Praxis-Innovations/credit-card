@@ -1,11 +1,11 @@
-import { readFile, writeFile, mkdir } from "node:fs/promises";
-import path from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { FALLBACK_SOURCES } from "./config";
 import type { CheckResult } from "./checks";
 import type { DiffKind, FindingReviewStatus } from "./diff";
-import type { CardExtraction } from "./extract/schema";
+import { extractionSchemaVersionOf, type CardExtraction } from "./extract/schema";
 import type { CardLink, CatalogCard, CrawlSource, SkippedPage } from "./types";
+
+export { LocalCache } from "./local-cache";
 
 export interface DiscoveredRow {
   id: string;
@@ -218,7 +218,14 @@ export class SupabaseStore implements ScheduleStore {
       .limit(1)
       .maybeSingle();
     if (error) fail("read card_findings", error);
-    return data ? { hash: data.page_hash, extraction: data.extracted, model: data.model } : null;
+    if (!data) return null;
+    const extraction = data.extracted as CardExtraction;
+    return {
+      hash: data.page_hash,
+      extraction,
+      schemaVersion: extractionSchemaVersionOf(extraction),
+      model: (data.model as string | null) ?? null,
+    };
   }
 
   async createRun(run: Parameters<Store["createRun"]>[0]): Promise<void> {
@@ -354,49 +361,4 @@ export class OfflineStore implements Store {
   }
   async insertFindings() {}
   async markSourceCrawled() {}
-}
-
-interface CacheFile {
-  compare: Record<string, PreviousDiscovery>;
-  cards: Record<string, PreviousCard>;
-}
-
-/**
- * Local page-hash cache in output/cache.json so repeated local (and dry) runs
- * skip Claude for unchanged pages even without database history.
- */
-export class LocalCache {
-  private data: CacheFile = { compare: {}, cards: {} };
-
-  constructor(private readonly file: string | null) {}
-
-  async load(): Promise<this> {
-    if (!this.file) return this;
-    try {
-      const parsed = JSON.parse(await readFile(this.file, "utf8")) as Partial<CacheFile>;
-      this.data = { compare: parsed.compare ?? {}, cards: parsed.cards ?? {} };
-    } catch {
-      // Missing or unreadable cache just means no skips this run.
-    }
-    return this;
-  }
-
-  getCompare(url: string): PreviousDiscovery | null {
-    return this.data.compare[url] ?? null;
-  }
-  setCompare(url: string, value: PreviousDiscovery): void {
-    this.data.compare[url] = value;
-  }
-  getCard(url: string): PreviousCard | null {
-    return this.data.cards[url] ?? null;
-  }
-  setCard(url: string, value: PreviousCard): void {
-    this.data.cards[url] = value;
-  }
-
-  async save(): Promise<void> {
-    if (!this.file) return;
-    await mkdir(path.dirname(this.file), { recursive: true });
-    await writeFile(this.file, `${JSON.stringify(this.data, null, 2)}\n`);
-  }
 }

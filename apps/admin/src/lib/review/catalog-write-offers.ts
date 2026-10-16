@@ -182,6 +182,8 @@ function buildPromoRows(fields: Map<string, string>, base: PromoBase): Result<Re
   if (rateRaw !== undefined && rate === null && !isEmpty(rateRaw)) {
     return { ok: false, message: `Enter a valid rate for promotion "${summary}".` };
   }
+  // Points-only promos are not earn rates — skip so we never write a 0x category row.
+  if (rate == null) return { ok: true, value: [] };
 
   const from = promoDate(fields, "valid_from", base.valid_from, "start");
   if (!from.ok) return from;
@@ -192,13 +194,24 @@ function buildPromoRows(fields: Map<string, string>, base: PromoBase): Result<Re
   return {
     ok: true,
     value: promoCategories(fields, base).map((category) => {
-      const row: RewardCategory = { category, earnRate: rate ?? 0, quote: base.quote };
+      const row: RewardCategory = { category, earnRate: rate, quote: base.quote };
       if (from.value) row.validFrom = from.value;
       if (to.value) row.validTo = to.value;
       if (sourceUrl) row.sourceUrl = sourceUrl;
       return row;
     }),
   };
+}
+
+function promoIdentity(row: RewardCategory): string {
+  return `${row.category}|${row.validFrom ?? ""}|${row.validTo ?? ""}|${row.quote ?? ""}`;
+}
+
+/** Replace earlier rows that match the same promo identity, then append the new ones. */
+function mergePromoRows(categories: RewardCategory[], extra: RewardCategory[]): RewardCategory[] {
+  if (extra.length === 0) return categories;
+  const replacing = new Set(extra.map(promoIdentity));
+  return [...categories.filter((r) => !replacing.has(promoIdentity(r))), ...extra];
 }
 
 /** Dated public promotions become extra reward_categories rows (with validFrom/validTo). */
@@ -232,7 +245,7 @@ export function applyPromotions(
     extra.push(...rows.value);
   }
 
-  return { ok: true, value: [...categories, ...extra] };
+  return { ok: true, value: mergePromoRows(categories, extra) };
 }
 
 export function hasWelcomeDecisions(decisions: Map<string, FieldDecision>): boolean {

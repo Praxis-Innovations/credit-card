@@ -79,6 +79,21 @@ export function numberInQuote(value: number, quote: string): boolean {
   return value === 0 && /\b(no|zero|free|none|waived|nil)\b/i.test(quote);
 }
 
+/**
+ * ISO `YYYY-MM-DD` is in its quote when the year appears, or the year plus a
+ * day/month form (full ISO, "March 31, 2026", "31/03/2026", … — all include the year).
+ */
+export function dateInQuote(isoDate: string, quote: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate.trim());
+  if (!m) return false;
+  const year = m[1]!;
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+  const q = normaliseForMatch(quote);
+  return q.includes(isoDate) || q.includes(year);
+}
+
 const loose = (s: string) => normaliseForMatch(s).toLowerCase().replace(/[^a-z0-9+]/g, "");
 
 const STRING_ALIASES: Record<string, string[]> = {
@@ -173,6 +188,32 @@ function checkMccsAndMerchants(
   return fields;
 }
 
+function flagMissingNumber(
+  field: string,
+  value: number,
+  quote: string,
+  page: string,
+  label: string,
+): FieldCheck {
+  return mismatch(field, quote, page, `${label} does not appear in its quote`, inRange(value, [0, 1_000_000]));
+}
+
+function checkDatedFields(
+  prefix: string,
+  quote: string,
+  page: string,
+  dates: Array<{ key: "valid_from" | "valid_to"; value: string | null | undefined }>,
+): FieldCheck[] {
+  const fields: FieldCheck[] = [];
+  for (const { key, value } of dates) {
+    if (value == null || value === "") continue;
+    if (dateInQuote(value, quote)) continue;
+    const label = key === "valid_from" ? "start date" : "end date";
+    fields.push(mismatch(`${prefix}.${key}`, quote, page, `${label} does not appear in its quote`));
+  }
+  return fields;
+}
+
 function checkCapAndTier(
   e: CardExtraction["earn_rates"][number],
   prefix: string,
@@ -180,21 +221,20 @@ function checkCapAndTier(
 ): FieldCheck[] {
   const fields: FieldCheck[] = [];
   if (e.cap_amount != null && !numberInQuote(e.cap_amount, e.quote)) {
-    fields.push(
-      mismatch(`${prefix}.cap_amount`, e.quote, page, "cap amount does not appear in its quote", inRange(e.cap_amount, [0, 1_000_000])),
-    );
+    fields.push(flagMissingNumber(`${prefix}.cap_amount`, e.cap_amount, e.quote, page, "cap amount"));
+  }
+  if (e.rate_after_cap != null && !numberInQuote(e.rate_after_cap, e.quote)) {
+    fields.push(flagMissingNumber(`${prefix}.rate_after_cap`, e.rate_after_cap, e.quote, page, "rate after cap"));
   }
   if (e.tier_threshold != null && !numberInQuote(e.tier_threshold, e.quote)) {
-    fields.push(
-      mismatch(
-        `${prefix}.tier_threshold`,
-        e.quote,
-        page,
-        "tier threshold does not appear in its quote",
-        inRange(e.tier_threshold, [0, 1_000_000]),
-      ),
-    );
+    fields.push(flagMissingNumber(`${prefix}.tier_threshold`, e.tier_threshold, e.quote, page, "tier threshold"));
   }
+  fields.push(
+    ...checkDatedFields(prefix, e.quote, page, [
+      { key: "valid_from", value: e.valid_from },
+      { key: "valid_to", value: e.valid_to },
+    ]),
+  );
   if (e.mcc_source === "terms" && (e.mccs?.length ?? 0) === 0 && (e.merchants?.length ?? 0) === 0) {
     fields.push(
       finish({
@@ -239,11 +279,24 @@ function checkWelcomeAndPromos(extraction: CardExtraction, page: string): FieldC
           (wb.value.cashback_cad === null || inRange(wb.value.cashback_cad, BONUS_CASH_RANGE)) &&
           (wb.value.rate == null || inRange(wb.value.rate, [0, 20]));
     fields.push(checkQuoted("welcome_bonus", wb, page, valueOk, rangeOk));
+    fields.push(
+      ...checkDatedFields("welcome_bonus", wb.quote, page, [
+        { key: "valid_from", value: wb.value.valid_from },
+        { key: "valid_to", value: wb.value.valid_to },
+      ]),
+    );
   }
   for (const [i, p] of (extraction.promotions ?? []).entries()) {
     const nums = [p.rate, p.points].filter((n): n is number => n !== null);
     const valueOk = nums.length ? nums.every((n) => numberInQuote(n, p.quote)) : null;
-    fields.push(checkQuoted(`promotions[${i}]`, p, page, valueOk, null));
+    const prefix = `promotions[${i}]`;
+    fields.push(checkQuoted(prefix, p, page, valueOk, null));
+    fields.push(
+      ...checkDatedFields(prefix, p.quote, page, [
+        { key: "valid_from", value: p.valid_from },
+        { key: "valid_to", value: p.valid_to },
+      ]),
+    );
   }
   return fields;
 }

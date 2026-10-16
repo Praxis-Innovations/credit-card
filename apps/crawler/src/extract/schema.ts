@@ -121,6 +121,11 @@ export interface CardExtraction {
   insurance_highlights: Array<Quoted<string>>;
   /** Model's note on anything ambiguous. Not checked, never shown as data. */
   notes: string | null;
+  /**
+   * Stamped by the crawler (not the model). Persisted inside `card_findings.extracted`
+   * so hash reuse can tell which schema wrote the row.
+   */
+  schema_version?: number;
 }
 
 export const NUMBER_FIELDS = [
@@ -321,34 +326,43 @@ export function coerceExtraction(input: unknown): CardExtraction {
   };
 }
 
-/** Attach the crawled page URL to every rate / promotion (model never invents URLs). */
-export function stampSourceUrl(extraction: CardExtraction, pageUrl: string): CardExtraction {
-  return {
-    ...extraction,
-    earn_rates: extraction.earn_rates.map((e) => ({ ...e, source_url: pageUrl })),
-    promotions: extraction.promotions.map((p) => ({ ...p, source_url: pageUrl })),
-  };
-}
-
 /**
  * Bump when `CardExtraction` gains fields that older cached / DB findings lack
  * (MCCs, promotions, source_url, …). Hash reuse must miss until re-extracted.
  */
 export const EXTRACTION_SCHEMA_VERSION = 2;
 
-/** Infer version from a stored finding: pre-MC2 rows omit `promotions` entirely. */
-function extractionSchemaVersionOf(extraction: CardExtraction): number {
+/** Attach the crawled page URL to every rate / promotion (model never invents URLs). */
+export function stampSourceUrl(extraction: CardExtraction, pageUrl: string): CardExtraction {
+  return {
+    ...extraction,
+    earn_rates: extraction.earn_rates.map((e) => ({ ...e, source_url: pageUrl })),
+    promotions: extraction.promotions.map((p) => ({ ...p, source_url: pageUrl })),
+    schema_version: EXTRACTION_SCHEMA_VERSION,
+  };
+}
+
+/**
+ * Resolve the schema version of a stored finding.
+ * Prefers the stamped `schema_version`; pre-MC2 rows (no `promotions`) are 1;
+ * unstamped rows that already have `promotions` are the literal MC2 version `2`
+ * (not the constant — a future bump must not treat them as current).
+ */
+export function extractionSchemaVersionOf(extraction: CardExtraction): number {
+  const stamped = extraction.schema_version;
+  if (typeof stamped === "number" && Number.isInteger(stamped) && stamped > 0) return stamped;
   const raw = extraction as { promotions?: unknown };
   if (raw.promotions === undefined) return 1;
-  return EXTRACTION_SCHEMA_VERSION;
+  return 2;
 }
 
 /** True when the page hash matches and the stored extraction is the current schema. */
 export function canReuseCardExtraction(
   prev: { hash: string; extraction: CardExtraction; schemaVersion?: number } | null | undefined,
   pageHash: string,
+  currentVersion: number = EXTRACTION_SCHEMA_VERSION,
 ): boolean {
   if (!prev || prev.hash !== pageHash) return false;
   const version = prev.schemaVersion ?? extractionSchemaVersionOf(prev.extraction);
-  return version === EXTRACTION_SCHEMA_VERSION;
+  return version === currentVersion;
 }
