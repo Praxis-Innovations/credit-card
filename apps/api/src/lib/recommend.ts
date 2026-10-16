@@ -8,7 +8,6 @@ import {
   POINT_CURRENCIES,
   buildValueBreakdown,
   matchMerchantBrand,
-  previewCardAtStore,
   recommendByMcc,
   type Category,
   type FuelGrade,
@@ -317,9 +316,6 @@ export async function createRecommendationPreview(
     ownedCardIds: [input.cardId],
     limit: 1,
   });
-
-  // Soft-check that the domain preview agrees (same inputs).
-  void previewCardAtStore;
 
   return {
     purchase: full.purchase,

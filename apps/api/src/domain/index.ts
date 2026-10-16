@@ -96,7 +96,6 @@ export {
 
 export {
   DISPLAY_CATEGORIES,
-  previewCardAtStore,
   recommendByMcc,
   resolveStoreCode,
   type CategoryMccRow,

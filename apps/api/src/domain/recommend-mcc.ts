@@ -723,18 +723,6 @@ function buildMccReason(
   }
 }
 
-/** Preview a single card at a store/MCC — used by the admin console. */
-export function previewCardAtStore(
-  input: MccRecommendationInput & { cardId: string },
-): MccCardRecommendation | null {
-  const result = recommendByMcc({
-    ...input,
-    ownedCardIds: [input.cardId],
-    limit: 1,
-  });
-  return result.recommendations[0] ?? null;
-}
-
 /** Re-export category list so callers don't grow CATEGORIES ad hoc. */
 export const DISPLAY_CATEGORIES = CATEGORIES;
 
