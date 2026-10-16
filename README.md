@@ -79,9 +79,14 @@ pnpm seed:catalog
 
 ## Vercel deploys
 
-Four Vercel projects share this monorepo. Each project’s Root Directory is its
-app folder, and each `apps/*/vercel.json` sets an **Ignored Build Step** so
-Vercel only builds when that app (or a shared `packages/` path) changed:
+Four Vercel projects share this monorepo (`northtap`, `northtap-app`,
+`northtap-admin`, `northtap-api`). **Preview deployments are disabled** on all
+four (`previewDeploymentsDisabled=true`) — do not re-enable them. Only
+production deploys from `main` run.
+
+Each project’s Root Directory is its app folder. On production, each
+`apps/*/vercel.json` sets an **Ignored Build Step** so a push to `main` only
+builds a project when that app (or a shared `packages/` path) changed:
 
 | Vercel project | Root Directory | Builds when these paths change |
 |----------------|----------------|--------------------------------|
@@ -96,9 +101,9 @@ Command (exit `0` = skip build, `1` = proceed), from each `vercel.json`:
 cd ../.. && git diff --quiet HEAD^ HEAD -- apps/<app> packages/
 ```
 
-A PR that only touches `apps/crawler`, `docs/`, `e2e/`, or other non-listed
-paths triggers no Vercel builds — which avoids hitting Vercel’s deployment
-rate limit when every project would otherwise rebuild on every push.
+A merge to `main` that only touches `apps/crawler`, `docs/`, `e2e/`, or other
+non-listed paths triggers no production builds — which avoids hitting Vercel’s
+deployment rate limit when every project would otherwise rebuild on every push.
 
 ## CI
 
