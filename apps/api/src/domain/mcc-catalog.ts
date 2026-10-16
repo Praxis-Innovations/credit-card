@@ -1,5 +1,4 @@
-import type { Category } from "./schema";
-import type { CategoryMccRow, StoreTypeMccRow } from "./recommend-mcc";
+import type { CategoryMccRow, StoreTypeMccRow } from "./recommend-mcc-types";
 
 /**
  * Static verified MCC ↔ display-category map for `NORTHTAP_CATALOG_SOURCE=static`.
@@ -57,7 +56,3 @@ export const STORE_TYPE_MCCS: readonly StoreTypeMccRow[] = [
   { osmTag: "shop=electronics", mcc: "5732" },
   { osmTag: "shop=doityourself", mcc: "5200" },
 ];
-
-export function categoryForStaticMcc(mcc: string): Category | undefined {
-  return CATEGORY_MCCS.find((r) => r.mcc === mcc)?.category;
-}

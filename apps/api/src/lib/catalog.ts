@@ -284,7 +284,7 @@ async function loadPartnershipsFromDb(
 
 const CATEGORY_SET = new Set<string>(CATEGORIES);
 
-export function mapCategoryMcc(row: Record<string, unknown>): CategoryMccRow | null {
+function mapCategoryMcc(row: Record<string, unknown>): CategoryMccRow | null {
   const category = row.category;
   const mcc = row.mcc;
   if (typeof category !== "string" || !CATEGORY_SET.has(category)) return null;
@@ -292,7 +292,7 @@ export function mapCategoryMcc(row: Record<string, unknown>): CategoryMccRow | n
   return { category: category as Category, mcc };
 }
 
-export function mapStoreTypeMcc(
+function mapStoreTypeMcc(
   row: Record<string, unknown>,
 ): StoreTypeMccRow | null {
   const osmTag = row.osm_tag;

@@ -74,8 +74,7 @@ export const ISSUERS = [
 export type Issuer = (typeof ISSUERS)[number];
 
 /** How an earn rule's MCC list was obtained. */
-export const MCC_SOURCES = ["terms", "network_default"] as const;
-export type MccSource = (typeof MCC_SOURCES)[number];
+const MCC_SOURCES = ["terms", "network_default"] as const;
 
 export interface RewardCategory {
   category: Category;
@@ -90,7 +89,7 @@ export interface RewardCategory {
   /** Named merchant brand ids / names this rate applies to. */
   merchants?: string[];
   /** Where `mccs` came from when the terms only name a category. */
-  mccSource?: MccSource;
+  mccSource?: (typeof MCC_SOURCES)[number];
   /** Merchant / product exclusions (e.g. warehouse clubs, gift cards). */
   exclusions?: string[];
   /** Shared cap group id — multiple rates that share one spend pool. */
@@ -115,7 +114,7 @@ export interface RewardCategory {
 }
 
 /** Certainty of an approved store MCC. */
-export const MCC_CERTAINTIES = [
+const MCC_CERTAINTIES = [
   "confirmed",
   "varies_by_store",
   "varies_by_network",
@@ -127,7 +126,7 @@ export const MCC_CERTAINTIES = [
 export type MccCertainty = (typeof MCC_CERTAINTIES)[number];
 
 /** Card networks a merchant may accept. */
-export const ACCEPTED_NETWORKS = ["visa", "mastercard", "amex"] as const;
+const ACCEPTED_NETWORKS = ["visa", "mastercard", "amex"] as const;
 export type AcceptedNetwork = (typeof ACCEPTED_NETWORKS)[number];
 
 export interface WelcomeOffer {
