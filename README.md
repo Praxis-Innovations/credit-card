@@ -86,19 +86,23 @@ production deploys from `main` run.
 
 Each project’s Root Directory is its app folder. On production, each
 `apps/*/vercel.json` sets an **Ignored Build Step** so a push to `main` only
-builds a project when that app (or a shared `packages/` path) changed:
+builds a project when that app or shared root workspace files changed:
 
 | Vercel project | Root Directory | Builds when these paths change |
 |----------------|----------------|--------------------------------|
-| `northtap` | `apps/web` | `apps/web`, `packages/` |
-| `northtap-app` | `apps/mobile` | `apps/mobile`, `packages/` |
-| `northtap-admin` | `apps/admin` | `apps/admin`, `packages/` |
-| `northtap-api` | `apps/api` | `apps/api`, `packages/` |
+| `northtap` | `apps/web` | `apps/web`, plus shared root files below |
+| `northtap-app` | `apps/mobile` | `apps/mobile`, plus shared root files below |
+| `northtap-admin` | `apps/admin` | `apps/admin`, plus shared root files below |
+| `northtap-api` | `apps/api` | `apps/api`, plus shared root files below |
+
+Shared root files watched by every project: `pnpm-lock.yaml`, `package.json`,
+`pnpm-workspace.yaml`, `tsconfig.base.json` (so lockfile-only bumps and base
+tsconfig changes still rebuild).
 
 Command (exit `0` = skip build, `1` = proceed), from each `vercel.json`:
 
 ```bash
-cd ../.. && git diff --quiet HEAD^ HEAD -- apps/<app> packages/
+cd ../.. && git diff --quiet HEAD^ HEAD -- apps/<app> pnpm-lock.yaml package.json pnpm-workspace.yaml tsconfig.base.json
 ```
 
 A merge to `main` that only touches `apps/crawler`, `docs/`, `e2e/`, or other
