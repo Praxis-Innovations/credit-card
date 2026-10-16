@@ -45,7 +45,9 @@ live in **one place outside the repo and its worker copies**:
 
 Override the directory with `NORTHTAP_ENV_DIR`. `scripts/setup-local-env.sh`
 symlinks each file to `apps/<app>/.env.local` (`--copy` copies instead; an
-existing different `.env.local` is moved to `.env.local.bak.<timestamp>`). Run
+existing different `.env.local` is moved to `.env.local.bak.<timestamp>`; an
+identical regular file is kept in `--copy` mode and replaced by the symlink in
+link mode). Run
 it after cloning or creating any worktree. The script contains no secrets.
 
 To create a file, start from `apps/<app>/.env.example`:

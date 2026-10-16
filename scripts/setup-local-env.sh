@@ -57,17 +57,21 @@ for app in "${APPS[@]}"; do
   fi
 
   # Keep any pre-existing, different local file instead of clobbering it.
-  # Identical regular files are left alone so --copy does not pile up .bak copies.
+  # --copy: identical regular files are left alone so reruns do not pile up .bak copies.
+  # link mode: an identical regular file is removed (no backup needed) and replaced
+  # by the symlink, so later edits to the shared file reach this app.
   if [ -e "$dest" ] || [ -L "$dest" ]; then
     if [ -L "$dest" ] && [ "$(readlink "$dest")" = "$src" ] && [ "$MODE" = link ]; then
       echo "ok     apps/$app/.env.local -> $src"
       continue
     fi
-    if [ ! -L "$dest" ] && [ -f "$dest" ] && cmp -s "$src" "$dest"; then
+    if [ "$MODE" = copy ] && [ ! -L "$dest" ] && [ -f "$dest" ] && cmp -s "$src" "$dest"; then
       echo "ok     apps/$app/.env.local (matches $src)"
       continue
     fi
     if [ -L "$dest" ]; then
+      rm "$dest"
+    elif [ "$MODE" = link ] && [ -f "$dest" ] && cmp -s "$src" "$dest"; then
       rm "$dest"
     else
       backup="$dest.bak.$(date +%Y%m%d%H%M%S)"
