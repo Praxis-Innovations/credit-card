@@ -37,7 +37,7 @@ cheaper comparison), `--no-llm`, `--dry-run`.
 
 | Variable | Needed for |
 | --- | --- |
-| `ANTHROPIC_ORGANIZATION_ID`, `ANTHROPIC_FEDERATION_RULE_ID`, `ANTHROPIC_SERVICE_ACCOUNT_ID`, `CRAWLER_WIF_IDENTITY` (+ `CRAWLER_WIF_GCP_SERVICE_ACCOUNT` for `gcloud`) | Any run that calls Claude. See [Claude authentication](#claude-authentication). With none set, `--dry-run` runs without Claude; a full run stops with a clear message. |
+| `ANTHROPIC_ORGANIZATION_ID`, `ANTHROPIC_FEDERATION_RULE_ID`, `ANTHROPIC_SERVICE_ACCOUNT_ID`, `CRAWLER_WIF_IDENTITY` (+ `CRAWLER_WIF_GCP_SERVICE_ACCOUNT` for `gcloud`) | Any run that calls Claude. See [Claude authentication](#claude-authentication). With none set (or incomplete WIF), `--dry-run` runs without Claude; a full run stops with a clear message. |
 | `ANTHROPIC_WORKSPACE_ID` | Only if the federation rule covers more than one workspace. |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Reading `crawl_sources` / `cards`, writing runs and findings. Optional for `--dry-run`, which then uses a built-in Scotiabank source and skips the catalog diff. |
 | `CRAWLER_MODEL` | Optional model override. |
