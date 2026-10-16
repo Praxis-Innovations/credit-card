@@ -9,6 +9,7 @@ import type {
   ValueComponent,
 } from "./schema";
 import { CATEGORY_LABELS } from "./schema";
+import { compareByCentsThenFeeThenName } from "./recommend-rank";
 import { resolveValuations } from "./valuations";
 
 function findReward(
@@ -160,16 +161,7 @@ export function recommendCards(input: RecommendationInput): Recommendation[] {
     });
   }
 
-  return results.sort((a, b) => {
-    if (b.centsPerDollar !== a.centsPerDollar) {
-      return b.centsPerDollar - a.centsPerDollar;
-    }
-    // Tie-break: lower annual fee, then name
-    if (a.card.annualFee !== b.card.annualFee) {
-      return a.card.annualFee - b.card.annualFee;
-    }
-    return a.card.name.localeCompare(b.card.name);
-  });
+  return results.sort(compareByCentsThenFeeThenName);
 }
 
 /** Convenience: best single card, or null if none owned. */

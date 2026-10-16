@@ -7,6 +7,7 @@ export type {
   FuelGrade,
   Issuer,
   LoyaltyProgram,
+  MccCertainty,
   MerchantBrand,
   MerchantPartnership,
   PartnershipBenefit,
@@ -64,7 +65,6 @@ export {
   DEFAULT_FUEL_GRADE,
   FUEL_GRADE_SCOPES,
   isBenefitApplicable,
-  recommendCardsForMerchant,
   summarizePartnershipBenefits,
   type MerchantRecommendation,
   type PartnershipCatalog,
@@ -85,5 +85,16 @@ export {
   bestCard,
   cardEarnComponent,
   effectiveEarnRate,
-  recommendCards,
 } from "./recommend";
+
+export { recommendByMcc } from "./recommend-mcc";
+
+export type {
+  CategoryMccRow,
+  MccCatalog,
+  MccMatchKind,
+  RecommendationWarning,
+  StoreTypeMccRow,
+} from "./recommend-mcc-types";
+
+export { CATEGORY_MCCS, STORE_TYPE_MCCS } from "./mcc-catalog";

@@ -81,6 +81,32 @@ Regenerate catalog SQL seed (requires `NORTHTAP_SEED_API_KEY` in the environment
 pnpm seed:catalog
 ```
 
+### Importing MCC research CSVs
+
+Research CSVs become **`merchant_code_findings` only** (never live catalog rows).
+Requires `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`. Bad rows are rejected with
+a reason; the rest still import. Idempotent on re-run.
+
+```bash
+pnpm import:store_codes path/to/store_codes.csv
+pnpm import:test_purchases path/to/test_purchases.csv
+pnpm import:mcc_codes path/to/mcc_codes.csv
+pnpm import:category_mccs path/to/category_mccs.csv
+pnpm import:store_type_mccs path/to/store_type_mccs.csv
+```
+
+Formats (headers exact):
+
+| Kind | Columns |
+|------|---------|
+| `store_codes` | chain,wikidata_id,mcc,network,channel,certainty,source_type,url,observed_date,quote |
+| `test_purchases` | date,card,statement_text,mcc_shown,category_shown,screenshot_file |
+| `mcc_codes` | mcc,name,source_url |
+| `category_mccs` | category,mcc,source_url |
+| `store_type_mccs` | osm_tag,mcc,note |
+
+Do not put seed MCC data in migrations. Approve findings in the admin review queue.
+
 ## Vercel deploys
 
 Four Vercel projects share this monorepo (`northtap`, `northtap-app`,

@@ -73,6 +73,9 @@ export const ISSUERS = [
 
 export type Issuer = (typeof ISSUERS)[number];
 
+/** How an earn rule's MCC list was obtained. */
+const MCC_SOURCES = ["terms", "network_default"] as const;
+
 export interface RewardCategory {
   category: Category;
   /** Points (or cashback cents) earned per dollar spent. */
@@ -81,7 +84,50 @@ export interface RewardCategory {
   capMonthly?: number;
   /** Optional annual earn cap in dollars of spend. */
   capAnnual?: number;
+  /** MCC codes this bonus rate applies to (from issuer terms). */
+  mccs?: string[];
+  /** Named merchant brand ids / names this rate applies to. */
+  merchants?: string[];
+  /** Where `mccs` came from when the terms only name a category. */
+  mccSource?: (typeof MCC_SOURCES)[number];
+  /** Merchant / product exclusions (e.g. warehouse clubs, gift cards). */
+  exclusions?: string[];
+  /** Shared cap group id — multiple rates that share one spend pool. */
+  capGroup?: string;
+  /** Earn rate after the bonus cap is exhausted (defaults to `other`). */
+  rateAfterCap?: number;
+  /** Annual spend threshold before this tier rate unlocks. */
+  tierThreshold?: number;
+  /** Inclusive ISO date when a dated offer starts. */
+  validFrom?: string;
+  /** Inclusive ISO date when a dated offer ends. */
+  validTo?: string;
+  /** Verbatim quote from the issuer terms. */
+  quote?: string;
+  /** Source URL for the quote. */
+  sourceUrl?: string;
+  /**
+   * User-picked bonus category (e.g. Tangerine). Shown as a warning only —
+   * never used in the dollar calculation.
+   */
+  userChosen?: boolean;
 }
+
+/** Certainty of an approved store MCC. */
+const MCC_CERTAINTIES = [
+  "confirmed",
+  "varies_by_store",
+  "varies_by_network",
+  "varies_by_product",
+  "category_only",
+  "estimate",
+  "unknown",
+] as const;
+export type MccCertainty = (typeof MCC_CERTAINTIES)[number];
+
+/** Card networks a merchant may accept. */
+const ACCEPTED_NETWORKS = ["visa", "mastercard", "amex"] as const;
+export type AcceptedNetwork = (typeof ACCEPTED_NETWORKS)[number];
 
 export interface WelcomeOffer {
   summary: string;
@@ -285,6 +331,14 @@ export interface MerchantBrand {
   sourceUrl: string;
   lastVerified: string;
   logo?: CatalogAsset;
+  /** Approved Visa/Mastercard MCC, when known. */
+  mcc?: string | null;
+  /** Optional Amex-specific MCC when it differs. */
+  amexMcc?: string | null;
+  /** How sure we are of the store code. */
+  certainty?: MccCertainty;
+  /** Networks accepted in-store; omit/null = unknown (do not block). */
+  acceptedNetworks?: AcceptedNetwork[] | null;
 }
 
 /**

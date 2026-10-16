@@ -1,70 +1,67 @@
 import { ApiError } from "@/lib/errors";
-import { jsonResponse } from "@/lib/http";
+import { mapSharedStoreFields } from "@/lib/recommend-request";
+import {
+  handleRecommendationPost,
+  recommendationOptions,
+} from "@/lib/recommendations-http";
 import {
   createRecommendation,
   isCategory,
+  isFuelGrade,
   type RecommendationRequestBody,
 } from "@/lib/recommend";
-import { handleOptions, withAuth } from "@/lib/route";
 
 export const runtime = "nodejs";
 
 export function OPTIONS(request: Request) {
-  return handleOptions(request);
+  return recommendationOptions(request);
 }
 
 export async function POST(request: Request) {
-  return withAuth(request, async () => {
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      throw new ApiError(400, "bad_request", "Request body must be JSON");
-    }
-
-    if (!body || typeof body !== "object" || Array.isArray(body)) {
-      throw new ApiError(400, "bad_request", "Request body must be an object");
-    }
-
-    const raw = body as Record<string, unknown>;
-    const amountCad = raw.amountCad;
-    const category = raw.category;
-
-    if (!isCategory(category)) {
+  return handleRecommendationPost(request, (raw) => {
+    if (
+      raw.categoryFallback !== undefined &&
+      raw.categoryFallback !== null &&
+      !isCategory(raw.categoryFallback)
+    ) {
       throw new ApiError(
         400,
         "bad_request",
-        "category must be a known spend category",
+        "categoryFallback must be a known spend category",
       );
     }
 
+    if ("category" in raw && raw.category !== undefined) {
+      throw new ApiError(
+        400,
+        "bad_request",
+        "category was removed; send mcc, merchantQuery/osmTag, or categoryFallback",
+      );
+    }
+
+    const shared = mapSharedStoreFields(raw);
     const input: RecommendationRequestBody = {
-      amountCad: amountCad as number,
-      category,
-      merchant: typeof raw.merchant === "string" ? raw.merchant : undefined,
-      merchantQuery:
-        typeof raw.merchantQuery === "string"
-          ? raw.merchantQuery
-          : undefined,
+      amountCad: raw.amountCad as number,
+      ...shared,
       ownedCardIds: Array.isArray(raw.ownedCardIds)
         ? (raw.ownedCardIds as string[])
         : undefined,
-      spendToDate:
-        raw.spendToDate && typeof raw.spendToDate === "object"
-          ? (raw.spendToDate as RecommendationRequestBody["spendToDate"])
+      capGroupSpendToDate:
+        raw.capGroupSpendToDate && typeof raw.capGroupSpendToDate === "object"
+          ? (raw.capGroupSpendToDate as Record<string, number>)
           : undefined,
-      valuations:
-        raw.valuations && typeof raw.valuations === "object"
-          ? (raw.valuations as RecommendationRequestBody["valuations"])
+      annualSpendByCard:
+        raw.annualSpendByCard && typeof raw.annualSpendByCard === "object"
+          ? (raw.annualSpendByCard as Record<string, number>)
           : undefined,
       fuelGrade:
         raw.fuelGrade === undefined || raw.fuelGrade === null
           ? undefined
-          : (raw.fuelGrade as RecommendationRequestBody["fuelGrade"]),
+          : isFuelGrade(raw.fuelGrade)
+            ? raw.fuelGrade
+            : (raw.fuelGrade as RecommendationRequestBody["fuelGrade"]),
       limit: typeof raw.limit === "number" ? raw.limit : undefined,
     };
-
-    const result = await createRecommendation(input);
-    return jsonResponse(result, { request });
+    return createRecommendation(input);
   });
 }

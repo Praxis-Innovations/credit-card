@@ -2,17 +2,23 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   ASSET_RIGHTS_STATUSES,
   CARDS,
+  CATEGORIES,
+  CATEGORY_MCCS,
   LOYALTY_PROGRAMS,
   MERCHANT_BRANDS,
   MERCHANT_PARTNERSHIPS,
+  STORE_TYPE_MCCS,
   type AssetRightsStatus,
   type CatalogAsset,
   type Category,
+  type CategoryMccRow,
   type CreditCard,
   type LoyaltyProgram,
+  type MccCatalog,
   type MerchantBrand,
   type MerchantPartnership,
   type PartnershipBenefit,
+  type StoreTypeMccRow,
 } from "@/domain";
 import { ApiError } from "./errors";
 
@@ -85,6 +91,7 @@ export function mapCard(row: Record<string, unknown>): CreditCard {
 }
 
 export function mapBrand(row: Record<string, unknown>): MerchantBrand {
+  const accepted = row.accepted_networks;
   return {
     id: row.id as string,
     name: row.name as string,
@@ -94,6 +101,15 @@ export function mapBrand(row: Record<string, unknown>): MerchantBrand {
     sourceUrl: row.source_url as string,
     lastVerified: String(row.last_verified).slice(0, 10),
     logo: mapAsset(row, "logo"),
+    mcc: (row.mcc as string | null) ?? null,
+    amexMcc: (row.amex_mcc as string | null) ?? null,
+    certainty:
+      typeof row.certainty === "string"
+        ? (row.certainty as MerchantBrand["certainty"])
+        : "unknown",
+    acceptedNetworks: Array.isArray(accepted)
+      ? (accepted as MerchantBrand["acceptedNetworks"])
+      : null,
   };
 }
 
@@ -264,6 +280,80 @@ async function loadPartnershipsFromDb(
   return (data ?? []).map((row) =>
     mapPartnership(row as Record<string, unknown>),
   );
+}
+
+const CATEGORY_SET = new Set<string>(CATEGORIES);
+
+function mapCategoryMcc(row: Record<string, unknown>): CategoryMccRow | null {
+  const category = row.category;
+  const mcc = row.mcc;
+  if (typeof category !== "string" || !CATEGORY_SET.has(category)) return null;
+  if (typeof mcc !== "string" || !/^\d{4}$/.test(mcc)) return null;
+  return { category: category as Category, mcc };
+}
+
+function mapStoreTypeMcc(
+  row: Record<string, unknown>,
+): StoreTypeMccRow | null {
+  const osmTag = row.osm_tag;
+  const mcc = row.mcc;
+  if (typeof osmTag !== "string" || !osmTag.trim()) return null;
+  if (typeof mcc !== "string" || !/^\d{4}$/.test(mcc)) return null;
+  return { osmTag: osmTag.trim(), mcc };
+}
+
+async function loadCategoryMccsFromDb(): Promise<CategoryMccRow[]> {
+  const client = requireClient();
+  let data: unknown[] | null;
+  let error: unknown;
+  try {
+    ({ data, error } = await client
+      .from("category_mccs")
+      .select("category, mcc")
+      .eq("status", "verified")
+      .order("category", { ascending: true })
+      .order("mcc", { ascending: true }));
+  } catch (cause) {
+    catalogUnavailable("category_mccs", cause);
+  }
+  throwIfDbError("category_mccs", error);
+  return (data ?? [])
+    .map((row) => mapCategoryMcc(row as Record<string, unknown>))
+    .filter((r): r is CategoryMccRow => r !== null);
+}
+
+async function loadStoreTypeMccsFromDb(): Promise<StoreTypeMccRow[]> {
+  const client = requireClient();
+  let data: unknown[] | null;
+  let error: unknown;
+  try {
+    ({ data, error } = await client
+      .from("store_type_mccs")
+      .select("osm_tag, mcc")
+      .eq("status", "verified")
+      .order("osm_tag", { ascending: true }));
+  } catch (cause) {
+    catalogUnavailable("store_type_mccs", cause);
+  }
+  throwIfDbError("store_type_mccs", error);
+  return (data ?? [])
+    .map((row) => mapStoreTypeMcc(row as Record<string, unknown>))
+    .filter((r): r is StoreTypeMccRow => r !== null);
+}
+
+/** Verified MCC reference maps used by the recommender (static or Supabase). */
+export async function listVerifiedMccCatalog(): Promise<MccCatalog> {
+  if (getCatalogSource() === "static") {
+    return {
+      categoryMccs: [...CATEGORY_MCCS],
+      storeTypeMccs: [...STORE_TYPE_MCCS],
+    };
+  }
+  const [categoryMccs, storeTypeMccs] = await Promise.all([
+    loadCategoryMccsFromDb(),
+    loadStoreTypeMccsFromDb(),
+  ]);
+  return { categoryMccs, storeTypeMccs };
 }
 
 /** Public catalog: verified only. Static source mirrors the seed migration. */

@@ -19,7 +19,12 @@
     "code-health:report": "node scripts/code-health.mjs --report",
     "code-health:baseline": "node scripts/code-health.mjs --update-baseline",
     "e2e": "pnpm --filter e2e test:e2e",
-    "e2e:smoke": "pnpm --filter e2e test:smoke"
+    "e2e:smoke": "pnpm --filter e2e test:smoke",
+    "import:store_codes": "pnpm --filter api import:store_codes",
+    "import:test_purchases": "pnpm --filter api import:test_purchases",
+    "import:mcc_codes": "pnpm --filter api import:mcc_codes",
+    "import:category_mccs": "pnpm --filter api import:category_mccs",
+    "import:store_type_mccs": "pnpm --filter api import:store_type_mccs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

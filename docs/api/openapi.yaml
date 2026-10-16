@@ -83,31 +83,21 @@ paths:
     post:
       tags: [Recommendations]
       operationId: createRecommendation
-      summary: Rank cards for a purchase
+      summary: Rank cards for a purchase by MCC / store
       description: |
-        Stateless server-side ranking. The API invokes
-        `recommendCards()` / `recommendCardsForMerchant()` from the API domain engine (`apps/api/src/domain`)
-        and returns a ranked decision. It does **not** load the caller's wallet
-        from Supabase — `ownedCardIds` are caller-supplied opaque catalog slugs.
+        Stateless server-side ranking via `recommendByMcc()` in
+        `apps/api/src/domain`. Breaking change: send `mcc` and/or a store
+        (`merchantQuery` / `osmTag`), not `category`. Optional
+        `categoryFallback` is only used when store code and store-type are
+        unknown.
 
-        **Engine input** (maps to `RecommendationInput` in the API domain engine (`apps/api/src/domain`)):
-        `ownedCardIds`, `category`, optional `merchantBrandId`, optional
-        `spendToDate`, optional `valuations`.
+        Match order per card: network accepted → store code for
+        network/in-store → named merchant, then MCC list, then base rate →
+        exclusions → caps/tiers (assumed not reached unless spend inputs say
+        otherwise) → partnerships → points × point value.
 
-        **Purchase fields** (`amountCad`, optional `merchant`) do not change
-        ranking order (rank is per-dollar) but are used to compute
-        `estimatedRewardCad` / `estimatedCentsBack` for the response.
-
-        **Fuel grade**: partnership benefits scoped to a grade (e.g. Shell
-        V-Power's extra 4¢/L and extra Scene+ pt/L, Triangle's premium tier)
-        only count when `fuelGrade` matches. Omitted = `regular`.
-
-        **Value breakdown**: each item carries `valueBreakdown`, dollar lines
-        (card earn plus each applied partnership benefit) rounded to whole
-        cents that sum exactly to `estimatedRewardCad`, and `assumptions`
-        (pump price, litres, point valuations) used to produce them.
-        Per-litre benefits are converted at an assumed pump price
-        (`assumptions.cadPerLitre`), not a live price.
+        Welcome bonuses and user-chosen categories are **warnings only** —
+        never included in the dollar calculation.
       security:
         - ApiKeyAuth: []
       requestBody:
@@ -121,26 +111,21 @@ paths:
                 summary: Groceries at Loblaws
                 value:
                   amountCad: 87.42
-                  category: groceries
-                  merchant: Loblaws
+                  merchantQuery: Loblaws
                   ownedCardIds:
                     - amex-cobalt
-                    - tangerine-money-back
-                    - scotia-scene-momentum
-              withCaps:
-                summary: Cap-aware ranking
+                    - tangerine-moneyback
+                    - scotia-momentum-vi
+              byMcc:
+                summary: Known MCC without a store
                 value:
                   amountCad: 120
-                  category: groceries
+                  mcc: "5411"
                   ownedCardIds: [amex-cobalt, amex-simplycash]
-                  spendToDate:
-                    monthly:
-                      groceries: 2500
               premiumAtShell:
                 summary: Premium (V-Power) fill-up at Shell
                 value:
                   amountCad: 100
-                  category: gas
                   merchantQuery: Shell
                   fuelGrade: premium
                   ownedCardIds: [scotia-gold-amex, triangle-we]
@@ -157,6 +142,34 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "422":
           $ref: "#/components/responses/UnprocessableEntity"
+
+  /recommendations/preview:
+    post:
+      tags: [Recommendations]
+      operationId: previewRecommendation
+      summary: Preview one card at a store/MCC (admin console)
+      description: |
+        Same MCC calculator as `/recommendations`, limited to a single
+        `cardId`. Intended for the admin console preview pane.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecommendationPreviewRequest"
+      responses:
+        "200":
+          description: Preview result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendationPreviewResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /cards:
     get:
@@ -889,6 +902,90 @@ components:
           type: number
           exclusiveMinimum: 0
           description: Optional annual spend cap in CAD for this bonus rate
+        mccs:
+          type: array
+          items:
+            type: string
+            pattern: "^\\d{4}$"
+          description: MCC codes this bonus rate applies to
+        merchants:
+          type: array
+          items:
+            type: string
+          description: Named merchant brand ids or names this rate applies to
+        mccSource:
+          type: string
+          enum: [terms, network_default]
+        exclusions:
+          type: array
+          items:
+            type: string
+        capGroup:
+          type: string
+          description: Shared cap pool id across several rates
+        rateAfterCap:
+          type: number
+          minimum: 0
+        tierThreshold:
+          type: number
+          exclusiveMinimum: 0
+          description: Annual spend CAD required before this tier unlocks
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: string
+          format: date
+        quote:
+          type: string
+        sourceUrl:
+          type: string
+          format: uri
+        userChosen:
+          type: boolean
+          description: >
+            User-picked bonus category (e.g. Tangerine). Warning only — never
+            used in the dollar calculation.
+
+    MccCertainty:
+      type: string
+      enum:
+        - confirmed
+        - varies_by_store
+        - varies_by_network
+        - varies_by_product
+        - category_only
+        - estimate
+        - unknown
+
+    MccMatchKind:
+      type: string
+      enum:
+        - named_merchant
+        - mcc_list
+        - category_default
+        - store_type_estimate
+        - user_category
+        - base_rate
+        - network_not_accepted
+
+    RecommendationWarning:
+      type: object
+      required: [kind, message]
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+          enum:
+            - welcome_bonus
+            - user_chosen_category
+            - certainty
+            - network_not_accepted
+            - cap_assumed_not_reached
+            - tier_assumed_not_reached
+            - exclusion
+        message:
+          type: string
 
     WelcomeOffer:
       type: object
@@ -1082,20 +1179,25 @@ components:
 
     RecommendationRequest:
       type: object
-      required: [amountCad, category]
+      required: [amountCad]
       additionalProperties: false
+      description: >
+        Provide at least one of `mcc`, `merchantQuery`/`osmTag`/`merchant`, or
+        `categoryFallback`. Legacy `category` is rejected.
       properties:
         amountCad:
           type: number
           exclusiveMinimum: 0
           description: Purchase amount in CAD
-        category:
-          $ref: "#/components/schemas/Category"
+        mcc:
+          type: string
+          pattern: "^\\d{4}$"
+          description: Four-digit Merchant Category Code
+          examples: ["5411", "5541"]
         merchant:
           type: string
           maxLength: 200
-          description: >
-            Free-text merchant / store name for display.
+          description: Free-text merchant / store name for display.
         merchantQuery:
           type: string
           maxLength: 200
@@ -1104,6 +1206,12 @@ components:
             resolves this against `merchant_brands` (exact/fuzzy) and may apply
             partnership-aware ranking. Clients must not send catalog brand ids.
           examples: [Shell, "Costco Gas", Loblaws]
+        osmTag:
+          type: string
+          maxLength: 120
+          description: OSM tag for store-type MCC fallback (e.g. shop=supermarket)
+        categoryFallback:
+          $ref: "#/components/schemas/Category"
         ownedCardIds:
           type: array
           minItems: 1
@@ -1116,6 +1224,18 @@ components:
             storage — never resolved by this API.
         spendToDate:
           $ref: "#/components/schemas/SpendToDate"
+        capGroupSpendToDate:
+          type: object
+          additionalProperties:
+            type: number
+            minimum: 0
+          description: Spend already applied toward a shared cap group (CAD)
+        annualSpendByCard:
+          type: object
+          additionalProperties:
+            type: number
+            minimum: 0
+          description: Annual spend toward tier thresholds, keyed by card id
         valuations:
           type: object
           additionalProperties:
@@ -1133,6 +1253,40 @@ components:
           default: 10
           description: Max recommendations to return (after ranking)
 
+    RecommendationPreviewRequest:
+      type: object
+      required: [amountCad, cardId]
+      additionalProperties: false
+      properties:
+        amountCad:
+          type: number
+          exclusiveMinimum: 0
+        cardId:
+          $ref: "#/components/schemas/CardId"
+        mcc:
+          type: string
+          pattern: "^\\d{4}$"
+        merchant:
+          type: string
+          maxLength: 200
+        merchantQuery:
+          type: string
+          maxLength: 200
+        osmTag:
+          type: string
+          maxLength: 120
+        categoryFallback:
+          $ref: "#/components/schemas/Category"
+        fuelGrade:
+          $ref: "#/components/schemas/FuelGrade"
+        spendToDate:
+          $ref: "#/components/schemas/SpendToDate"
+        valuations:
+          type: object
+          additionalProperties:
+            type: number
+            exclusiveMinimum: 0
+
     RecommendationItem:
       type: object
       required:
@@ -1145,14 +1299,17 @@ components:
         - estimatedRewardCad
         - capExhausted
         - reason
+        - matchKind
+        - confidence
+        - effectiveMcc
         - merchantBrand
         - loyaltyProgram
         - valueBreakdown
         - assumptions
+        - warnings
       additionalProperties: false
       description: >
-        One ranked result. Core fields mirror `Recommendation` in
-        the API domain engine (`apps/api/src/domain`); purchase-scaled estimates are API additions.
+        One ranked result from the MCC calculator, with purchase-scaled estimates.
       properties:
         rank:
           type: integer
@@ -1189,6 +1346,13 @@ components:
           type: string
           minLength: 1
           description: Short human-readable explanation of the earn math
+        matchKind:
+          $ref: "#/components/schemas/MccMatchKind"
+        confidence:
+          $ref: "#/components/schemas/MccCertainty"
+        effectiveMcc:
+          type: [string, "null"]
+          description: MCC used for this card (Amex may differ)
         usedPartnership:
           type: boolean
           description: True when a merchant partnership drove the score/reason
@@ -1218,6 +1382,10 @@ components:
             with card rewards, only the winning side is listed.
         assumptions:
           $ref: "#/components/schemas/ValueAssumptions"
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecommendationWarning"
 
     FuelGrade:
       type: string
@@ -1300,36 +1468,11 @@ components:
 
     RecommendationResponse:
       type: object
-      required: [purchase, recommendations]
+      required: [purchase, recommendations, warnings]
       additionalProperties: false
       properties:
         purchase:
-          type: object
-          required: [amountCad, category]
-          additionalProperties: false
-          properties:
-            amountCad:
-              type: number
-            category:
-              $ref: "#/components/schemas/Category"
-            merchant:
-              type: [string, "null"]
-            merchantQuery:
-              type: [string, "null"]
-              description: Echo of the request merchantQuery when provided
-            merchantBrandId:
-              type: [string, "null"]
-              description: Resolved catalog brand id when merchantQuery matched
-            merchantBrand:
-              description: Resolved brand with logo (e.g. the "You're at Shell" row), else null
-              oneOf:
-                - $ref: "#/components/schemas/LogoSummary"
-                - type: "null"
-            fuelGrade:
-              oneOf:
-                - $ref: "#/components/schemas/FuelGrade"
-                - type: "null"
-              description: Fuel grade applied for gas purchases; null otherwise
+          $ref: "#/components/schemas/RecommendationPurchase"
         recommendations:
           type: array
           items:
@@ -1337,6 +1480,62 @@ components:
         bestCardId:
           type: [string, "null"]
           description: Id of rank-1 card, or null if the wallet yielded no results
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecommendationWarning"
+          description: Purchase-level warnings (e.g. store-code certainty)
+
+    RecommendationPurchase:
+      type: object
+      required:
+        - amountCad
+        - mcc
+        - displayCategory
+        - certainty
+        - matchKind
+      additionalProperties: false
+      properties:
+        amountCad:
+          type: number
+        mcc:
+          type: [string, "null"]
+        displayCategory:
+          $ref: "#/components/schemas/Category"
+        merchant:
+          type: [string, "null"]
+        merchantQuery:
+          type: [string, "null"]
+        merchantBrandId:
+          type: [string, "null"]
+        merchantBrand:
+          oneOf:
+            - $ref: "#/components/schemas/LogoSummary"
+            - type: "null"
+        certainty:
+          $ref: "#/components/schemas/MccCertainty"
+        matchKind:
+          $ref: "#/components/schemas/MccMatchKind"
+        fuelGrade:
+          oneOf:
+            - $ref: "#/components/schemas/FuelGrade"
+            - type: "null"
+
+    RecommendationPreviewResponse:
+      type: object
+      required: [purchase, recommendation, warnings]
+      additionalProperties: false
+      properties:
+        purchase:
+          $ref: "#/components/schemas/RecommendationPurchase"
+        recommendation:
+          oneOf:
+            - $ref: "#/components/schemas/RecommendationItem"
+            - type: "null"
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecommendationWarning"
 
     CategoryListResponse:
       type: object
