@@ -124,4 +124,32 @@ test.describe("first-run flow (guest)", () => {
     await browseShellAndSkip(page);
     await expect(page.getByLabel("Best card").getByText("$1.00")).toBeVisible();
   });
+
+  test("offline → shows the last cached result, labelled as possibly out of date", async ({
+    page,
+  }) => {
+    await pickCards(page, [TRIANGLE, SCOTIA_GOLD]);
+    await page.getByRole("button", { name: "Choose a store instead" }).click();
+    await browseShellAndSkip(page);
+    await expect(page.getByLabel("Best card").getByText("$4.00")).toBeVisible();
+
+    // Drop recommendations only — catalog/store still load from the local API.
+    await page.route("**/v1/recommendations", (route) => route.abort("internetdisconnected"));
+
+    await page.getByRole("button", { name: "New search" }).click();
+    await page.getByRole("tab", { name: "Browse" }).click();
+    await page.getByRole("button", { name: "Gas", exact: true }).click();
+    await page.getByRole("button", { name: /^Esso,/ }).click();
+    await page.getByRole("button", { name: "$25" }).click();
+    await page.getByRole("button", { name: "Show my best card" }).click();
+
+    await expect(page.getByRole("alert").first()).toHaveText(
+      "You're offline. This is your last result and may be out of date.",
+    );
+    // The cached result keeps the store it was for.
+    await expect(page.getByText("Shell · $100.00")).toBeVisible();
+    const best = page.getByLabel("Best card");
+    await expect(best.getByText("$4.00")).toBeVisible();
+    await expect(best.getByText("back on your $100")).toBeVisible();
+  });
 });
