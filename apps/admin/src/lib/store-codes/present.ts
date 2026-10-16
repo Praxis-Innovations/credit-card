@@ -28,12 +28,9 @@ const VARIES: ReadonlySet<string> = new Set([
   "varies_by_product",
 ]);
 
-export function certaintyLabel(value: string | null | undefined): string {
+function certaintyLabel(value: string | null | undefined): string {
   if (!value) return "Unknown";
-  if (value === "varies_by_store" || value === "varies_by_network") {
-    // Design board shows a combined label when both apply; keep per-enum otherwise.
-    if (value === "varies_by_network") return "Varies by store and network";
-  }
+  if (value === "varies_by_network") return "Varies by store and network";
   return CERTAINTY_LABELS[value as MccCertainty] ?? value.replaceAll("_", " ");
 }
 
@@ -72,7 +69,7 @@ export function sourceTypeLabel(value: string | null | undefined): string {
   }
 }
 
-export function networkLabel(network: string): string {
+function networkLabel(network: string): string {
   switch (network) {
     case "visa":
       return "Visa";
@@ -109,7 +106,7 @@ export function needsEvidence(evidenceCount: number): boolean {
   return evidenceCount < CONFIRMED_EVIDENCE_THRESHOLD;
 }
 
-export function latestEvidenceLabel(evidence: readonly EvidenceRow[]): string | null {
+function latestEvidenceLabel(evidence: readonly EvidenceRow[]): string | null {
   if (evidence.length === 0) return null;
   const sorted = [...evidence].sort((a, b) => {
     const da = a.observed_date ?? a.created_at;
@@ -138,7 +135,7 @@ export function toListItem(
   };
 }
 
-export function matchesCertaintyFilter(item: StoreCodeListItem, filter: CertaintyFilter): boolean {
+function matchesCertaintyFilter(item: StoreCodeListItem, filter: CertaintyFilter): boolean {
   if (filter === "all") return true;
   if (filter === "needs_evidence") return item.needs_evidence;
   if (filter === "varies") return VARIES.has(item.certainty);

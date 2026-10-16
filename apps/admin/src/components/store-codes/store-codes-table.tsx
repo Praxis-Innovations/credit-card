@@ -2,14 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { StatusPill } from "@/components/sources/status-pill";
-import {
-  certaintyPill,
-  evidenceCountLabel,
-} from "@/lib/store-codes/present";
-import {
-  STORE_CODES_PAGE_SIZE,
-  type StoreCodeListItem,
-} from "@/lib/store-codes/types";
+import { certaintyPill, evidenceCountLabel } from "@/lib/store-codes/present";
+import { STORE_CODES_PAGE_SIZE, type StoreCodeListItem } from "@/lib/store-codes/types";
 
 const openBtn =
   "inline-flex h-9 items-center gap-1.5 rounded-lg border border-field bg-surface px-3 text-sm font-medium text-ink hover:bg-teal-soft";
@@ -106,49 +100,5 @@ export function StoreCodesTable({
         Page size {STORE_CODES_PAGE_SIZE}. Use the pager below when there are more results.
       </p>
     </div>
-  );
-}
-
-export function StoreCodesPager({
-  page,
-  pageCount,
-  total,
-  pageSize,
-  onPage,
-}: {
-  page: number;
-  pageCount: number;
-  total: number;
-  pageSize: number;
-  onPage: (next: number) => void;
-}) {
-  if (total <= pageSize) return null;
-  const from = (page - 1) * pageSize + 1;
-  const to = Math.min(page * pageSize, total);
-  const navBtn =
-    "h-9 rounded-lg border border-field bg-surface px-3 text-sm text-ink hover:bg-teal-soft disabled:opacity-50";
-
-  return (
-    <nav
-      aria-label="Store codes pages"
-      className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3 text-sm text-body"
-    >
-      <p>
-        Showing {from}–{to} of {total.toLocaleString("en-CA")}
-      </p>
-      <div className="flex items-center gap-2">
-        <button type="button" className={navBtn} disabled={page <= 1} onClick={() => onPage(page - 1)}>
-          Previous
-        </button>
-        <button
-          type="button"
-          className={navBtn}
-          disabled={page >= pageCount}
-          onClick={() => onPage(page + 1)}
-        >
-          Next
-        </button>
-      </div>
-    </nav>
   );
 }

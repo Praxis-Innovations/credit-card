@@ -9,8 +9,9 @@ import {
   type CertaintyFilter,
   type StoreCodeListItem,
 } from "@/lib/store-codes/types";
+import { TablePager } from "@/components/table-pager";
 import { CertaintyChips, StoreCodesSearchFilters } from "./store-codes-filters";
-import { StoreCodesPager, StoreCodesTable } from "./store-codes-table";
+import { StoreCodesTable } from "./store-codes-table";
 
 const headerBtn =
   "h-11 rounded-[10px] border border-field bg-surface px-4 text-[15px] font-medium text-ink hover:bg-teal-soft";
@@ -85,7 +86,9 @@ export function StoreCodesConsole({
           emptyBecauseFilter={filtered.length === 0 && items.length > 0}
           loadError={loadError}
         />
-        <StoreCodesPager
+        <TablePager
+          label="Store codes pages"
+          noun="stores"
           page={safePage}
           pageCount={pageCount}
           total={filtered.length}

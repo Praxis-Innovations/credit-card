@@ -1,7 +1,5 @@
 /** Live merchant_brands + evidence shapes for the Store codes console (AD5). */
 
-export type CatalogStatus = "pending" | "verified" | "stale" | "rejected" | "conflict";
-
 export type MccCertainty =
   | "confirmed"
   | "varies_by_store"
@@ -11,17 +9,6 @@ export type MccCertainty =
   | "estimate"
   | "unknown";
 
-export type MccNetwork = "visa" | "mastercard" | "amex" | "visa_mc" | "all";
-
-export type MccChannel = "in_store" | "online" | "pay_at_pump";
-
-export type MerchantCodeSourceType =
-  | "issuer_merchant_list"
-  | "cardholder_report"
-  | "blog"
-  | "issuer_faq"
-  | "test_purchase";
-
 export type MerchantBrandRow = {
   id: string;
   name: string;
@@ -29,7 +16,7 @@ export type MerchantBrandRow = {
   notes: string | null;
   source_url: string;
   last_verified: string;
-  status: CatalogStatus;
+  status: "pending" | "verified" | "stale" | "rejected" | "conflict";
   mcc: string | null;
   amex_mcc: string | null;
   certainty: MccCertainty;
@@ -41,9 +28,14 @@ export type EvidenceRow = {
   merchant_brand_id: string | null;
   chain: string;
   mcc: string | null;
-  network: MccNetwork;
-  channel: MccChannel;
-  source_type: MerchantCodeSourceType;
+  network: "visa" | "mastercard" | "amex" | "visa_mc" | "all";
+  channel: "in_store" | "online" | "pay_at_pump";
+  source_type:
+    | "issuer_merchant_list"
+    | "cardholder_report"
+    | "blog"
+    | "issuer_faq"
+    | "test_purchase";
   url: string | null;
   quote: string | null;
   observed_date: string | null;
