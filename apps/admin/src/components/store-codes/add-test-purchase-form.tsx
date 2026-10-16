@@ -40,7 +40,6 @@ export function AddTestPurchaseForm({
     cardId: cards[0]?.id ?? "",
     mccShown: "",
     categoryShown: "",
-    screenshotName: "",
   });
 
   async function onSubmit() {
@@ -54,7 +53,6 @@ export function AddTestPurchaseForm({
         statementText: state.statement,
         mccShown: state.mccShown,
         categoryShown: state.categoryShown,
-        screenshotFile: state.screenshotName,
       });
       onNotice({ ok: res.ok, message: res.message });
       if (res.ok) onSaved();

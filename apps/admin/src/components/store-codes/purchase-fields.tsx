@@ -12,7 +12,6 @@ export type PurchaseFormState = {
   cardId: string;
   mccShown: string;
   categoryShown: string;
-  screenshotName: string;
 };
 
 export function PurchaseFields({
@@ -32,16 +31,6 @@ export function PurchaseFields({
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-4">
       <DateAndStatement brandName={brandName} busy={busy} state={state} onPatch={onPatch} />
       <CardAndShown cards={cards} busy={busy} state={state} onPatch={onPatch} />
-      <label className={labelCls}>
-        Statement screenshot
-        <input
-          type="file"
-          accept="image/*,application/pdf"
-          className="h-11 w-full rounded-lg border border-dashed border-field bg-surface px-2.5 py-2 text-sm"
-          disabled={busy}
-          onChange={(e) => onPatch({ screenshotName: e.target.files?.[0]?.name ?? "" })}
-        />
-      </label>
     </div>
   );
 }

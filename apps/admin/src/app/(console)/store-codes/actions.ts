@@ -17,7 +17,6 @@ export type TestPurchaseInput = {
   statementText: string;
   mccShown: string;
   categoryShown: string;
-  screenshotFile: string;
 };
 
 function failure(message: string): AddTestPurchaseResult {
@@ -29,7 +28,6 @@ type ValidatedPurchase = {
   statement: string;
   shown: string;
   categoryShown: string;
-  screenshot: string | null;
   card: { id: string; name: string; network: string | null };
   chain: string;
   brandId: string;
@@ -86,7 +84,8 @@ function buildValidated(
   const categoryShown = input.categoryShown.trim();
   const parsed = chainFromStatement(statement);
   const chain = input.brandName.trim() || parsed.chain;
-  const screenshot = input.screenshotFile.trim() || null;
+  // Screenshots need a private Storage upload path; omit until that exists
+  // rather than storing a local filename nobody can open.
   const proposed = {
     date,
     card: card.name,
@@ -95,7 +94,7 @@ function buildValidated(
     statement_text: statement,
     mcc_shown: shown || null,
     category_shown: categoryShown || null,
-    screenshot_file: screenshot,
+    screenshot_file: null,
     ...parsed,
     chain,
     merchant_brand_id: input.brandId,
@@ -106,7 +105,6 @@ function buildValidated(
     statement,
     shown,
     categoryShown,
-    screenshot,
     card,
     chain,
     brandId: input.brandId,
