@@ -14,7 +14,9 @@ comment on column public.card_findings.review_fields is
 grant update (review_fields) on table public.card_findings to authenticated;
 
 -- Extend the audit payload with field decisions and a compact edits list
--- (page_value → value when they differ). Extraction stays on card_findings.
+-- (page_value → value when they differ and save is true). Unticked Save rows
+-- may still hold a typed value in the UI; those must not count as edits.
+-- Extraction stays on card_findings.
 create or replace function public.audit_finding_review()
 returns trigger
 language plpgsql
@@ -39,7 +41,8 @@ begin
       )
       into v_edits
       from jsonb_array_elements(new.review_fields -> 'fields') as f
-      where coalesce(f->>'page_value', '') is distinct from coalesce(f->>'value', '');
+      where coalesce((f->>'save')::boolean, false)
+        and coalesce(f->>'page_value', '') is distinct from coalesce(f->>'value', '');
     end if;
 
     insert into public.admin_audit (actor_email, action, entity, entity_id, before, after)

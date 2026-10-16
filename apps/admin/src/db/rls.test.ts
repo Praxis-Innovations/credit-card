@@ -465,6 +465,36 @@ describe("finding review", () => {
     expect(out.audit[0]!.after).not.toHaveProperty("extracted");
   });
 
+  it("omits unsaved edited fields from audit edits", async () => {
+    const fields = JSON.stringify({
+      fields: [
+        { key: "annual_fee", save: true, page_value: "59", value: "599" },
+        { key: "name", save: false, page_value: "Gold", value: "Gold Amex" },
+      ],
+    });
+    const audit = await db.transaction(async (tx) => {
+      await tx.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify(VALIDATOR)]);
+      await tx.exec("set local role authenticated");
+      await tx.query(
+        `update public.card_findings
+         set review_status = 'approved', review_fields = '${fields}'::jsonb
+         ${pending}`,
+      );
+      await tx.exec("reset role");
+      const rows = await findingAudit(tx);
+      await tx.rollback();
+      return rows;
+    });
+    expect(audit).toHaveLength(1);
+    expect(audit[0]!.after.edits).toEqual([{ key: "annual_fee", from: "59", to: "599" }]);
+    expect(audit[0]!.after.review_fields).toEqual({
+      fields: [
+        { key: "annual_fee", save: true, page_value: "59", value: "599" },
+        { key: "name", save: false, page_value: "Gold", value: "Gold Amex" },
+      ],
+    });
+  });
+
   it("does not let a validator write review_fields without deciding the finding", async () => {
     await expect(
       asRole(db, "authenticated", VALIDATOR, (tx) =>
