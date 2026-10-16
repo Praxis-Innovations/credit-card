@@ -5,11 +5,7 @@ import {
   recommendCardsForMerchant,
   type PartnershipCatalog,
 } from "./recommend-merchant";
-import {
-  cardEarnComponent,
-  effectiveEarnRate,
-  recommendCards,
-} from "./recommend";
+import { cardEarnComponent, effectiveEarnRate } from "./recommend";
 import type {
   AcceptedNetwork,
   Category,
@@ -18,7 +14,6 @@ import type {
   MccCertainty,
   MerchantBrand,
   PointCurrency,
-  Recommendation,
   RewardCategory,
   SpendToDate,
   ValueComponent,
@@ -725,10 +720,3 @@ function buildMccReason(
 
 /** Re-export category list so callers don't grow CATEGORIES ad hoc. */
 export const DISPLAY_CATEGORIES = CATEGORIES;
-
-/** @deprecated Prefer recommendByMcc; kept for gradual migration of callers. */
-export function recommendCardsByCategory(
-  input: Parameters<typeof recommendCards>[0],
-): Recommendation[] {
-  return recommendCards(input);
-}
