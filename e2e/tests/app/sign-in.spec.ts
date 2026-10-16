@@ -78,4 +78,15 @@ test.describe("sign-in (Save your wallet)", () => {
     const remote = await listAppUserCards(supabaseService, E2E_APP_USER_ID);
     expect(remote.sort()).toEqual(["cibc-costco-mc", "scotia-gold-amex"]);
   });
+
+  test("wide web shows the Save dialog with a close button", async ({ page }) => {
+    await reachResult(page);
+
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.getByRole("button", { name: "Save your wallet" }).click();
+    const dialog = page.getByRole("dialog", { name: "Save your wallet" });
+    await expect(dialog.getByRole("button", { name: "Continue with Google" })).toBeVisible();
+    await dialog.getByRole("button", { name: "Close" }).click();
+    await expect(dialog).toBeHidden();
+  });
 });
