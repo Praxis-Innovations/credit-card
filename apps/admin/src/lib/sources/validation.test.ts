@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { isIssuerDomain, registrableDomain } from "./issuer-domains";
-import { validateCompareUrl, validateSourceInput, validateUrlPattern } from "./validation";
+import { validateCompareUrl, validateSourceInput } from "./validation";
 
-const base = { issuer_name: "Scotiabank", compare_url: "", url_pattern: "", schedule: "monthly", notes: "" };
+const base = { issuer_name: "Scotiabank", compare_url: "" };
 
 describe("validateCompareUrl", () => {
   it.each([
@@ -63,31 +63,18 @@ describe("issuer domains", () => {
   });
 });
 
-describe("validateUrlPattern", () => {
-  it.each(["", "/credit-cards/", "/en/personal/credit-cards/"])("accepts %j", (v) => {
-    expect(validateUrlPattern(v).ok).toBe(true);
-  });
-  it.each(["credit-cards", "//evil.example/", "/with space/", "https://x.com/"])("rejects %j", (v) => {
-    expect(validateUrlPattern(v).ok).toBe(false);
-  });
-});
-
 describe("validateSourceInput", () => {
   it("normalizes a valid form", () => {
     const res = validateSourceInput({
       ...base,
       issuer_name: "  Scotiabank  ",
       compare_url: " https://www.scotiabank.com/ca/en/personal/credit-cards/compare-cards.html ",
-      notes: "  ",
     });
     expect(res).toEqual({
       ok: true,
       data: {
         issuer_name: "Scotiabank",
         compare_url: "https://www.scotiabank.com/ca/en/personal/credit-cards/compare-cards.html",
-        url_pattern: null,
-        schedule: "monthly",
-        notes: null,
       },
     });
   });
@@ -101,14 +88,9 @@ describe("validateSourceInput", () => {
     const res = validateSourceInput({
       issuer_name: "x",
       compare_url: "http://example.com",
-      url_pattern: "nope",
-      schedule: "hourly",
-      notes: "n".repeat(1001),
     });
     expect(res.ok).toBe(false);
-    expect(!res.ok && Object.keys(res.fieldErrors).sort()).toEqual(
-      ["compare_url", "issuer_name", "notes", "schedule", "url_pattern"].sort(),
-    );
+    expect(!res.ok && Object.keys(res.fieldErrors).sort()).toEqual(["compare_url", "issuer_name"].sort());
   });
 
   it("rejects markup in the issuer name", () => {

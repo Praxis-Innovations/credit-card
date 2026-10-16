@@ -1,4 +1,4 @@
-import type { CrawlSource, Schedule } from "./types";
+import type { CrawlSource } from "./types";
 
 export type PillTone = "ok" | "neutral" | "bad" | "warn";
 
@@ -16,21 +16,16 @@ export function statusPill(source: Pick<CrawlSource, "status" | "robots_status">
     case "active":
       switch (source.robots_status) {
         case "allowed":
-          return { label: "Active · robots.txt allows", tone: "ok" };
+          return { label: "Active", tone: "ok" };
         case "disallowed":
-          return { label: "Active · robots.txt disallows", tone: "bad" };
+          return { label: "Active · robots disallow", tone: "bad" };
         case "unreachable":
-          return { label: "Active · robots.txt unreachable", tone: "warn" };
+          return { label: "Active · robots unreachable", tone: "warn" };
         default:
-          return { label: "Active · robots.txt not checked", tone: "neutral" };
+          return { label: "Active", tone: "ok" };
       }
   }
 }
-
-export const SCHEDULE_LABELS: Record<Schedule, string> = {
-  monthly: "Monthly (1st) + daily health check",
-  manual: "Manual only",
-};
 
 const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -39,10 +34,25 @@ const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
   timeZone: "America/Toronto",
 });
 
+const DATE_TIME_FORMAT = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: "America/Toronto",
+});
+
 export function formatDate(iso: string | null, fallback = "Never"): string {
   if (!iso) return fallback;
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? fallback : DATE_FORMAT.format(d);
+}
+
+export function formatDateTime(iso: string | null, fallback = "Never"): string {
+  if (!iso) return fallback;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? fallback : DATE_TIME_FORMAT.format(d);
 }
 
 /** "https://www.td.com/ca/en/x" → "td.com/ca/en/x" for compact display. */

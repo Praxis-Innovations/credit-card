@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { label: "Review queue", href: "/review" },
   { label: "Cards", href: null },
   { label: "Sources", href: "/sources" },
-  { label: "Crawl runs", href: null },
+  { label: "Crawl", href: "/crawl" },
 ] as const;
 
 const itemBase =

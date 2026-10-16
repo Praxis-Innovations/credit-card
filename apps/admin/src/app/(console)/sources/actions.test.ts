@@ -58,7 +58,6 @@ function fakeSupabase() {
 }
 
 const supabaseFactory = vi.fn(async () => fakeSupabase());
-const robots = vi.fn();
 
 vi.mock("next/headers", () => ({
   headers: async () => new Headers(state.origin ? { origin: state.origin } : {}),
@@ -66,9 +65,8 @@ vi.mock("next/headers", () => ({
 }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createServerSupabase: () => supabaseFactory() }));
-vi.mock("@/lib/sources/robots", () => ({ checkRobotsTxt: (...args: unknown[]) => robots(...args) }));
 
-const { saveSource, setSourcePaused, checkSourceRobots } = await import("./actions");
+const { saveSource, setSourcePaused } = await import("./actions");
 
 function form(values: Record<string, string>) {
   const fd = new FormData();
@@ -79,16 +77,13 @@ function form(values: Record<string, string>) {
 const NEW_ISSUER = form({
   issuer_name: "Koho",
   compare_url: "https://www.koho.ca/credit-building/",
-  url_pattern: "/credit-building/",
-  schedule: "monthly",
-  notes: "",
 });
 
 const ACTIONS = {
   "saveSource (create)": () => saveSource(null, NEW_ISSUER),
-  "saveSource (update)": () => saveSource(null, form({ id: SCOTIA_ID, issuer_name: "Scotiabank", compare_url: SCOTIA.compare_url, url_pattern: "", schedule: "manual", notes: "" })),
+  "saveSource (update)": () =>
+    saveSource(null, form({ id: SCOTIA_ID, issuer_name: "Scotiabank", compare_url: SCOTIA.compare_url })),
   "setSourcePaused (pause)": () => setSourcePaused(SCOTIA_ID, true),
-  checkSourceRobots: () => checkSourceRobots(SCOTIA_ID),
 };
 
 beforeEach(() => {
@@ -98,11 +93,6 @@ beforeEach(() => {
   state.user = { id: "u1", email: "info.praxisinnovations@gmail.com" };
   state.role = "admin";
   state.writes = [];
-  robots.mockResolvedValue({
-    status: "allowed",
-    robotsUrl: "https://www.scotiabank.com/robots.txt",
-    detail: "robots.txt allows the compare page.",
-  });
 });
 
 describe.each(Object.entries(ACTIONS))("%s", (_name, run) => {
@@ -111,7 +101,6 @@ describe.each(Object.entries(ACTIONS))("%s", (_name, run) => {
     const res = await run();
     expect(res).toMatchObject({ ok: false, message: "Your role can't make this change." });
     expect(state.writes).toEqual([]);
-    expect(robots).not.toHaveBeenCalled();
   });
 
   it("rejects a signed-in user who isn't on the allow-list", async () => {
@@ -154,9 +143,6 @@ describe("admin writes", () => {
       payload: {
         issuer_name: "Koho",
         compare_url: "https://www.koho.ca/credit-building/",
-        url_pattern: "/credit-building/",
-        schedule: "monthly",
-        notes: null,
         status: "active",
       },
     });
@@ -165,7 +151,7 @@ describe("admin writes", () => {
   it("does not write when the URL is off the issuer's domain", async () => {
     const res = await saveSource(
       null,
-      form({ issuer_name: "Scotiabank", compare_url: "https://www.ratehub.ca/credit-cards", url_pattern: "", schedule: "monthly", notes: "" }),
+      form({ issuer_name: "Scotiabank", compare_url: "https://www.ratehub.ca/credit-cards" }),
     );
     expect(res.ok).toBe(false);
     expect(res.ok === false && res.fieldErrors?.compare_url).toMatch(/scotiabank\.com/);
@@ -175,13 +161,6 @@ describe("admin writes", () => {
   it("pauses an active issuer", async () => {
     await setSourcePaused(SCOTIA_ID, true);
     expect(state.writes).toEqual([{ table: "crawl_sources", op: "update", payload: { status: "paused" } }]);
-  });
-
-  it("stores the robots.txt result", async () => {
-    const res = await checkSourceRobots(SCOTIA_ID);
-    expect(robots).toHaveBeenCalledWith(SCOTIA.compare_url);
-    expect(res).toMatchObject({ ok: true });
-    expect(state.writes[0]?.payload).toMatchObject({ robots_status: "allowed" });
   });
 
   it("rejects a malformed id", async () => {

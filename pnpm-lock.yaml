@@ -57,9 +57,6 @@ importers:
       react-dom:
         specifier: ^19.1.0
         version: 19.3.0(react@19.3.0)
-      robots-parser:
-        specifier: ^3.0.1
-        version: 3.0.1
       server-only:
         specifier: ^0.0.1
         version: 0.0.1

@@ -2,8 +2,7 @@
 
 import { useActionState, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { saveSource, type ActionResult } from "@/app/(console)/sources/actions";
-import { SCHEDULE_LABELS } from "@/lib/sources/present";
-import { SCHEDULES, type CrawlSource } from "@/lib/sources/types";
+import type { CrawlSource } from "@/lib/sources/types";
 import type { FieldErrors, SourceFormValues } from "@/lib/sources/validation";
 
 const inputClass =
@@ -62,9 +61,6 @@ export function SourceForm({
   const [values, setValues] = useState<SourceFormValues>({
     issuer_name: source?.issuer_name ?? "",
     compare_url: source?.compare_url ?? "",
-    url_pattern: source?.url_pattern ?? "",
-    schedule: source?.schedule ?? "monthly",
-    notes: source?.notes ?? "",
   });
   const formRef = useRef<HTMLFormElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -73,9 +69,6 @@ export function SourceForm({
     heading: `${uid}-heading`,
     name: `${uid}-name`,
     url: `${uid}-url`,
-    pattern: `${uid}-pattern`,
-    schedule: `${uid}-schedule`,
-    notes: `${uid}-notes`,
   };
 
   useEffect(() => {
@@ -147,50 +140,6 @@ export function SourceForm({
               className={inputClass}
             />
           </Field>
-          <Field id={ids.pattern} label="Card page URL pattern" error={errors.url_pattern}>
-            <input
-              id={ids.pattern}
-              name="url_pattern"
-              autoComplete="off"
-              spellCheck={false}
-              placeholder="/credit-cards/"
-              value={values.url_pattern}
-              onChange={set("url_pattern")}
-              aria-invalid={errors.url_pattern ? true : undefined}
-              aria-describedby={describedBy(ids.pattern, false, errors.url_pattern)}
-              className={inputClass}
-            />
-          </Field>
-          <Field id={ids.schedule} label="Schedule" error={errors.schedule}>
-            <select
-              id={ids.schedule}
-              name="schedule"
-              value={values.schedule}
-              onChange={set("schedule")}
-              aria-invalid={errors.schedule ? true : undefined}
-              aria-describedby={describedBy(ids.schedule, false, errors.schedule)}
-              className={inputClass}
-            >
-              {SCHEDULES.map((s) => (
-                <option key={s} value={s}>
-                  {SCHEDULE_LABELS[s]}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field id={ids.notes} label="Notes" error={errors.notes} className="md:col-span-2">
-            <textarea
-              id={ids.notes}
-              name="notes"
-              rows={2}
-              maxLength={1000}
-              value={values.notes}
-              onChange={set("notes")}
-              aria-invalid={errors.notes ? true : undefined}
-              aria-describedby={describedBy(ids.notes, false, errors.notes)}
-              className={`${inputClass} h-auto py-2`}
-            />
-          </Field>
         </div>
 
         {state && !state.ok ? (
@@ -215,7 +164,7 @@ export function SourceForm({
             Cancel
           </button>
           <span className="text-[13px] text-muted">
-            Without a compare URL the issuer stays &ldquo;Not set up&rdquo;. Check robots.txt from the table after saving.
+            Without a compare URL the issuer stays &ldquo;Not set up&rdquo;.
           </span>
         </div>
       </form>
