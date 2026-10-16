@@ -34,6 +34,28 @@ test.describe("no saved cards", () => {
       token_type: "bearer",
     });
     await page.goto(`/result#${hash.toString()}`);
+
+    // Wait until supabase-js has consumed the hash and persisted the session.
+    await expect.poll(() => new URL(page.url()).hash).toBe("");
+    await expect
+      .poll(() =>
+        page.evaluate(`(() => {
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && /auth-token|supabase/i.test(key) && localStorage.getItem(key)) {
+              return true;
+            }
+          }
+          return false;
+        })()`),
+      )
+      .toBe(true);
+
+    // Guest + empty wallet on /result redirects to /cards; signed-in redirects to /store.
+    await expect(page.getByRole("tablist", { name: "Find a store" })).toBeVisible({
+      timeout: 30_000,
+    });
+
     await page.goto("/");
     await expect(
       page.getByRole("heading", { name: /right card for every purchase/i }),
@@ -41,5 +63,7 @@ test.describe("no saved cards", () => {
     await page.getByRole("button", { name: "Get started" }).click();
     await expect(page.getByText("Common cards")).toBeVisible();
     await expect(page.getByRole("button", { name: "Pick at least one card" })).toBeDisabled();
+    // Remote wallet was empty — nothing pre-selected after merge.
+    await expect(page.getByRole("checkbox", { checked: true })).toHaveCount(0);
   });
 });
