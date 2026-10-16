@@ -77,21 +77,25 @@ describe("classifyOsmTags", () => {
       placeType: "fuel",
       osmTag: "amenity=fuel",
       mcc: "5541",
+      certainty: "estimate",
       category: "gas",
     });
     expect(classifyOsmTags({ amenity: "parking", shop: "hardware" })).toEqual({
       placeType: "hardware",
       osmTag: "shop=hardware",
       mcc: "5251",
+      certainty: "estimate",
       category: "other",
     });
     expect(classifyOsmTags({ tourism: "motel" })).toMatchObject({
       osmTag: "tourism=motel",
       mcc: "7011",
+      certainty: "estimate",
       category: "travel",
     });
     expect(classifyOsmTags({ railway: "station" })).toMatchObject({
       osmTag: "railway=station",
+      certainty: "estimate",
       category: "transit",
     });
   });

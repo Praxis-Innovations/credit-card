@@ -1,4 +1,4 @@
-import type { Category } from "../api-types";
+import type { Category, MccCertainty } from "../api-types";
 
 /**
  * Places provider interface — swap Overpass for Google/Foursquare later
@@ -22,6 +22,8 @@ export interface NearbyPlace {
   osmTag?: string;
   /** Store-type MCC estimate from the OSM tag (brand codes override on the API). */
   mcc?: string;
+  /** Confidence for the place's MCC: `estimate` from the map tag, else unknown. */
+  certainty?: MccCertainty;
   /**
    * DS4 display group from the store-type MCC (or brand category when matched).
    * Not a new API category name.

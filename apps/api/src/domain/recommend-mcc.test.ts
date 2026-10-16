@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CATEGORY_MCCS, STORE_TYPE_MCCS } from "./mcc-catalog";
 import {
   cobaltShared,
   costco,
@@ -12,6 +13,11 @@ import {
 } from "./recommend-mcc.fixtures";
 import { recommendByMcc } from "./recommend-mcc";
 import type { MerchantBrand } from "./schema";
+
+const staticMccCatalog = {
+  categoryMccs: [...CATEGORY_MCCS],
+  storeTypeMccs: [...STORE_TYPE_MCCS],
+};
 
 describe("recommendByMcc cobalt shared cap", () => {
   it("groceries and dining share one pool", () => {
@@ -181,5 +187,55 @@ describe("recommendByMcc store certainty", () => {
     expect(result.purchase.matchKind).toBe("base_rate");
     expect(result.recommendations[0]!.earnRate).toBe(1);
     expect(result.recommendations[0]!.matchKind).toBe("base_rate");
+  });
+});
+
+describe("recommendByMcc expanded Overpass store types", () => {
+  it.each([
+    ["amenity=restaurant", "5812", "dining"],
+    ["tourism=hotel", "7011", "travel"],
+    ["shop=department_store", "5311", "other"],
+    ["shop=doityourself", "5200", "other"],
+    ["shop=electronics", "5732", "other"],
+  ] as const)(
+    "%s resolves via store-type estimate to MCC %s (%s)",
+    (osmTag, mcc, displayCategory) => {
+      const result = recommendByMcc({
+        amountCad: 40,
+        ownedCardIds: ["fixture-visa"],
+        cards: [visaCash],
+        brands: [],
+        store: { name: "Independent Place", osmTag },
+        valuations: pointValuations,
+        mccCatalog: staticMccCatalog,
+      });
+      expect(result.purchase).toMatchObject({
+        mcc,
+        displayCategory,
+        matchKind: "store_type_estimate",
+        certainty: "estimate",
+      });
+      // Card matchKind is how the earn rule was picked (often base_rate when the
+      // card has no MCC list for this code); purchase carries the store-type path.
+      expect(result.recommendations[0]!.effectiveMcc).toBe(mcc);
+      expect(result.recommendations[0]!.confidence).toBe("estimate");
+      expect(result.recommendations[0]!.displayCategory).toBe(displayCategory);
+    },
+  );
+
+  it("unmapped OSM tags stay unknown (base rate)", () => {
+    const result = recommendByMcc({
+      amountCad: 40,
+      ownedCardIds: ["fixture-visa"],
+      cards: [visaCash],
+      brands: [],
+      store: { name: "Mystery Spot", osmTag: "amenity=bank" },
+      valuations: pointValuations,
+      mccCatalog: staticMccCatalog,
+    });
+    expect(result.purchase.mcc).toBeNull();
+    expect(result.purchase.matchKind).toBe("base_rate");
+    expect(result.purchase.certainty).toBe("unknown");
+    expect(result.recommendations[0]!.earnRate).toBe(1);
   });
 });

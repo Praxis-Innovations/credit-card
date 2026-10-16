@@ -52,6 +52,7 @@ describe("createOverpassPlacesProvider", () => {
     expect(places[0]?.placeType).toBe("fuel");
     expect(places[0]?.osmTag).toBe("amenity=fuel");
     expect(places[0]?.mcc).toBe("5541");
+    expect(places[0]?.certainty).toBe("estimate");
     expect(places[0]?.category).toBe("gas");
     expect(places[0]?.brandHints).toContain("Shell");
     expect(places.find((p) => p.name === "Loblaws")).toMatchObject({

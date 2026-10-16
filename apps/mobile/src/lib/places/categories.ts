@@ -1,4 +1,4 @@
-import type { Category } from "../api-types";
+import type { Category, MccCertainty } from "../api-types";
 
 /** OSM keys the nearby lookup queries, in precedence order for tagging a place. */
 export const OSM_PLACE_KEYS = ["amenity", "shop", "tourism", "railway"] as const;
@@ -159,6 +159,8 @@ export interface PlaceClassification {
   osmTag: string;
   /** Store-type MCC estimate (brand codes override this on the API). */
   mcc: string;
+  /** Always `estimate` for map-tag fallback; brand codes are confirmed on the API. */
+  certainty: Extract<MccCertainty, "estimate">;
   /** DS4 display group for the store list. */
   category: Category;
 }
@@ -181,6 +183,7 @@ export function classifyOsmTags(
       placeType: value,
       osmTag: formatOsmTag(key, value),
       mcc: entry.mcc,
+      certainty: "estimate",
       category: displayCategoryForMcc(entry.mcc),
     };
   }

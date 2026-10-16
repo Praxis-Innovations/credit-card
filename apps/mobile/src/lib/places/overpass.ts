@@ -137,6 +137,7 @@ function toNearbyPlace(
     placeType: classification?.placeType,
     osmTag: classification?.osmTag,
     mcc: classification?.mcc,
+    certainty: classification?.certainty ?? "unknown",
     category: classification?.category,
     brandHints,
     rawTags: tags,
