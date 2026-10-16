@@ -51,10 +51,33 @@ jobs:
           --filter=mobile
           --filter=web
 
+  api-coverage:
+    name: api coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          turbo-cache-key: api-coverage
+
+      - name: Run api coverage
+        run: pnpm --filter api test:coverage
+
+      - name: Upload coverage summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-coverage-summary
+          path: apps/api/coverage/coverage-summary.json
+          if-no-files-found: error
+
   ci-gate:
     name: CI gate
     if: always()
-    needs: [unit]
+    needs: [unit, api-coverage]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

@@ -14,6 +14,7 @@ import {
   type MerchantPartnership,
   type PartnershipBenefit,
 } from "@/domain";
+import { ApiError } from "./errors";
 
 export type CatalogSource = "static" | "supabase";
 
@@ -171,54 +172,95 @@ function paginate<T>(items: T[], limit: number, offset: number): {
   };
 }
 
-async function loadCardsFromDb(): Promise<CreditCard[]> {
+function catalogUnavailable(table: string, cause?: unknown): never {
+  console.error(`Catalog unavailable (table=${table})`, cause);
+  throw new ApiError(
+    503,
+    "service_unavailable",
+    "Catalog temporarily unavailable",
+  );
+}
+
+function requireClient(): SupabaseClient {
   const client = getClient();
-  if (!client) throw new Error("Supabase not configured");
-  const { data, error } = await client
-    .from("cards")
-    .select("*")
-    .eq("status", "verified")
-    .order("issuer", { ascending: true })
-    .order("name", { ascending: true });
-  if (error) throw error;
+  if (!client) {
+    catalogUnavailable("(client)", new Error("Supabase not configured"));
+  }
+  return client;
+}
+
+function throwIfDbError(table: string, error: unknown): void {
+  if (error) catalogUnavailable(table, error);
+}
+
+async function loadCardsFromDb(): Promise<CreditCard[]> {
+  const client = requireClient();
+  let data: unknown[] | null;
+  let error: unknown;
+  try {
+    ({ data, error } = await client
+      .from("cards")
+      .select("*")
+      .eq("status", "verified")
+      .order("issuer", { ascending: true })
+      .order("name", { ascending: true }));
+  } catch (cause) {
+    catalogUnavailable("cards", cause);
+  }
+  throwIfDbError("cards", error);
   return (data ?? []).map((row) => mapCard(row as Record<string, unknown>));
 }
 
 async function loadBrandsFromDb(): Promise<MerchantBrand[]> {
-  const client = getClient();
-  if (!client) throw new Error("Supabase not configured");
-  const { data, error } = await client
-    .from("merchant_brands")
-    .select("*")
-    .eq("status", "verified")
-    .order("name", { ascending: true });
-  if (error) throw error;
+  const client = requireClient();
+  let data: unknown[] | null;
+  let error: unknown;
+  try {
+    ({ data, error } = await client
+      .from("merchant_brands")
+      .select("*")
+      .eq("status", "verified")
+      .order("name", { ascending: true }));
+  } catch (cause) {
+    catalogUnavailable("merchant_brands", cause);
+  }
+  throwIfDbError("merchant_brands", error);
   return (data ?? []).map((row) => mapBrand(row as Record<string, unknown>));
 }
 
 async function loadProgramsFromDb(): Promise<LoyaltyProgram[]> {
-  const client = getClient();
-  if (!client) throw new Error("Supabase not configured");
-  const { data, error } = await client
-    .from("loyalty_programs")
-    .select("*")
-    .eq("status", "verified")
-    .order("name", { ascending: true });
-  if (error) throw error;
+  const client = requireClient();
+  let data: unknown[] | null;
+  let error: unknown;
+  try {
+    ({ data, error } = await client
+      .from("loyalty_programs")
+      .select("*")
+      .eq("status", "verified")
+      .order("name", { ascending: true }));
+  } catch (cause) {
+    catalogUnavailable("loyalty_programs", cause);
+  }
+  throwIfDbError("loyalty_programs", error);
   return (data ?? []).map((row) => mapProgram(row as Record<string, unknown>));
 }
 
 async function loadPartnershipsFromDb(
   includeNonVerified = false,
 ): Promise<MerchantPartnership[]> {
-  const client = getClient();
-  if (!client) throw new Error("Supabase not configured");
-  let query = client.from("merchant_partnerships").select("*");
-  if (!includeNonVerified) {
-    query = query.eq("status", "verified");
+  const client = requireClient();
+  let data: unknown[] | null;
+  let error: unknown;
+  try {
+    let query = client.from("merchant_partnerships").select("*");
+    if (!includeNonVerified) {
+      query = query.eq("status", "verified");
+    }
+    ({ data, error } = await query.order("id", { ascending: true }));
+  } catch (cause) {
+    catalogUnavailable("merchant_partnerships", cause);
   }
-  const { data, error } = await query.order("id", { ascending: true });
-  if (error) throw error;
+  throwIfDbError("merchant_partnerships", error);
   return (data ?? []).map((row) =>
     mapPartnership(row as Record<string, unknown>),
   );
@@ -272,16 +314,21 @@ export async function getCard(id: string): Promise<CreditCard | null> {
   if (getCatalogSource() === "static") {
     return CARDS.find((c) => c.id === id) ?? null;
   }
-  const client = getClient();
-  if (!client) return null;
-  const { data: row, error } = await client
-    .from("cards")
-    .select("*")
-    .eq("id", id)
-    .eq("status", "verified")
-    .maybeSingle();
-  if (error) throw error;
-  return row ? mapCard(row as Record<string, unknown>) : null;
+  const client = requireClient();
+  let row: Record<string, unknown> | null;
+  let error: unknown;
+  try {
+    ({ data: row, error } = await client
+      .from("cards")
+      .select("*")
+      .eq("id", id)
+      .eq("status", "verified")
+      .maybeSingle());
+  } catch (cause) {
+    catalogUnavailable("cards", cause);
+  }
+  throwIfDbError("cards", error);
+  return row ? mapCard(row) : null;
 }
 
 export async function listAllVerifiedCards(): Promise<CreditCard[]> {
@@ -330,16 +377,21 @@ export async function getMerchantBrand(
   if (getCatalogSource() === "static") {
     return MERCHANT_BRANDS.find((b) => b.id === id) ?? null;
   }
-  const client = getClient();
-  if (!client) return null;
-  const { data, error } = await client
-    .from("merchant_brands")
-    .select("*")
-    .eq("id", id)
-    .eq("status", "verified")
-    .maybeSingle();
-  if (error) throw error;
-  return data ? mapBrand(data as Record<string, unknown>) : null;
+  const client = requireClient();
+  let data: Record<string, unknown> | null;
+  let error: unknown;
+  try {
+    ({ data, error } = await client
+      .from("merchant_brands")
+      .select("*")
+      .eq("id", id)
+      .eq("status", "verified")
+      .maybeSingle());
+  } catch (cause) {
+    catalogUnavailable("merchant_brands", cause);
+  }
+  throwIfDbError("merchant_brands", error);
+  return data ? mapBrand(data) : null;
 }
 
 export async function listAllVerifiedBrands(): Promise<MerchantBrand[]> {
