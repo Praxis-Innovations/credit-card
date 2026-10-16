@@ -17,6 +17,7 @@ const E2E_REVIEW = {
   runId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
   approveFindingId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1",
   rejectFindingId: "cccccccc-cccc-4ccc-8ccc-ccccccccccc1",
+  discoveredUrlId: "dddddddd-dddd-4ddd-8ddd-ddddddddddd1",
 } as const;
 
 const APPROVE_CARD = "E2E Approve Card";
@@ -140,6 +141,63 @@ export async function deleteIssuerByName(issuerName: string): Promise<void> {
   }
 }
 
+/**
+ * Seed enough admin rows that an RLS "zero rows" assertion is meaningful.
+ * Reuses review fixtures (crawl_runs / card_findings) and adds a discovered
+ * URL plus a crawl_sources touch so admin_audit gets a trigger row.
+ */
+export async function ensureAdminRlsFixtures(): Promise<void> {
+  await ensureReviewFixtures();
+  const service = createServiceClient();
+
+  const { data: source, error: sourceError } = await service
+    .from("crawl_sources")
+    .select("id")
+    .eq("issuer_name", "Scotiabank")
+    .maybeSingle<{ id: string }>();
+  if (sourceError || !source) {
+    throw new Error(`Scotiabank source missing for RLS fixtures: ${sourceError?.message ?? "not found"}`);
+  }
+
+  await service.from("discovered_card_urls").delete().eq("id", E2E_REVIEW.discoveredUrlId);
+  const { error: urlError } = await service.from("discovered_card_urls").insert({
+    id: E2E_REVIEW.discoveredUrlId,
+    source_id: source.id,
+    card_name: "E2E Discovered Card",
+    product_url:
+      "https://www.scotiabank.com/ca/en/personal/credit-cards/e2e-discovered.html",
+  });
+  if (urlError) {
+    throw new Error(`Failed to seed discovered_card_urls: ${urlError.message}`);
+  }
+
+  // Seed insert of Scotiabank ran before the audit trigger; poke notes so
+  // admin_audit has at least one row for the service-role visibility check.
+  const { error: touchError } = await service
+    .from("crawl_sources")
+    .update({ notes: "e2e rls probe" })
+    .eq("id", source.id);
+  if (touchError) {
+    throw new Error(`Failed to touch crawl_sources for admin_audit: ${touchError.message}`);
+  }
+
+  for (const table of ADMIN_DATA_TABLES) {
+    const n = await countAsService(table);
+    if (n < 1) {
+      throw new Error(`Expected service role to see rows in ${table} after RLS fixtures; got ${n}`);
+    }
+  }
+}
+
+async function countAsService(table: AdminDataTable): Promise<number> {
+  const service = createServiceClient();
+  const { count, error } = await service.from(table).select("*", { count: "exact", head: true });
+  if (error) {
+    throw new Error(`Service-role count on ${table} failed: ${error.message}`);
+  }
+  return count ?? 0;
+}
+
 /** Count rows visible to the seeded app user under RLS. */
 export async function countAsAppUser(table: AdminDataTable): Promise<number> {
   const { client } = await signInAs("app");
@@ -148,6 +206,11 @@ export async function countAsAppUser(table: AdminDataTable): Promise<number> {
     throw new Error(`App-user count on ${table} failed: ${error.message}`);
   }
   return count ?? 0;
+}
+
+/** Count rows visible to the local service role (bypasses RLS). */
+export async function countAsServiceRole(table: AdminDataTable): Promise<number> {
+  return countAsService(table);
 }
 
 export async function appUserAdminRole(): Promise<{
