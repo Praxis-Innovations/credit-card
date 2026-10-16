@@ -1,0 +1,67 @@
+name: Migrate
+
+# Keep production Supabase schema in step with supabase/migrations on main.
+# Schema only — never passes --include-seed. See #136 (PL10).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migrate-production
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    # Defense in depth: path filter is push-to-main only; reject other refs.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check required secrets
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          missing=
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            missing="${missing} SUPABASE_ACCESS_TOKEN"
+          fi
+          if [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            missing="${missing} SUPABASE_DB_PASSWORD"
+          fi
+          if [ -n "$missing" ]; then
+            echo "::error::Missing GitHub Actions secret(s):$missing"
+            echo "Add them under Settings → Secrets and variables → Actions for Praxis-Innovations/credit-card."
+            echo "SUPABASE_ACCESS_TOKEN: personal or CI access token with project access (https://supabase.com/dashboard/account/tokens)."
+            echo "SUPABASE_DB_PASSWORD: database password for project bshxaqjufibgsxeauyux (NorthTap)."
+            exit 1
+          fi
+
+      # Fresh checkouts have no supabase/.temp (gitignored), so link before push.
+      - name: Link production project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: npx -y supabase@2.121.0 link --project-ref bshxaqjufibgsxeauyux --yes
+
+      - name: Dry-run migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: npx -y supabase@2.121.0 db push --dry-run --yes
+
+      - name: Push migrations to production
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: npx -y supabase@2.121.0 db push --yes
