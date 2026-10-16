@@ -1,0 +1,57 @@
+{
+  "extracted": {
+    "card_name": {
+      "value": "Scotiabank® U.S. Dollar Visa* Card",
+      "quote": "Scotiabank® U.S. Dollar Visa* Card"
+    },
+    "issuer": {
+      "value": "Scotiabank",
+      "quote": "Registered trademarks of The Bank of Nova Scotia."
+    },
+    "network": {
+      "value": "Visa",
+      "quote": "Scotiabank® U.S. Dollar Visa* Card"
+    },
+    "annual_fee": {
+      "value": 35,
+      "quote": "$35\nUSD/year"
+    },
+    "additional_card_fee": {
+      "value": 0,
+      "quote": "$0\nUSD/year"
+    },
+    "purchase_apr": {
+      "value": 19.99,
+      "quote": "19.99%"
+    },
+    "cash_advance_apr": {
+      "value": 22.99,
+      "quote": "22.99%"
+    },
+    "balance_transfer_apr": {
+      "value": 22.99,
+      "quote": "Your cash advance rate applies to cash advances (including balance transfers, and cash-like transactions)."
+    },
+    "fx_fee_percent": null,
+    "min_personal_income": null,
+    "min_household_income": null,
+    "min_credit_limit": {
+      "value": 500,
+      "quote": "$500"
+    },
+    "reward_currency": null,
+    "earn_rates": [],
+    "welcome_bonus": null,
+    "insurance_highlights": [
+      {
+        "value": "Purchase Security & Extended Warranty Protection",
+        "quote": "Most new purchases made with your card are protected against theft, loss, or damage for 90 days from the purchase date."
+      },
+      {
+        "value": "Extended warranty doubles manufacturer's warranty up to one year",
+        "quote": "Plus, when you charge the full cost of most items to your card, extended warranty coverage can double the original manufacturer’s warranty for up to one year."
+      }
+    ],
+    "notes": "Fees are in USD. No currency fee on USD purchases only; the fee for other currencies is not stated, so fx_fee_percent is null. Balance transfer rate taken from the statement that the cash advance rate applies to balance transfers. Shell fuel benefits are offered, but no ongoing earn rate is stated. Optional Scotia Credit Card Protection is available."
+  }
+}

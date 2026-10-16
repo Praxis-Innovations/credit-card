@@ -87,11 +87,31 @@ const STRING_ALIASES: Record<string, string[]> = {
   cashback: ["cashback", "cashbackrewards"],
 };
 
-export function stringInQuote(value: string, quote: string): boolean {
+/**
+ * Catalog issuer name → legal / trade names that count as the same issuer in a
+ * quote. Big-six Canadian banks; keyed by the loose form of the catalog name.
+ */
+const ISSUER_ALIASES: Record<string, readonly string[]> = {
+  scotiabank: ["bankofnovascotia", "thebankofnovascotia", "scotia"],
+  rbc: ["royalbankofcanada", "royalbank"],
+  td: ["torontodominionbank", "thetorontodominionbank", "tdbank"],
+  bmo: ["bankofmontreal"],
+  cibc: ["canadianimperialbankofcommerce"],
+  nationalbank: ["nationalbankofcanada"],
+};
+
+export interface CheckOptions {
+  /** When false, skip issuer aliases (CR6 before/after comparison). Default true. */
+  issuerAliases?: boolean;
+}
+
+export function stringInQuote(value: string, quote: string, opts?: { issuerAliases?: boolean }): boolean {
   const v = loose(value);
   const q = loose(quote);
   if (!v) return false;
-  return q.includes(v) || (STRING_ALIASES[v] ?? []).some((alias) => q.includes(alias));
+  if (q.includes(v) || (STRING_ALIASES[v] ?? []).some((alias) => q.includes(alias))) return true;
+  if (opts?.issuerAliases === false) return false;
+  return (ISSUER_ALIASES[v] ?? []).some((alias) => q.includes(alias));
 }
 
 function inRange(n: number, [lo, hi]: [number, number]): boolean {
@@ -118,9 +138,14 @@ function checkQuoted(
 }
 
 /** Runs every deterministic check. Failed values are flagged here, never removed from the extraction. */
-export function checkExtraction(extraction: CardExtraction, pageText: string): CheckResult {
+export function checkExtraction(
+  extraction: CardExtraction,
+  pageText: string,
+  opts: CheckOptions = {},
+): CheckResult {
   const page = normaliseForMatch(pageText);
   const fields: FieldCheck[] = [];
+  const aliasOpts = { issuerAliases: opts.issuerAliases };
 
   if (!extraction.card_name) {
     fields.push(
@@ -129,7 +154,11 @@ export function checkExtraction(extraction: CardExtraction, pageText: string): C
   }
   for (const f of ["card_name", "issuer", "network", "reward_currency"] as const) {
     const q = extraction[f];
-    if (q) fields.push(checkQuoted(f, q, page, stringInQuote(q.value, q.quote), null));
+    if (q) {
+      const inQuote =
+        f === "issuer" ? stringInQuote(q.value, q.quote, aliasOpts) : stringInQuote(q.value, q.quote, { issuerAliases: false });
+      fields.push(checkQuoted(f, q, page, inQuote, null));
+    }
   }
   for (const f of NUMBER_FIELDS) {
     const q = extraction[f];

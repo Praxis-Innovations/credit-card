@@ -9,6 +9,7 @@ import type { FetchResult } from "./fetcher";
 import { contentHash } from "./hash";
 import { acceptDiscoveredLinks, heuristicCardLinks } from "./links";
 import { slugForUrl, type OutputWriter } from "./output";
+import { selectQuoteSpans } from "./quote-span";
 import type { DiscoveredRow, FindingRow, LocalCache, RunCounts, Store } from "./store";
 import type { CardFinding, CardLink, SkippedPage, Usage } from "./types";
 
@@ -248,6 +249,9 @@ export async function runCrawl(opts: RunOptions, deps: RunDeps): Promise<RunSumm
           continue;
         }
       }
+      // Widen earn-rate / BT APR quotes to the table row or sentence that holds
+      // the number before checks — values stay as Claude returned them.
+      extraction = selectQuoteSpans(extraction, cleaned.text);
       deps.cache.setCard(link.url, { hash, extraction, model });
       counts.cards_extracted++;
 

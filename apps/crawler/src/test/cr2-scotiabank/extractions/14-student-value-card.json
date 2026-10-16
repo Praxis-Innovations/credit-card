@@ -1,0 +1,60 @@
+{
+  "extracted": {
+    "card_name": {
+      "value": "Scotiabank Value® Visa* Card (for students)",
+      "quote": "Scotiabank Value® Visa* Card (for students)"
+    },
+    "issuer": {
+      "value": "Scotiabank",
+      "quote": "Trademark of The Bank of Nova Scotia."
+    },
+    "network": {
+      "value": "Visa",
+      "quote": "Scotiabank Value® Visa* Card (for students)"
+    },
+    "annual_fee": {
+      "value": 29,
+      "quote": "The current annual fee is $29 for the primary card and $0 for each additional card (including those issued to co-borrowers and supplementary cardholders)."
+    },
+    "additional_card_fee": {
+      "value": 0,
+      "quote": "The current annual fee is $29 for the primary card and $0 for each additional card (including those issued to co-borrowers and supplementary cardholders)."
+    },
+    "purchase_apr": {
+      "value": 13.99,
+      "quote": "The current preferred annual interest rates for the Account are 13.99% on purchases and 13.99% on Cash Advances"
+    },
+    "cash_advance_apr": {
+      "value": 13.99,
+      "quote": "The current preferred annual interest rates for the Account are 13.99% on purchases and 13.99% on Cash Advances"
+    },
+    "balance_transfer_apr": {
+      "value": 13.99,
+      "quote": "After the BT Promotional Period, the promotional 0% interest rate on any Cash Advances (including any amount of those Cash Advances that remain unpaid after the BT Promotional Period ends) will increase to the preferred interest rate on Cash Advances (currently 13.99%)."
+    },
+    "fx_fee_percent": null,
+    "min_personal_income": null,
+    "min_household_income": null,
+    "min_credit_limit": {
+      "value": 500,
+      "quote": "Minimum credit limit\n\n$500"
+    },
+    "reward_currency": null,
+    "earn_rates": [],
+    "welcome_bonus": {
+      "value": {
+        "summary": "0% promotional interest rate on balance transfers for the first 9 months with a 1% balance transfer fee, plus no annual fee in the first year.",
+        "points": null,
+        "cashback_cad": null
+      },
+      "quote": "0% promotional interest rate on balance transfers for the first 9 months with a 1% balance transfer fee. Plus pay no annual fee in the first year."
+    },
+    "insurance_highlights": [
+      {
+        "value": "Scotia Credit Card Protection (optional) – balance/payment protection for death, critical illness, hospitalization, disability, job loss, strike or lockout",
+        "quote": "This insurance coverage can provide you and your family financial protection by paying off your outstanding account balance or helping to cover your monthly credit card payments as a result of certain unexpected life events, such as Death, Critical Illness, Hospitalization, Disability, Job Loss or Strike or Lockout."
+      }
+    ],
+    "notes": "Page shows 13.99% preferred rate on purchases and cash advances (balance transfers use the cash advance rate). Fine print also mentions \"standard\" rates of 24.99% purchases and 27.99% cash advances that apply if the promotional offer is lost. Shell fuel benefit earns Scene+ points per litre, not per dollar, so no earn rates listed. Foreign transaction fee not stated."
+  }
+}

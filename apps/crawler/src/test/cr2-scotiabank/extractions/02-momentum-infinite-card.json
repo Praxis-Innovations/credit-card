@@ -1,0 +1,138 @@
+{
+  "extracted": {
+    "card_name": {
+      "value": "Scotia Momentum® Visa Infinite +* Card",
+      "quote": "Scotia Momentum® Visa Infinite +* Card"
+    },
+    "issuer": {
+      "value": "Scotiabank",
+      "quote": "The Bank of Nova Scotia"
+    },
+    "network": {
+      "value": "Visa",
+      "quote": "Scotia Momentum® Visa Infinite +* Card"
+    },
+    "annual_fee": {
+      "value": 120,
+      "quote": "The current annual fee is $120 for the primary card and $50 for each additional card"
+    },
+    "additional_card_fee": {
+      "value": 50,
+      "quote": "The current annual fee is $120 for the primary card and $50 for each additional card"
+    },
+    "purchase_apr": {
+      "value": 20.99,
+      "quote": "The current preferred annual interest rates for the Account are: 20.99% on purchases and 22.99% on Cash Advances."
+    },
+    "cash_advance_apr": {
+      "value": 22.99,
+      "quote": "The current preferred annual interest rates for the Account are: 20.99% on purchases and 22.99% on Cash Advances."
+    },
+    "balance_transfer_apr": {
+      "value": 22.99,
+      "quote": "Your cash advance rate applies to cash advances, balance transfers, and cash-like transactions."
+    },
+    "fx_fee_percent": null,
+    "min_personal_income": {
+      "value": 60000,
+      "quote": "You have a minimum income of $60,000 -$80,000 or more per year, a minimum household income of $100,000 - $150,000 or more, or a minimum of $250,000 - $300,000 or more assets under management."
+    },
+    "min_household_income": {
+      "value": 100000,
+      "quote": "You have a minimum income of $60,000 -$80,000 or more per year, a minimum household income of $100,000 - $150,000 or more, or a minimum of $250,000 - $300,000 or more assets under management."
+    },
+    "min_credit_limit": {
+      "value": 5000,
+      "quote": "Minimum credit limit\n\n$5,000"
+    },
+    "reward_currency": {
+      "value": "cash back",
+      "quote": "Earn up to 4% cash back on your eligible everyday purchases when you shop with your card."
+    },
+    "earn_rates": [
+      {
+        "category": "groceries",
+        "unit": "percent_cashback",
+        "rate": 4,
+        "description": "On groceries and recurring payments, like bills and subscriptions",
+        "cap": "annual spend limit of $25,000",
+        "quote": "You will earn 4% cash back on eligible Purchases on your Account at Grocery and on Recurring Bill Payments, up to an annual spend limit of $25,000."
+      },
+      {
+        "category": "recurring_bills",
+        "unit": "percent_cashback",
+        "rate": 4,
+        "description": "Recurring bill payments, like bills and subscriptions",
+        "cap": "annual spend limit of $25,000",
+        "quote": "You will earn 4% cash back on eligible Purchases on your Account at Grocery and on Recurring Bill Payments, up to an annual spend limit of $25,000."
+      },
+      {
+        "category": "gas",
+        "unit": "percent_cashback",
+        "rate": 2,
+        "description": "Gas stations and electric vehicle charging",
+        "cap": "annual spend limit of $25,000",
+        "quote": "You will earn 2% cash back on eligible Purchases on Gas Stations, Electric Vehicle Charging (EV), Transit, Rideshare and Food Delivery, up to an annual spend limit of $25,000"
+      },
+      {
+        "category": "transit",
+        "unit": "percent_cashback",
+        "rate": 2,
+        "description": "Daily transit like buses, taxis, rideshares, and food delivery",
+        "cap": "annual spend limit of $25,000",
+        "quote": "You will earn 2% cash back on eligible Purchases on Gas Stations, Electric Vehicle Charging (EV), Transit, Rideshare and Food Delivery, up to an annual spend limit of $25,000"
+      },
+      {
+        "category": "other",
+        "unit": "percent_cashback",
+        "rate": 1,
+        "description": "All other purchases",
+        "cap": null,
+        "quote": "1%\n\nOn all other purchases"
+      }
+    ],
+    "welcome_bonus": {
+      "value": {
+        "summary": "15% cash back on all purchases for the first 3 months (up to $2,000 in total purchases), 0% introductory balance transfer rate for 12 months, and first-year annual fee waived (including additional cards). Account opened July 2, 2026 to November 1, 2026.",
+        "points": null,
+        "cashback_cad": 300
+      },
+      "quote": "Earn 15% cash back on all purchases for the first 3 months (up to $2,000 in total purchases)."
+    },
+    "insurance_highlights": [
+      {
+        "value": "New Mobile Device Insurance",
+        "quote": "you may be covered for up to $1,000 CAD if your device is lost, stolen, or accidentally damaged."
+      },
+      {
+        "value": "Trip Cancellation and Trip Interruption Insurance",
+        "quote": "Protect your trip with trip cancellation and interruption insurance when you charge at least 75% of costs to your card."
+      },
+      {
+        "value": "Travel Emergency Medical Insurance",
+        "quote": "Receive up to $1 million CAD in emergency medical coverage for you, your spouse, and your eligible dependent children."
+      },
+      {
+        "value": "Flight Delay Insurance",
+        "quote": "If you charge at least 75% of your ticket to your card, you’re eligible for reimbursement of necessary expenses if your flight is delayed up to $500 per insured person on the same trip."
+      },
+      {
+        "value": "Delayed and Lost Baggage Insurance",
+        "quote": "If your checked luggage is delayed or lost, you’re covered up to $500 if you charged the full cost of your travel ticket to your card."
+      },
+      {
+        "value": "Travel Accident Insurance",
+        "quote": "When you charge at least 75% of your trip to your card, you’re insured against accidental loss of life or dismemberment up to $500,000 per insured person and up to $1,000,000 for the trip occurrence."
+      },
+      {
+        "value": "Rental Car Collision Loss/Damage Insurance",
+        "quote": "If your eligible rental car is damaged or stolen, you’re automatically insured if you:"
+      },
+      {
+        "value": "Purchase Security & Extended Warranty Protection",
+        "quote": "Most new purchases made with your card are protected against theft, loss, or damage for 90 days from the purchase date."
+      }
+    ],
+    "notes": "Income requirement is given as ranges ($60,000–$80,000 personal; $100,000–$150,000 household); lower bounds recorded. Balance transfer standard rate taken from the statement that the cash advance rate applies to balance transfers (22.99%); the offer terms mention 25.99%/27.99% as rates after losing the promotional rate. Welcome bonus cashback_cad of 300 is computed from 15% x $2,000 and is not stated outright. No foreign transaction fee stated."
+  }
+}

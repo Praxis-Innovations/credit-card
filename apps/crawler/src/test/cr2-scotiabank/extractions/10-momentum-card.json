@@ -1,0 +1,99 @@
+{
+  "extracted": {
+    "card_name": {
+      "value": "Scotia Momentum® Mastercard* credit card",
+      "quote": "Scotia Momentum® Mastercard* credit card"
+    },
+    "issuer": {
+      "value": "Scotiabank",
+      "quote": "Registered Trademark of The Bank of Nova Scotia"
+    },
+    "network": {
+      "value": "Mastercard",
+      "quote": "Mastercard is accepted in over 150 currencies, 210 countries and territories, and at millions of merchants worldwide."
+    },
+    "annual_fee": {
+      "value": 0,
+      "quote": "There is currently no annual fee for the primary card"
+    },
+    "additional_card_fee": {
+      "value": 0,
+      "quote": "no fee for each additional card (including those issued to co-borrowers and supplementary cardholders)"
+    },
+    "purchase_apr": {
+      "value": 20.99,
+      "quote": "20.99% on purchases and 22.99% on cash advances"
+    },
+    "cash_advance_apr": {
+      "value": 22.99,
+      "quote": "20.99% on purchases and 22.99% on cash advances"
+    },
+    "balance_transfer_apr": {
+      "value": 22.99,
+      "quote": "22.99% on cash advances (including balance transfers and cash-like transactions)"
+    },
+    "fx_fee_percent": null,
+    "min_personal_income": null,
+    "min_household_income": null,
+    "min_credit_limit": {
+      "value": 500,
+      "quote": "Minimum credit limit\n\n$500"
+    },
+    "reward_currency": {
+      "value": "cash back",
+      "quote": "Earn up to 1% cash back on eligible purchases"
+    },
+    "earn_rates": [
+      {
+        "category": "groceries",
+        "unit": "percent_cashback",
+        "rate": 1,
+        "description": "On eligible gas station, grocery store, and drugstore purchases",
+        "cap": null,
+        "quote": "On eligible gas station, grocery store, and drugstore purchases"
+      },
+      {
+        "category": "gas",
+        "unit": "percent_cashback",
+        "rate": 1,
+        "description": "On eligible gas station, grocery store, and drugstore purchases",
+        "cap": null,
+        "quote": "On eligible gas station, grocery store, and drugstore purchases"
+      },
+      {
+        "category": "drugstore",
+        "unit": "percent_cashback",
+        "rate": 1,
+        "description": "On eligible gas station, grocery store, and drugstore purchases",
+        "cap": null,
+        "quote": "On eligible gas station, grocery store, and drugstore purchases"
+      },
+      {
+        "category": "recurring_bills",
+        "unit": "percent_cashback",
+        "rate": 1,
+        "description": "On eligible recurring bill payments like utilities and gym memberships",
+        "cap": null,
+        "quote": "On eligible recurring bill payments like utilities and gym memberships"
+      },
+      {
+        "category": "other",
+        "unit": "percent_cashback",
+        "rate": 0.5,
+        "description": "All other eligible transactions",
+        "cap": null,
+        "quote": "All other eligible transactions"
+      }
+    ],
+    "welcome_bonus": {
+      "value": {
+        "summary": "7.99% introductory rate on purchases for the first 6 months (20.99% after); $0 annual fee",
+        "points": null,
+        "cashback_cad": null
+      },
+      "quote": "Get a 7.99% introductory rate on purchases for the first 6 months (20.99% applies after that; $0 annual fee)."
+    },
+    "insurance_highlights": [],
+    "notes": "The welcome offer is an introductory interest rate, not a points/cash bonus. Earn-rate quotes cover grouped categories (gas, grocery, drugstore at 1%). FX fee not stated on the page."
+  }
+}
