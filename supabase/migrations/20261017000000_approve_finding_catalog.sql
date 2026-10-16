@@ -1,6 +1,8 @@
 -- AD2: approving a finding writes accepted values to public.cards in the same
 -- transaction as the finding decision (and thus the admin_audit row). There is
 -- no separate promote step. Bulk approve (when present) calls this once per row.
+-- Catalog writes are audited on entity=cards so the applied values are recorded
+-- even when a client sends a p_card_op that diverges from review_fields.
 
 create or replace function public.approve_finding_to_catalog(
   p_finding_id uuid,
@@ -27,6 +29,9 @@ declare
   v_network text;
   v_last_verified date;
   v_verified_at timestamptz;
+  v_before jsonb;
+  v_after jsonb;
+  v_actor text := coalesce(nullif(auth.jwt() ->> 'email', ''), 'system:' || session_user);
 begin
   if not public.is_admin('validator') then
     raise exception 'not authorized' using errcode = '42501';
@@ -83,11 +88,20 @@ begin
          or jsonb_typeof(v_reward_categories) <> 'array' then
         raise exception 'card insert is missing required fields' using errcode = '22023';
       end if;
+      if v_welcome_offer is not null
+         and v_welcome_offer <> 'null'::jsonb
+         and jsonb_typeof(v_welcome_offer) <> 'object' then
+        raise exception 'welcome_offer must be an object or null' using errcode = '22023';
+      end if;
       if v_network is not null and v_network not in ('Visa', 'Mastercard', 'Amex') then
         raise exception 'invalid network' using errcode = '22023';
       end if;
       if v_annual_fee is null or v_annual_fee < 0 then
         raise exception 'invalid annual_fee' using errcode = '22023';
+      end if;
+
+      if v_welcome_offer is null or v_welcome_offer = 'null'::jsonb then
+        v_welcome_offer := null;
       end if;
 
       insert into public.cards (
@@ -100,16 +114,35 @@ begin
         v_annual_fee,
         v_point_currency,
         v_reward_categories,
-        case
-          when v_welcome_offer is null or v_welcome_offer = 'null'::jsonb then null
-          else v_welcome_offer
-        end,
+        v_welcome_offer,
         v_network,
         v_last_verified,
         now(),
         v_verified_at,
         'verified'::public.catalog_status
       );
+
+      v_after := jsonb_build_object(
+        'op', 'insert',
+        'finding_id', p_finding_id,
+        'review_fields', p_review_fields,
+        'row', jsonb_build_object(
+          'id', v_card_id,
+          'name', v_name,
+          'issuer', v_issuer,
+          'annual_fee', v_annual_fee,
+          'point_currency', v_point_currency,
+          'reward_categories', v_reward_categories,
+          'welcome_offer', v_welcome_offer,
+          'network', v_network,
+          'last_verified', v_last_verified,
+          'verified_at', v_verified_at,
+          'status', 'verified'
+        )
+      );
+
+      insert into public.admin_audit (actor_email, action, entity, entity_id, before, after)
+      values (v_actor, 'card.approve_insert', 'cards', v_card_id, null, v_after);
 
     elsif v_op = 'update' then
       v_card_id := nullif(btrim(p_card_op ->> 'id'), '');
@@ -143,6 +176,40 @@ begin
          ) then
         raise exception 'invalid annual_fee' using errcode = '22023';
       end if;
+      if (v_set ? 'reward_categories')
+         and (
+           v_set -> 'reward_categories' is null
+           or jsonb_typeof(v_set -> 'reward_categories') <> 'array'
+         ) then
+        raise exception 'reward_categories must be a json array' using errcode = '22023';
+      end if;
+      if (v_set ? 'welcome_offer')
+         and v_set -> 'welcome_offer' is not null
+         and v_set -> 'welcome_offer' <> 'null'::jsonb
+         and jsonb_typeof(v_set -> 'welcome_offer') <> 'object' then
+        raise exception 'welcome_offer must be an object or null' using errcode = '22023';
+      end if;
+
+      select jsonb_build_object(
+        'id', c.id,
+        'name', c.name,
+        'issuer', c.issuer,
+        'annual_fee', c.annual_fee,
+        'point_currency', c.point_currency,
+        'reward_categories', c.reward_categories,
+        'welcome_offer', c.welcome_offer,
+        'network', c.network,
+        'last_verified', c.last_verified,
+        'verified_at', c.verified_at,
+        'status', c.status
+      )
+      into v_before
+      from public.cards c
+      where c.id = v_card_id;
+
+      if v_before is null then
+        raise exception 'catalog card % not found', v_card_id using errcode = 'P0002';
+      end if;
 
       update public.cards c
       set
@@ -173,9 +240,38 @@ begin
         status = 'verified'::public.catalog_status
       where c.id = v_card_id;
 
-      if not found then
-        raise exception 'catalog card % not found', v_card_id using errcode = 'P0002';
-      end if;
+      select jsonb_build_object(
+        'id', c.id,
+        'name', c.name,
+        'issuer', c.issuer,
+        'annual_fee', c.annual_fee,
+        'point_currency', c.point_currency,
+        'reward_categories', c.reward_categories,
+        'welcome_offer', c.welcome_offer,
+        'network', c.network,
+        'last_verified', c.last_verified,
+        'verified_at', c.verified_at,
+        'status', c.status
+      )
+      into v_after
+      from public.cards c
+      where c.id = v_card_id;
+
+      insert into public.admin_audit (actor_email, action, entity, entity_id, before, after)
+      values (
+        v_actor,
+        'card.approve_update',
+        'cards',
+        v_card_id,
+        v_before,
+        jsonb_build_object(
+          'op', 'update',
+          'finding_id', p_finding_id,
+          'review_fields', p_review_fields,
+          'set', v_set,
+          'row', v_after
+        )
+      );
 
     else
       raise exception 'card_op.op must be insert or update' using errcode = '22023';
@@ -204,7 +300,7 @@ end;
 $$;
 
 comment on function public.approve_finding_to_catalog(uuid, jsonb, jsonb) is
-  'Approve a pending finding and optionally write accepted values to cards in one transaction (AD2).';
+  'Approve a pending finding and optionally write accepted values to cards in one transaction (AD2). Catalog writes are audited on entity=cards.';
 
 revoke all on function public.approve_finding_to_catalog(uuid, jsonb, jsonb)
   from public, anon;
