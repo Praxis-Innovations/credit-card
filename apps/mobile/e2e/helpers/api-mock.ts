@@ -1,6 +1,9 @@
 import type { Page, Request } from "@playwright/test";
 
-/** Card fixtures shaped like GET /v1/cards (dev catalog ids, no art). */
+/** Public `brand-assets` bucket on the e2e Supabase host (see playwright.config.ts). */
+export const BRAND_ASSETS = "http://127.0.0.1:54321/storage/v1/object/public/brand-assets";
+
+/** Card fixtures shaped like GET /v1/cards (dev catalog ids). */
 export const E2E_CARDS = [
   {
     id: "scotia-gold-amex",
@@ -15,8 +18,9 @@ export const E2E_CARDS = [
       { category: "gas", earnRate: 1 },
       { category: "other", earnRate: 1 },
     ],
-    imageUrl: "http://127.0.0.1:8787/assets/cards/scotia-gold-amex.png",
-    imageAlt: "Scotiabank Gold American Express card",
+    // A generated illustration, as `assets:generate-card-art` stores it.
+    imageUrl: `${BRAND_ASSETS}/cards/generated/scotia-gold-amex-0123456789ab.png`,
+    imageAlt: "Scotiabank Gold American Express card (illustration)",
   },
   {
     id: "triangle-we",
@@ -202,9 +206,12 @@ export async function installNorthtapApiMock(page: Page): Promise<ApiMock> {
     offline: false,
   };
 
-  await page.route("**/assets/cards/**", async (route) => {
+  const isCardImage = (url: URL) =>
+    (url.port === "8787" && url.pathname.startsWith("/assets/cards/")) ||
+    `${url.origin}${url.pathname}`.startsWith(`${BRAND_ASSETS}/cards/`);
+
+  await page.route(isCardImage, async (route) => {
     const url = new URL(route.request().url());
-    if (url.port !== "8787") return route.fallback();
     mock.imageRequests.push(url.pathname);
     if (url.pathname.endsWith("-missing.png")) return route.fulfill({ status: 404, body: "" });
     return route.fulfill({ status: 200, contentType: "image/png", body: CARD_PNG });
