@@ -547,8 +547,54 @@ describe("finding review", () => {
     ).rejects.toThrow(/permission denied/);
   });
 
-  it("does not let a validator read the audit log", async () => {
-    expect(await asRole(db, "authenticated", VALIDATOR, (tx) => count(tx, "admin_audit"))).toBe(0);
+  it("lets a validator read cards audit rows but not other entities (AD4)", async () => {
+    await db.exec(`
+      insert into public.admin_audit (actor_email, action, entity, entity_id, before, after)
+      values
+        (
+          'info.praxisinnovations@gmail.com',
+          'card.retire',
+          'cards',
+          'scotia-gold-amex',
+          '{"status":"verified"}'::jsonb,
+          '{"status":"rejected"}'::jsonb
+        ),
+        (
+          'info.praxisinnovations@gmail.com',
+          'finding.approve',
+          'card_findings',
+          '00000000-0000-4000-8000-0000000000bb',
+          null,
+          '{"review_status":"approved"}'::jsonb
+        );
+    `);
+
+    await asRole(db, "authenticated", VALIDATOR, async (tx) => {
+      const cards = await tx.query<{ action: string }>(
+        `select action from public.admin_audit
+         where entity = 'cards' and entity_id = 'scotia-gold-amex' and action = 'card.retire'`,
+      );
+      expect(cards.rows).toEqual([{ action: "card.retire" }]);
+
+      const findings = await tx.query<{ action: string }>(
+        `select action from public.admin_audit
+         where entity = 'card_findings' and action = 'finding.approve'`,
+      );
+      expect(findings.rows).toEqual([]);
+    });
+
+    await asRole(db, "authenticated", VIEWER, async (tx) => {
+      const cards = await tx.query<{ action: string }>(
+        `select action from public.admin_audit
+         where entity = 'cards' and entity_id = 'scotia-gold-amex' and action = 'card.retire'`,
+      );
+      expect(cards.rows).toEqual([{ action: "card.retire" }]);
+
+      const findings = await tx.query<{ action: string }>(
+        `select action from public.admin_audit where entity = 'card_findings'`,
+      );
+      expect(findings.rows).toEqual([]);
+    });
   });
 
   it("recording the finding decision alone does not mutate cards (use the approve RPC)", async () => {
