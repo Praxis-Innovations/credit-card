@@ -147,17 +147,19 @@ create index if not exists merchant_brands_amex_mcc_idx on public.merchant_brand
 
 -- ---------------------------------------------------------------------------
 -- Earn-rule fields on cards.reward_categories jsonb (documented shape).
--- Each element MAY include, in addition to category / earnRate / caps:
---   mccs text[], merchants text[], mcc_source ('terms'|'network_default'),
---   exclusions text[], cap_group text, rate_after_cap number,
---   tier_threshold number, valid_from date, valid_to date,
---   quote text, source_url text
+-- Keys are camelCase to match apps/api domain RewardCategory / mapCard passthrough
+-- (same convention as earnRate, capMonthly). Each element MAY include, in
+-- addition to category / earnRate / caps:
+--   mccs text[], merchants text[], mccSource ('terms'|'network_default'),
+--   exclusions text[], capGroup text, rateAfterCap number,
+--   tierThreshold number, validFrom date, validTo date,
+--   quote text, sourceUrl text, userChosen boolean
 -- Live values are applied only after review; importers write findings only.
 -- ---------------------------------------------------------------------------
 comment on column public.cards.reward_categories is
-  'Earn rules (jsonb array). Optional MCC fields: mccs, merchants, mcc_source, '
-  'exclusions, cap_group, rate_after_cap, tier_threshold, valid_from, valid_to, '
-  'quote, source_url. Applied only after human review.';
+  'Earn rules (jsonb array). Optional MCC fields (camelCase): mccs, merchants, '
+  'mccSource, exclusions, capGroup, rateAfterCap, tierThreshold, validFrom, '
+  'validTo, quote, sourceUrl, userChosen. Applied only after human review.';
 
 -- ---------------------------------------------------------------------------
 -- merchant_code_evidence — cited observations backing a chain's code
