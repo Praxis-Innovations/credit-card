@@ -99,10 +99,14 @@ Shared root files watched by every project: `pnpm-lock.yaml`, `package.json`,
 `pnpm-workspace.yaml`, `tsconfig.base.json` (so lockfile-only bumps and base
 tsconfig changes still rebuild).
 
-Command (exit `0` = skip build, `1` = proceed), from each `vercel.json`:
+Command (exit `0` = skip build, `1` = proceed), from each `vercel.json`.
+Uses `VERCEL_GIT_PREVIOUS_SHA` (last successful deploy for this project/branch)
+so multi-commit pushes still build when an earlier commit touched the app;
+falls back to `HEAD^` when unset. If that SHA is missing from the shallow
+clone, `git` exits non-zero and the build proceeds:
 
 ```bash
-cd ../.. && git diff --quiet HEAD^ HEAD -- apps/<app> pnpm-lock.yaml package.json pnpm-workspace.yaml tsconfig.base.json
+cd ../.. && git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD -- apps/<app> pnpm-lock.yaml package.json pnpm-workspace.yaml tsconfig.base.json
 ```
 
 A merge to `main` that only touches `apps/crawler`, `docs/`, `e2e/`, or other

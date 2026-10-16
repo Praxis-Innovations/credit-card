@@ -2,6 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "cd ../.. && pnpm install",
-  "ignoreCommand": "cd ../.. && git diff --quiet HEAD^ HEAD -- apps/admin pnpm-lock.yaml package.json pnpm-workspace.yaml tsconfig.base.json"
+  "ignoreCommand": "cd ../.. && git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD -- apps/admin pnpm-lock.yaml package.json pnpm-workspace.yaml tsconfig.base.json"
 }
 
