@@ -7,9 +7,9 @@ request, every push to `main`, merge-queue builds and manual dispatch.
 
 | Job | Command |
 |-----|---------|
-| `typecheck` | `pnpm turbo run typecheck` for api, admin, crawler, mobile, web |
-| `lint` | `pnpm turbo run lint` for the same apps |
-| `test` | `pnpm turbo run test` (Vitest unit tests) for the same apps |
+| `typecheck` | `pnpm turbo run typecheck` for api, admin, crawler, mobile, web, e2e |
+| `lint` | `pnpm turbo run lint` for the same packages |
+| `test` | `pnpm turbo run test` (Vitest unit tests) for the apps that define it |
 | `api coverage` | `pnpm --filter api test:coverage` — prints a text report and uploads `coverage-summary.json` |
 | `code-health` | `pnpm code-health` — ESLint size/complexity, knip, jscpd, dependency-cruiser; fails only on findings not in `code-health/baselines/` |
 | `e2e smoke` | Local Supabase (`supabase start`) + Playwright `@smoke` across api/web/admin/app — see [`e2e/README.md`](../e2e/README.md) |

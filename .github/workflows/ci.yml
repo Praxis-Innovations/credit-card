@@ -50,6 +50,7 @@ jobs:
           --filter=crawler
           --filter=mobile
           --filter=web
+          --filter=e2e
 
   api-coverage:
     name: api coverage
