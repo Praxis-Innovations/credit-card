@@ -1,0 +1,48 @@
+{
+  "extracted": {
+    "card_name": {
+      "value": "Scotiabank Value® Visa* Card",
+      "quote": "Scotiabank Value® Visa* Card"
+    },
+    "issuer": {
+      "value": "The Bank of Nova Scotia",
+      "quote": "Trademark of The Bank of Nova Scotia."
+    },
+    "network": {
+      "value": "Visa",
+      "quote": "Visa Int./Licensed User."
+    },
+    "annual_fee": {
+      "value": 29,
+      "quote": "The current annual fee is $29 for the primary card and $0 for each additional card (including those issued to co-borrowers and supplementary cardholders)."
+    },
+    "additional_card_fee": {
+      "value": 0,
+      "quote": "The current annual fee is $29 for the primary card and $0 for each additional card (including those issued to co-borrowers and supplementary cardholders)."
+    },
+    "purchase_apr": {
+      "value": 13.99,
+      "quote": "The current preferred annual interest rates for the Account are 13.99% on purchases and 13.99% on Cash Advances"
+    },
+    "cash_advance_apr": {
+      "value": 13.99,
+      "quote": "The current preferred annual interest rates for the Account are 13.99% on purchases and 13.99% on Cash Advances"
+    },
+    "balance_transfer_apr": {
+      "value": 13.99,
+      "quote": "Your cash advance rate applies to cash advances, balance transfers, and cash-like transactions."
+    },
+    "fx_fee_percent": null,
+    "min_personal_income": null,
+    "min_household_income": null,
+    "min_credit_limit": {
+      "value": 500,
+      "quote": "Minimum credit limit\n\n$500"
+    },
+    "reward_currency": null,
+    "earn_rates": [],
+    "welcome_bonus": null,
+    "insurance_highlights": [],
+    "notes": "Page shows 13.99% purchase/cash advance rates (described as 'preferred' rates), while the promo legal text says standard rates are currently 24.99% on purchases and 27.99% on cash advances after losing the promotion. Balance transfer rate taken as the cash advance rate, which the page says applies to balance transfers. Current offer is a 0% balance transfer rate for 9 months (1% fee) plus first-year annual fee waiver, not a points or cash bonus. Fuel savings at Shell are per litre, not per dollar, so no earn rates were recorded. Scotia Credit Card Protection is optional insurance, not included. Foreign transaction fee and income requirements are not stated."
+  }
+}

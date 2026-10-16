@@ -1,0 +1,108 @@
+{
+  "extracted": {
+    "card_name": {
+      "value": "Scotia Momentum® Visa* Card",
+      "quote": "Scotia Momentum® Visa* Card"
+    },
+    "issuer": {
+      "value": "Scotiabank",
+      "quote": "Registered Trademark of The Bank of Nova Scotia"
+    },
+    "network": {
+      "value": "Visa",
+      "quote": "Scotia Momentum® Visa* Card"
+    },
+    "annual_fee": {
+      "value": 49,
+      "quote": "The current annual fee is $49 for the primary card and $15 for each additional card"
+    },
+    "additional_card_fee": {
+      "value": 15,
+      "quote": "The current annual fee is $49 for the primary card and $15 for each additional card"
+    },
+    "purchase_apr": {
+      "value": 20.99,
+      "quote": "The current preferred annual interest rates for the Account are: 20.99% on purchases and 22.99% on Cash Advances."
+    },
+    "cash_advance_apr": {
+      "value": 22.99,
+      "quote": "The current preferred annual interest rates for the Account are: 20.99% on purchases and 22.99% on Cash Advances."
+    },
+    "balance_transfer_apr": {
+      "value": 22.99,
+      "quote": "Your cash advance rate applies to cash advances, balance transfers, and cash-like transactions."
+    },
+    "fx_fee_percent": null,
+    "min_personal_income": null,
+    "min_household_income": null,
+    "min_credit_limit": {
+      "value": 500,
+      "quote": "Minimum credit limit"
+    },
+    "reward_currency": {
+      "value": "cash back",
+      "quote": "Earn up to 2% cash back on your eligible everyday purchases when you shop with your card."
+    },
+    "earn_rates": [
+      {
+        "category": "groceries",
+        "unit": "percent_cashback",
+        "rate": 2,
+        "description": "On groceries, food delivery and food subscription services, and drugstore purchases",
+        "cap": "annual spend limit of $25,000",
+        "quote": "On groceries, food delivery and food subscription services, and drugstore purchases"
+      },
+      {
+        "category": "gas",
+        "unit": "percent_cashback",
+        "rate": 2,
+        "description": "On gas, electric vehicle charging, and daily transit like buses, taxis, and rideshares",
+        "cap": "annual spend limit of $25,000",
+        "quote": "On gas, electric vehicle charging, and daily transit like buses, taxis, and rideshares"
+      },
+      {
+        "category": "recurring_bills",
+        "unit": "percent_cashback",
+        "rate": 2,
+        "description": "On eligible recurring bill payments like utilities and gym memberships",
+        "cap": "annual spend limit of $25,000",
+        "quote": "On eligible recurring bill payments like utilities and gym memberships"
+      },
+      {
+        "category": "recurring_bills",
+        "unit": "percent_cashback",
+        "rate": 2,
+        "description": "On eligible recurring subscription services like music and video streaming",
+        "cap": "annual spend limit of $25,000",
+        "quote": "On eligible recurring subscription services like music and video streaming"
+      },
+      {
+        "category": "other",
+        "unit": "percent_cashback",
+        "rate": 1,
+        "description": "On all other eligible purchases",
+        "cap": null,
+        "quote": "On all other eligible purchases"
+      }
+    ],
+    "welcome_bonus": {
+      "value": {
+        "summary": "0.99% introductory interest rate on balance transfers for the first 9 months (2% fee; 22.99% after)",
+        "points": null,
+        "cashback_cad": null
+      },
+      "quote": "Get a 0.99% introductory interest rate on balance transfers for the first 9 months (2% fee per cash advance; 22.99% after that; annual fee $49)."
+    },
+    "insurance_highlights": [
+      {
+        "value": "Purchase Security & Extended Warranty Protection",
+        "quote": "Most new purchases made with your card are protected against theft, loss, or damage for 90 days from the purchase date."
+      },
+      {
+        "value": "Scotia Credit Card Protection (optional)",
+        "quote": "This insurance coverage can provide you and your family financial protection by paying off your outstanding account balance or helping to cover your monthly credit card payments as a result of certain unexpected life events, such as Death, Critical Illness, Hospitalization, Disability, Job Loss or Strike or Lockout."
+      }
+    ],
+    "notes": "The page states the cash advance rate applies to balance transfers, so balance transfer APR is taken as 22.99. The legal text also mentions standard rates of 25.99% purchases and 27.99% cash advances that apply if the promotional offer is lost. The page lists current preferred rates of 20.99% and 22.99%. The page doesn't state a foreign transaction fee or income requirements. The welcome offer is a balance transfer promotion, not a points or cash back bonus."
+  }
+}

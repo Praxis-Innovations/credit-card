@@ -1,0 +1,136 @@
+{
+  "extracted": {
+    "card_name": {
+      "value": "Scotiabank American Express® Card (for students)",
+      "quote": "Scotiabank American Express® Card (for students)"
+    },
+    "issuer": {
+      "value": "Scotiabank",
+      "quote": "This credit card program is issued and administered by the Bank of Nova Scotia under license from American Express."
+    },
+    "network": {
+      "value": "American Express",
+      "quote": "This credit card program is issued and administered by the Bank of Nova Scotia under license from American Express."
+    },
+    "annual_fee": {
+      "value": 0,
+      "quote": "There is currently no annual fee for the primary card and no fee for each additional card"
+    },
+    "additional_card_fee": {
+      "value": 0,
+      "quote": "There is currently no annual fee for the primary card and no fee for each additional card"
+    },
+    "purchase_apr": {
+      "value": 21.99,
+      "quote": "The current preferred annual interest rates for the Account are: 21.99% on purchases and 22.99% on cash advances"
+    },
+    "cash_advance_apr": {
+      "value": 22.99,
+      "quote": "The current preferred annual interest rates for the Account are: 21.99% on purchases and 22.99% on cash advances"
+    },
+    "balance_transfer_apr": {
+      "value": 22.99,
+      "quote": "22.99% on cash advances (including balance transfers and cash-like transactions)"
+    },
+    "fx_fee_percent": null,
+    "min_personal_income": null,
+    "min_household_income": null,
+    "min_credit_limit": {
+      "value": 1000,
+      "quote": "Minimum credit limit\n\n$1,000"
+    },
+    "reward_currency": {
+      "value": "Scene+ points",
+      "quote": "Earn Scene+ points on every purchase"
+    },
+    "earn_rates": [
+      {
+        "category": "groceries",
+        "unit": "points_per_dollar",
+        "rate": 3,
+        "description": "At Sobeys, Safeway, FreshCo, Foodland, and more.",
+        "cap": "First $50,000 in annual accelerated-rate purchases",
+        "quote": "You are awarded three (3) Scene+ Points for every eligible $1.00 purchase made at Sobeys, IGA, Safeway, Foodland, FreshCo"
+      },
+      {
+        "category": "dining",
+        "unit": "points_per_dollar",
+        "rate": 2,
+        "description": "On dining, food delivery, food subscriptions, and other eligible grocery stores.",
+        "cap": "First $50,000 in annual accelerated-rate purchases",
+        "quote": "On dining, food delivery, food subscriptions, and other eligible grocery stores."
+      },
+      {
+        "category": "entertainment",
+        "unit": "points_per_dollar",
+        "rate": 2,
+        "description": "On eligible entertainment purchases, including movies, theatre, and ticket agencies.",
+        "cap": "First $50,000 in annual accelerated-rate purchases",
+        "quote": "On eligible entertainment purchases, including movies, theatre, and ticket agencies."
+      },
+      {
+        "category": "gas",
+        "unit": "points_per_dollar",
+        "rate": 2,
+        "description": "On eligible gas and daily transit, including rideshare, buses, taxis, subway, and more.",
+        "cap": "First $50,000 in annual accelerated-rate purchases",
+        "quote": "On eligible gas and daily transit, including rideshare, buses, taxis, subway, and more."
+      },
+      {
+        "category": "recurring_bills",
+        "unit": "points_per_dollar",
+        "rate": 2,
+        "description": "On eligible streaming services.",
+        "cap": "First $50,000 in annual accelerated-rate purchases",
+        "quote": "On eligible streaming services."
+      },
+      {
+        "category": "travel",
+        "unit": "points_per_dollar",
+        "rate": 1,
+        "description": "Eligible travel purchases",
+        "cap": null,
+        "quote": "Earn 1 Scene+ point for every $1 you spend on eligible travel purchases."
+      },
+      {
+        "category": "travel",
+        "unit": "points_per_dollar",
+        "rate": 3,
+        "description": "Extra points on hotels and car rentals booked through Scene+ Travel, Powered by Expedia (in addition to the 1 point)",
+        "cap": null,
+        "quote": "Plus, earn an extra 3 Scene+ points for every $1 CAD you spend on hotels and car rentals when you book through Scene+ Travel, Powered by Expedia."
+      },
+      {
+        "category": "other",
+        "unit": "points_per_dollar",
+        "rate": 1,
+        "description": "All other eligible everyday purchases",
+        "cap": null,
+        "quote": "1 point\n\nOn all other eligible everyday purchases."
+      }
+    ],
+    "welcome_bonus": {
+      "value": {
+        "summary": "Earn up to 10,000 bonus Scene+ points within first 3 months: 2,500 with $250 in purchases plus 7,500 more with $1,000 in purchases (account opened May 1–Nov 1, 2026)",
+        "points": 10000,
+        "cashback_cad": null
+      },
+      "quote": "Earn up to 10,000 bonus Scene+ points within your first 3 months."
+    },
+    "insurance_highlights": [
+      {
+        "value": "New Mobile Device Insurance (up to $500)",
+        "quote": "you may be covered for up to $500 CAD if your device is lost, stolen or suffers a mechanical breakdown or accidental damage."
+      },
+      {
+        "value": "Purchase Security (90 days)",
+        "quote": "Most new purchases made with your card are protected against theft, loss, or damage for 90 days from the purchase date."
+      },
+      {
+        "value": "Extended Warranty Protection",
+        "quote": "extended warranty coverage can double the original manufacturer’s warranty for up to one year."
+      }
+    ],
+    "notes": "Foreign transaction fee not stated on page. Balance transfers are charged the cash advance rate. Shell fuel savings (up to 11¢/L) also offered. Income requirement: page says steady income of more than $12,000/year may qualify for other cards, not a stated minimum."
+  }
+}

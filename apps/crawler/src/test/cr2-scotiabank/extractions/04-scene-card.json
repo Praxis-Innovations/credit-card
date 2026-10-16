@@ -1,0 +1,107 @@
+{
+  "extracted": {
+    "card_name": {
+      "value": "Scotiabank® Scene+™ Visa* Card",
+      "quote": "Scotiabank® Scene+™ Visa* Card"
+    },
+    "issuer": {
+      "value": "Scotiabank",
+      "quote": "Registered Trademark of The Bank of Nova Scotia"
+    },
+    "network": {
+      "value": "Visa",
+      "quote": "Scotiabank® Scene+™ Visa* Card"
+    },
+    "annual_fee": {
+      "value": 0,
+      "quote": "There is currently no annual fee for the primary card"
+    },
+    "additional_card_fee": {
+      "value": 0,
+      "quote": "no fee for each additional card"
+    },
+    "purchase_apr": {
+      "value": 21.99,
+      "quote": "21.99% on purchases"
+    },
+    "cash_advance_apr": {
+      "value": 22.99,
+      "quote": "22.99% on cash advances"
+    },
+    "balance_transfer_apr": {
+      "value": 22.99,
+      "quote": "Your cash advance rate applies to cash advances, balance transfers, and cash-like transactions."
+    },
+    "fx_fee_percent": null,
+    "min_personal_income": null,
+    "min_household_income": null,
+    "min_credit_limit": {
+      "value": 500,
+      "quote": "Minimum credit limit\n\n$500"
+    },
+    "reward_currency": {
+      "value": "Scene+ points",
+      "quote": "Earn Scene+ points on every purchase"
+    },
+    "earn_rates": [
+      {
+        "category": "groceries",
+        "unit": "points_per_dollar",
+        "rate": 2,
+        "description": "At Sobeys, Safeway, Foodland, participating IGA and co-ops, and more.",
+        "cap": null,
+        "quote": "You are awarded two (2) Scene+ Points for every eligible $1.00 purchase made at Sobeys, Safeway, participating IGA, Foodland, Foodland & Participating Co-ops"
+      },
+      {
+        "category": "other",
+        "unit": "points_per_dollar",
+        "rate": 2,
+        "description": "At Home Hardware, Home Building Centre locations in Canada, and online at homehardware.ca",
+        "cap": null,
+        "quote": "You are awarded two (2) Scene+ Points for every eligible $1.00 purchase made at eligible Home Hardware"
+      },
+      {
+        "category": "entertainment",
+        "unit": "points_per_dollar",
+        "rate": 2,
+        "description": "At Cineplex theatres or at cineplex.com",
+        "cap": null,
+        "quote": "You are awarded two (2) Scene+ Points for every $1.00 purchase made at Cineplex theaters"
+      },
+      {
+        "category": "travel",
+        "unit": "points_per_dollar",
+        "rate": 1,
+        "description": "Eligible travel purchases",
+        "cap": null,
+        "quote": "Earn 1 Scene+ point for every $1 you spend on eligible travel purchases."
+      },
+      {
+        "category": "travel",
+        "unit": "points_per_dollar",
+        "rate": 3,
+        "description": "Extra points on hotels and car rentals booked through Scene+ Travel, Powered by Expedia (in addition to the 1 point)",
+        "cap": null,
+        "quote": "Plus, earn an extra 3 Scene+ points for every $1 CAD you spend on hotels and car rentals when you book through Scene+ Travel, Powered by Expedia."
+      },
+      {
+        "category": "other",
+        "unit": "points_per_dollar",
+        "rate": 1,
+        "description": "All other eligible everyday purchases",
+        "cap": null,
+        "quote": "On all other eligible everyday purchases."
+      }
+    ],
+    "welcome_bonus": {
+      "value": {
+        "summary": "Earn up to 5,000 bonus Scene+ points: 2,500 with $250 in purchases and an additional 2,500 with $1,000 in purchases in first 3 months (account opened July 2, 2026 to November 1, 2026)",
+        "points": 5000,
+        "cashback_cad": null
+      },
+      "quote": "Earn up to 5,000 bonus Scene+ points in your first 3 months."
+    },
+    "insurance_highlights": [],
+    "notes": "The page lists only optional Scotia Credit Card Protection (a paid add-on), not built-in insurance coverages. No foreign transaction fee, income requirements stated. The balance transfer rate is stated as the same as the cash advance rate. Shell fuel savings of up to 10¢/L are promotional/conditional."
+  }
+}

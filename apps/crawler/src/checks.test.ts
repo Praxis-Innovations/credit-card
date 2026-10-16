@@ -41,6 +41,42 @@ describe("value-in-quote", () => {
     expect(stringInQuote("American Express", "Scotiabank Gold Amex Card")).toBe(true);
     expect(stringInQuote("Visa", "Scotiabank Gold Amex Card")).toBe(false);
   });
+
+  it("treats big-bank legal names as aliases of the catalog issuer", () => {
+    expect(
+      stringInQuote(
+        "Scotiabank",
+        "This credit card program is issued and administered by the Bank of Nova Scotia under license from American Express.",
+      ),
+    ).toBe(true);
+    expect(stringInQuote("Scotiabank", "Registered trademarks of The Bank of Nova Scotia.")).toBe(true);
+    expect(stringInQuote("RBC", "Issued by Royal Bank of Canada")).toBe(true);
+    expect(stringInQuote("TD", "The Toronto-Dominion Bank")).toBe(true);
+    expect(stringInQuote("BMO", "Bank of Montreal")).toBe(true);
+    expect(stringInQuote("CIBC", "Canadian Imperial Bank of Commerce")).toBe(true);
+    expect(stringInQuote("National Bank", "National Bank of Canada")).toBe(true);
+    expect(stringInQuote("Scotiabank", "Issued by Royal Bank of Canada", { issuerAliases: true })).toBe(false);
+    expect(stringInQuote("Scotiabank", "Bank of Nova Scotia", { issuerAliases: false })).toBe(false);
+  });
+});
+
+describe("issuer field check", () => {
+  it("passes when the quote uses the legal name for an aliased catalog issuer", () => {
+    const result = checkExtraction(
+      goldExtraction({
+        issuer: {
+          value: "Scotiabank",
+          quote: "This credit card program is issued and administered by the Bank of Nova Scotia under license from American Express.",
+        },
+      }),
+      `${GOLD_PAGE_TEXT}\nThis credit card program is issued and administered by the Bank of Nova Scotia under license from American Express.`,
+    );
+    expect(result.fields.find((f) => f.field === "issuer")).toMatchObject({
+      quote_found: true,
+      value_in_quote: true,
+      ok: true,
+    });
+  });
 });
 
 describe("checkExtraction", () => {
