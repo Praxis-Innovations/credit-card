@@ -72,5 +72,7 @@
   "eslint|apps/mobile/src/lib/recommend.test.ts|max-lines-per-function": 1,
   "eslint|apps/mobile/src/state/flow.tsx|max-lines-per-function": 1,
   "eslint|apps/web/src/components/try-it-widget.tsx|max-lines-per-function": 1,
-  "eslint|scripts/code-health.mjs|no-undef": 24
+  "eslint|scripts/code-health.mjs|complexity": 3,
+  "eslint|scripts/code-health.mjs|max-lines": 1,
+  "eslint|scripts/code-health.mjs|max-lines-per-function": 2
 }

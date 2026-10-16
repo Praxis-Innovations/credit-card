@@ -75,6 +75,7 @@
     "eslint",
     "@eslint/js",
     "typescript-eslint",
+    "globals",
     "jscpd",
     "knip",
     "dependency-cruiser",
