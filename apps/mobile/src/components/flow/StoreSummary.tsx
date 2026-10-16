@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import type { Category } from "../../lib/api-types";
 import { colors, fonts } from "../../lib/theme";
 import { StoreLogo } from "./Logos";
 
@@ -8,15 +9,29 @@ interface StoreSummaryProps {
   meta: string;
   logoUrl: string | null | undefined;
   logoAlt?: string | null;
+  category: Category;
   /** Outline "Change store" button (or similar), shown under the store row. */
   action: ReactNode;
 }
 
-export function StoreSummary({ name, meta, logoUrl, logoAlt, action }: StoreSummaryProps) {
+export function StoreSummary({
+  name,
+  meta,
+  logoUrl,
+  logoAlt,
+  category,
+  action,
+}: StoreSummaryProps) {
   return (
     <View style={styles.card} role="region" aria-label="Selected store">
       <View style={styles.row}>
-        <StoreLogo name={name} logoUrl={logoUrl} logoAlt={logoAlt} size={40} />
+        <StoreLogo
+          name={name}
+          logoUrl={logoUrl}
+          logoAlt={logoAlt}
+          category={category}
+          size={40}
+        />
         <View style={styles.text}>
           <Text style={styles.name} numberOfLines={1}>
             {name}

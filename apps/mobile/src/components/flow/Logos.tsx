@@ -1,15 +1,19 @@
 import { useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { resolveAssetUrl } from "../../lib/api-client";
+import type { Category } from "../../lib/api-types";
 import { initials } from "../../lib/programs";
-import { colors, fonts } from "../../lib/theme";
+import { storeLogoMode } from "../../lib/store-logo";
+import { brand, colors, fonts } from "../../lib/theme";
+import { CategoryIcon } from "./CategoryIcons";
 
-/** Resolved logo URL, or null once it has failed to load (show the letter fallback). */
+/** Resolved logo URL, or null once it has failed to load. */
 function useLogoSource(url: string | null | undefined) {
   const uri = resolveAssetUrl(url);
   const [failed, setFailed] = useState<string | null>(null);
   return {
     uri: uri && failed !== uri ? uri : null,
+    failed,
     onError: () => setFailed(uri),
   };
 }
@@ -18,14 +22,49 @@ interface StoreLogoProps {
   name: string;
   logoUrl: string | null | undefined;
   logoAlt?: string | null;
+  /** MCC display group — drives the tinted category-icon fallback. */
+  category?: Category;
   size?: number;
 }
 
-/** Store logo tile: the API logo, or a dashed initial-letter fallback. */
-export function StoreLogo({ name, logoUrl, logoAlt, size = 48 }: StoreLogoProps) {
+/** Tinted square with the category glyph (DS4 store-row fallback). */
+function CategoryMark({
+  name,
+  category,
+  size,
+}: {
+  name: string;
+  category: Category;
+  size: number;
+}) {
+  const radius = Math.round(size / 4);
+  const iconSize = Math.round(size * 0.5);
+  return (
+    <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={`${name} logo`}
+      style={[
+        styles.categoryTile,
+        { width: size, height: size, borderRadius: radius },
+      ]}
+    >
+      <CategoryIcon category={category} size={iconSize} color={colors.primary} />
+    </View>
+  );
+}
+
+/** Store logo tile: the API logo, or a tinted category icon (else initials). */
+export function StoreLogo({
+  name,
+  logoUrl,
+  logoAlt,
+  category,
+  size = 48,
+}: StoreLogoProps) {
   const radius = Math.round(size / 4);
   const logo = useLogoSource(logoUrl);
-  if (logo.uri) {
+  if (storeLogoMode(logoUrl, logo.failed) === "logo" && logo.uri) {
     return (
       <Image
         source={{ uri: logo.uri }}
@@ -39,6 +78,9 @@ export function StoreLogo({ name, logoUrl, logoAlt, size = 48 }: StoreLogoProps)
         ]}
       />
     );
+  }
+  if (category) {
+    return <CategoryMark name={name} category={category} size={size} />;
   }
   return (
     <View
@@ -93,6 +135,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  categoryTile: {
+    backgroundColor: brand.paleTeal,
+    alignItems: "center",
+    justifyContent: "center",
   },
   letterTile: {
     backgroundColor: colors.bg,

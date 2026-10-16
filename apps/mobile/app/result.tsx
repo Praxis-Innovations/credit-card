@@ -295,6 +295,7 @@ function PurchaseSummary({
       name={purchase.name}
       logoUrl={purchase.logoUrl}
       logoAlt={purchase.logoAlt}
+      category={purchase.category}
       size={size}
     />
   );

@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   ActionButton,
-  LinkButton,
   OutlineButton,
   PrimaryButton,
 } from "../src/components/flow/Buttons";
@@ -243,6 +242,7 @@ export default function StoreScreen() {
       meta={formatDistance(s.distanceMeters)}
       logoUrl={s.brand?.logoUrl}
       logoAlt={s.brand?.logoAlt}
+      category={s.category}
       onPress={() => choose(choiceFromNearby(s))}
     />
   );
@@ -253,6 +253,7 @@ export default function StoreScreen() {
       meta={CATEGORY_LABELS[b.category]}
       logoUrl={b.logoUrl}
       logoAlt={b.logoAlt}
+      category={b.category}
       onPress={() => choose(choiceFromBrand(b))}
     />
   );
@@ -266,10 +267,13 @@ export default function StoreScreen() {
   }
 
   function secondary(label: string, onPress: () => void) {
-    return wide ? (
-      <OutlineButton label={label} onPress={onPress} height={48} style={styles.start} />
-    ) : (
-      <LinkButton label={label} onPress={onPress} height={44} />
+    return (
+      <OutlineButton
+        label={label}
+        onPress={onPress}
+        height={wide ? 48 : 44}
+        style={wide ? styles.start : undefined}
+      />
     );
   }
 
@@ -362,7 +366,7 @@ export default function StoreScreen() {
             <View style={[styles.padded, flush]}>
               <TileGrid>{topStores.map(brandTile)}</TileGrid>
             </View>
-            <LinkButton
+            <OutlineButton
               label={`Not listed? Use ${categoryLabel} rates`}
               onPress={() => choose(choiceForCategory(category))}
               height={44}
@@ -391,11 +395,11 @@ export default function StoreScreen() {
         ) : (
           <Text style={styles.stateText}>No stores match “{trimmed}”.</Text>
         )}
-        <LinkButton
+        <OutlineButton
           label={`Use “${trimmed}” with ${categoryLabel} rates`}
           onPress={() => choose(choiceFromSearch(trimmed, category))}
           height={44}
-          style={wide && styles.start}
+          style={wide ? styles.start : undefined}
         />
       </View>
     );
