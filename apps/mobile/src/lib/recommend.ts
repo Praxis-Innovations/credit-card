@@ -72,14 +72,9 @@ function hasStoreIdentity(input: RecommendationRequest): boolean {
   );
 }
 
-/**
- * Prefer apps/api server-side ranking. On network failure, show the last
- * successful response labeled stale — no on-device re-ranking.
- */
-export async function requestRecommendation(
+function validateRecommendationRequest(
   input: RecommendationRequest,
-  store: StoreChoice | null = null,
-): Promise<RecommendResult> {
+): Extract<RecommendResult, { error: ApiErrorBody["error"] }> | null {
   const { amountCad, ownedCardIds } = input;
 
   if (typeof amountCad !== "number" || !(amountCad > 0) || !Number.isFinite(amountCad)) {
@@ -119,31 +114,51 @@ export async function requestRecommendation(
     };
   }
 
+  return null;
+}
+
+async function recommendationFromNetworkFailure(
+  err: unknown,
+): Promise<RecommendResult> {
+  if (isNetworkFailure(err)) {
+    const cached = await loadLastRecommendation();
+    if (cached) return { ...cached, stale: true };
+    return {
+      status: 503,
+      error: {
+        code: "offline_cache_miss",
+        message:
+          "No network and no cached recommendation yet — connect once to warm the offline cache",
+      },
+    };
+  }
+
+  const e = err as Error & { status?: number; code?: string };
+  return {
+    status: e.status ?? 502,
+    error: {
+      code: e.code ?? "bad_gateway",
+      message: e.message || "Recommendation request failed",
+    },
+  };
+}
+
+/**
+ * Prefer apps/api server-side ranking. On network failure, show the last
+ * successful response labeled stale — no on-device re-ranking.
+ */
+export async function requestRecommendation(
+  input: RecommendationRequest,
+  store: StoreChoice | null = null,
+): Promise<RecommendResult> {
+  const invalid = validateRecommendationRequest(input);
+  if (invalid) return invalid;
+
   try {
     const response = await fetchRecommendation(input);
     await saveLastRecommendation({ response, store });
     return { response, store, stale: false };
   } catch (err) {
-    if (isNetworkFailure(err)) {
-      const cached = await loadLastRecommendation();
-      if (cached) return { ...cached, stale: true };
-      return {
-        status: 503,
-        error: {
-          code: "offline_cache_miss",
-          message:
-            "No network and no cached recommendation yet — connect once to warm the offline cache",
-        },
-      };
-    }
-
-    const e = err as Error & { status?: number; code?: string };
-    return {
-      status: e.status ?? 502,
-      error: {
-        code: e.code ?? "bad_gateway",
-        message: e.message || "Recommendation request failed",
-      },
-    };
+    return recommendationFromNetworkFailure(err);
   }
 }

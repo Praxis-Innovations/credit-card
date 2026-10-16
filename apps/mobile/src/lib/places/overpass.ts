@@ -98,21 +98,17 @@ function elementCoords(
   return null;
 }
 
-function toNearbyPlace(
-  el: OverpassElement,
-  origin: GeoPoint,
-): NearbyPlace | null {
-  const coords = elementCoords(el);
-  if (!coords) return null;
-  const tags = el.tags ?? {};
-  const name =
+function placeDisplayName(tags: Record<string, string>): string {
+  return (
     tags.name?.trim() ||
     tags.brand?.trim() ||
     tags.operator?.trim() ||
-    "";
-  if (!name) return null;
+    ""
+  );
+}
 
-  const brandHints = [
+function brandHintsFromTags(tags: Record<string, string>): string[] {
+  return [
     tags.brand,
     tags["brand:en"],
     tags.name,
@@ -120,6 +116,17 @@ function toNearbyPlace(
     tags.operator,
     tags["operator:en"],
   ].filter((v): v is string => Boolean(v && v.trim()));
+}
+
+function toNearbyPlace(
+  el: OverpassElement,
+  origin: GeoPoint,
+): NearbyPlace | null {
+  const coords = elementCoords(el);
+  if (!coords) return null;
+  const tags = el.tags ?? {};
+  const name = placeDisplayName(tags);
+  if (!name) return null;
 
   const classification = classifyOsmTags(tags);
 
@@ -138,7 +145,7 @@ function toNearbyPlace(
     osmTag: classification?.osmTag,
     mcc: classification?.mcc ?? undefined,
     certainty: classification?.certainty ?? "unknown",
-    brandHints,
+    brandHints: brandHintsFromTags(tags),
     rawTags: tags,
   };
 }

@@ -13,7 +13,17 @@ function sentQuery(fetchImpl: ReturnType<typeof vi.fn>): string {
   return decodeURIComponent(String(init.body).replace(/^data=/, ""));
 }
 
-describe("createOverpassPlacesProvider", () => {
+function placeElements(tagged: Record<string, string>[]) {
+  return tagged.map((tags, i) => ({
+    type: "node" as const,
+    id: i + 1,
+    lat: 43.65 + i * 0.0005,
+    lon: -79.38,
+    tags,
+  }));
+}
+
+describe("createOverpassPlacesProvider parsing", () => {
   it("parses Overpass fuel nodes into NearbyPlace[] sorted by distance", async () => {
     const payload = {
       elements: [
@@ -65,6 +75,42 @@ describe("createOverpassPlacesProvider", () => {
     );
   });
 
+  it("keeps OSM names as-is and classifies by the first requested tag", async () => {
+    const payload = {
+      elements: [
+        {
+          type: "node",
+          id: 1,
+          lat: 43.65,
+          lon: -79.38,
+          tags: { amenity: "bank", shop: "supermarket", name: "  No Frills — Bloor " },
+        },
+      ],
+    };
+    const provider = createOverpassPlacesProvider({ fetchImpl: stubFetch(payload) });
+    const [place] = await provider.findNearby({ latitude: 43.65, longitude: -79.38 });
+
+    expect(place?.name).toBe("No Frills — Bloor");
+    expect(place?.placeType).toBe("supermarket");
+    expect(place?.osmTag).toBe("shop=supermarket");
+    expect(place?.mcc).toBe("5411");
+  });
+
+  it("throws when Overpass responds with an error status", async () => {
+    const fetchImpl = vi.fn(async () => ({
+      ok: false,
+      status: 504,
+      statusText: "Gateway Timeout",
+    })) as unknown as typeof fetch;
+
+    const provider = createOverpassPlacesProvider({ fetchImpl });
+    await expect(
+      provider.findNearby({ latitude: 0, longitude: 0 }),
+    ).rejects.toThrow(/Overpass request failed/i);
+  });
+});
+
+describe("createOverpassPlacesProvider MCC mapping", () => {
   it("maps restaurants, hotels, department, hardware, electronics and transit via MCC", async () => {
     const tagged: Record<string, string>[] = [
       { amenity: "restaurant", name: "The Keg" },
@@ -82,17 +128,9 @@ describe("createOverpassPlacesProvider", () => {
       { amenity: "cinema", name: "Scotiabank Theatre" },
       { railway: "station", name: "Union" },
     ];
-    const payload = {
-      elements: tagged.map((tags, i) => ({
-        type: "node",
-        id: i + 1,
-        lat: 43.65 + i * 0.0005,
-        lon: -79.38,
-        tags,
-      })),
-    };
-
-    const provider = createOverpassPlacesProvider({ fetchImpl: stubFetch(payload) });
+    const provider = createOverpassPlacesProvider({
+      fetchImpl: stubFetch({ elements: placeElements(tagged) }),
+    });
     const places = await provider.findNearby({ latitude: 43.65, longitude: -79.38 });
     const byName = Object.fromEntries(
       places.map((p) => [p.name, [p.placeType, p.osmTag, p.mcc, p.certainty]]),
@@ -115,28 +153,9 @@ describe("createOverpassPlacesProvider", () => {
       Union: ["station", "railway=station", "4111", "estimate"],
     });
   });
+});
 
-  it("keeps OSM names as-is and classifies by the first requested tag", async () => {
-    const payload = {
-      elements: [
-        {
-          type: "node",
-          id: 1,
-          lat: 43.65,
-          lon: -79.38,
-          tags: { amenity: "bank", shop: "supermarket", name: "  No Frills — Bloor " },
-        },
-      ],
-    };
-    const provider = createOverpassPlacesProvider({ fetchImpl: stubFetch(payload) });
-    const [place] = await provider.findNearby({ latitude: 43.65, longitude: -79.38 });
-
-    expect(place?.name).toBe("No Frills — Bloor");
-    expect(place?.placeType).toBe("supermarket");
-    expect(place?.osmTag).toBe("shop=supermarket");
-    expect(place?.mcc).toBe("5411");
-  });
-
+describe("createOverpassPlacesProvider query shape", () => {
   it("sends one query covering every store type and caps the results", async () => {
     const payload = {
       elements: Array.from({ length: 30 }, (_, i) => ({
@@ -175,19 +194,6 @@ describe("createOverpassPlacesProvider", () => {
     ]) {
       expect(query).toContain(fragment);
     }
-  });
-
-  it("throws when Overpass responds with an error status", async () => {
-    const fetchImpl = vi.fn(async () => ({
-      ok: false,
-      status: 504,
-      statusText: "Gateway Timeout",
-    })) as unknown as typeof fetch;
-
-    const provider = createOverpassPlacesProvider({ fetchImpl });
-    await expect(
-      provider.findNearby({ latitude: 0, longitude: 0 }),
-    ).rejects.toThrow(/Overpass request failed/i);
   });
 });
 
