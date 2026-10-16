@@ -57,9 +57,14 @@ for app in "${APPS[@]}"; do
   fi
 
   # Keep any pre-existing, different local file instead of clobbering it.
+  # Identical regular files are left alone so --copy does not pile up .bak copies.
   if [ -e "$dest" ] || [ -L "$dest" ]; then
     if [ -L "$dest" ] && [ "$(readlink "$dest")" = "$src" ] && [ "$MODE" = link ]; then
       echo "ok     apps/$app/.env.local -> $src"
+      continue
+    fi
+    if [ ! -L "$dest" ] && [ -f "$dest" ] && cmp -s "$src" "$dest"; then
+      echo "ok     apps/$app/.env.local (matches $src)"
       continue
     fi
     if [ -L "$dest" ]; then
