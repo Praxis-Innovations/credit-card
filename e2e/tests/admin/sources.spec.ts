@@ -42,22 +42,17 @@ test.describe("admin sources", () => {
     await page.getByRole("button", { name: "Add issuer" }).click();
     await page.getByLabel("Issuer name").fill(ISSUER);
     await page.getByLabel("Compare page URL (official site only)").fill(VALID_COMPARE);
-    await page.getByLabel("Card page URL pattern").fill("/credit-cards/");
-    await page.getByLabel("Notes").fill("E2E add");
     await page.getByRole("button", { name: "Save issuer" }).click();
 
     await expect(page.getByRole("status")).toContainText(`Added ${ISSUER}`);
-    await expect(page.getByRole("button", { name: ISSUER, exact: true })).toBeVisible();
+    await expect(page.getByRole("rowheader", { name: ISSUER })).toBeVisible();
 
     // Edit
     await page.getByRole("button", { name: `Edit ${ISSUER}` }).click();
     await expect(page.getByRole("heading", { name: `Edit ${ISSUER}` })).toBeVisible();
-    await page.getByLabel("Notes").fill("E2E edited notes");
+    await page.getByLabel("Compare page URL (official site only)").fill(VALID_COMPARE);
     await page.getByRole("button", { name: "Save issuer" }).click();
     await expect(page.getByRole("status")).toContainText(`Saved ${ISSUER}`);
-
-    await page.getByRole("button", { name: ISSUER, exact: true }).click();
-    await expect(page.getByText("E2E edited notes")).toBeVisible();
 
     // Pause
     await page.getByRole("button", { name: `Pause ${ISSUER}` }).click();

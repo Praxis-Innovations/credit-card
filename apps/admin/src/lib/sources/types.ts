@@ -21,23 +21,17 @@ export type CrawlSource = {
   updated_at: string;
 };
 
-export type DiscoveredCardUrl = {
-  id: string;
-  source_id: string;
-  card_name: string;
-  product_url: string;
-  first_seen_at: string;
-  last_fetched_at: string | null;
-  http_status: number | null;
-  linked_card_id: string | null;
-  included: boolean;
-};
-
-export type SourceRow = CrawlSource & {
-  urls: DiscoveredCardUrl[];
-  /** Verified catalog cards for this issuer, shown until the crawler finds pages. */
-  catalogCount: number;
-};
-
 export const CRAWL_SOURCE_COLUMNS =
   "id, issuer_name, compare_url, url_pattern, schedule, status, robots_status, robots_checked_at, last_crawled_at, notes, created_at, updated_at";
+
+export const SOURCE_STATUS_FILTERS = [
+  { value: "all", label: "All statuses" },
+  { value: "active", label: "Active" },
+  { value: "blocked", label: "Blocked" },
+  { value: "paused", label: "Paused" },
+  { value: "not_set_up", label: "Not set up" },
+] as const;
+
+export type SourceStatusFilter = (typeof SOURCE_STATUS_FILTERS)[number]["value"];
+
+export const SOURCES_PAGE_SIZE = 20;

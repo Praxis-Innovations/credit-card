@@ -1,20 +1,13 @@
 import { isIssuerDomain, knownDomainsFor } from "./issuer-domains";
-import { SCHEDULES, type Schedule } from "./types";
 
 export type SourceFormValues = {
   issuer_name: string;
   compare_url: string;
-  url_pattern: string;
-  schedule: string;
-  notes: string;
 };
 
 export type SourceInput = {
   issuer_name: string;
   compare_url: string | null;
-  url_pattern: string | null;
-  schedule: Schedule;
-  notes: string | null;
 };
 
 export type FieldErrors = Partial<Record<keyof SourceFormValues, string>>;
@@ -24,7 +17,6 @@ export type ValidationResult =
   | { ok: false; fieldErrors: FieldErrors };
 
 const MAX_URL_LENGTH = 2048;
-const MAX_NOTES_LENGTH = 1000;
 const IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/;
 
 export type UrlCheck = { ok: true; url: string } | { ok: false; error: string };
@@ -70,15 +62,6 @@ export function validateCompareUrl(raw: string, issuerName: string): UrlCheck {
   return { ok: true, url: url.toString() };
 }
 
-export function validateUrlPattern(raw: string): { ok: true; value: string | null } | { ok: false; error: string } {
-  const value = raw.trim();
-  if (!value) return { ok: true, value: null };
-  if (!value.startsWith("/") || value.startsWith("//") || /\s/.test(value) || value.length > 200) {
-    return { ok: false, error: "Use a path that starts with /, like /credit-cards/." };
-  }
-  return { ok: true, value };
-}
-
 export function readSourceForm(formData: FormData): SourceFormValues {
   const get = (key: string) => {
     const v = formData.get(key);
@@ -87,9 +70,6 @@ export function readSourceForm(formData: FormData): SourceFormValues {
   return {
     issuer_name: get("issuer_name"),
     compare_url: get("compare_url"),
-    url_pattern: get("url_pattern"),
-    schedule: get("schedule"),
-    notes: get("notes"),
   };
 }
 
@@ -111,27 +91,12 @@ export function validateSourceInput(values: SourceFormValues): ValidationResult 
     else fieldErrors.compare_url = check.error;
   }
 
-  const pattern = validateUrlPattern(values.url_pattern);
-  if (!pattern.ok) fieldErrors.url_pattern = pattern.error;
-
-  if (!(SCHEDULES as readonly string[]).includes(values.schedule)) {
-    fieldErrors.schedule = "Choose a schedule.";
-  }
-
-  const notes = values.notes.trim();
-  if (notes.length > MAX_NOTES_LENGTH) {
-    fieldErrors.notes = `Keep notes under ${MAX_NOTES_LENGTH} characters.`;
-  }
-
   if (Object.keys(fieldErrors).length > 0) return { ok: false, fieldErrors };
   return {
     ok: true,
     data: {
       issuer_name: issuerName,
       compare_url: compareUrl,
-      url_pattern: pattern.ok ? pattern.value : null,
-      schedule: values.schedule as Schedule,
-      notes: notes || null,
     },
   };
 }

@@ -2,12 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { authorizeMutation } from "@/lib/auth/guard";
-import { checkRobotsTxt } from "@/lib/sources/robots";
 import { CRAWL_SOURCE_COLUMNS, type CrawlSource, type SourceStatus } from "@/lib/sources/types";
 import {
   isUuid,
   readSourceForm,
-  validateCompareUrl,
   validateSourceInput,
   type FieldErrors,
 } from "@/lib/sources/validation";
@@ -47,15 +45,18 @@ export async function saveSource(_prev: ActionResult | null, formData: FormData)
   }
 
   if (id === null) {
-    const { error } = await supabase
-      .from("crawl_sources")
-      .insert({ ...input, status: input.compare_url ? "active" : "not_set_up" });
+    const { error } = await supabase.from("crawl_sources").insert({
+      issuer_name: input.issuer_name,
+      compare_url: input.compare_url,
+      status: input.compare_url ? "active" : "not_set_up",
+    });
     if (error) {
       return error.code === UNIQUE_VIOLATION
         ? failure("Check the highlighted fields.", { issuer_name: `${input.issuer_name} is already on the list.` })
         : failure("Could not add the issuer. Try again.");
     }
     revalidatePath("/sources");
+    revalidatePath("/crawl");
     return { ok: true, message: `Added ${input.issuer_name}.` };
   }
 
@@ -74,7 +75,8 @@ export async function saveSource(_prev: ActionResult | null, formData: FormData)
   const { data: updated, error } = await supabase
     .from("crawl_sources")
     .update({
-      ...input,
+      issuer_name: input.issuer_name,
+      compare_url: input.compare_url,
       status,
       ...(urlChanged ? { robots_status: null, robots_checked_at: null } : {}),
     })
@@ -87,6 +89,7 @@ export async function saveSource(_prev: ActionResult | null, formData: FormData)
   }
   if (!updated || updated.length === 0) return failure("Your role can't make this change.");
   revalidatePath("/sources");
+  revalidatePath("/crawl");
   return { ok: true, message: `Saved ${input.issuer_name}.` };
 }
 
@@ -125,39 +128,6 @@ export async function setSourcePaused(id: string, paused: boolean): Promise<Acti
     return failure(`Could not ${paused ? "pause" : "resume"} ${source.issuer_name}. Refresh and try again.`);
   }
   revalidatePath("/sources");
+  revalidatePath("/crawl");
   return { ok: true, message: `${paused ? "Paused" : "Resumed"} ${source.issuer_name}.` };
-}
-
-/** Fetch the compare URL's robots.txt server-side and store whether it's allowed. */
-export async function checkSourceRobots(id: string): Promise<ActionResult> {
-  const auth = await authorizeMutation("admin");
-  if (!auth.ok) return failure(auth.message);
-  if (!isUuid(id)) return failure("That issuer no longer exists.");
-  const { supabase } = auth;
-
-  const { data: source } = await supabase
-    .from("crawl_sources")
-    .select("id, issuer_name, compare_url")
-    .eq("id", id)
-    .maybeSingle<Pick<CrawlSource, "id" | "issuer_name" | "compare_url">>();
-  if (!source) return failure("That issuer no longer exists.");
-  if (!source.compare_url) return failure(`Add a compare page URL for ${source.issuer_name} first.`);
-
-  const urlCheck = validateCompareUrl(source.compare_url, source.issuer_name);
-  if (!urlCheck.ok) return failure(`${source.issuer_name}'s compare URL is invalid: ${urlCheck.error}`);
-
-  const result = await checkRobotsTxt(urlCheck.url);
-  const { data: updated, error } = await supabase
-    .from("crawl_sources")
-    .update({ robots_status: result.status, robots_checked_at: new Date().toISOString() })
-    .eq("id", id)
-    .select("id");
-  if (error || !updated || updated.length === 0) {
-    return failure(`Checked robots.txt but could not save the result for ${source.issuer_name}.`);
-  }
-  revalidatePath("/sources");
-  return {
-    ok: result.status !== "unreachable",
-    message: `${source.issuer_name}: ${result.detail}`,
-  };
 }
