@@ -329,3 +329,26 @@ export function stampSourceUrl(extraction: CardExtraction, pageUrl: string): Car
     promotions: extraction.promotions.map((p) => ({ ...p, source_url: pageUrl })),
   };
 }
+
+/**
+ * Bump when `CardExtraction` gains fields that older cached / DB findings lack
+ * (MCCs, promotions, source_url, …). Hash reuse must miss until re-extracted.
+ */
+export const EXTRACTION_SCHEMA_VERSION = 2;
+
+/** Infer version from a stored finding: pre-MC2 rows omit `promotions` entirely. */
+function extractionSchemaVersionOf(extraction: CardExtraction): number {
+  const raw = extraction as { promotions?: unknown };
+  if (raw.promotions === undefined) return 1;
+  return EXTRACTION_SCHEMA_VERSION;
+}
+
+/** True when the page hash matches and the stored extraction is the current schema. */
+export function canReuseCardExtraction(
+  prev: { hash: string; extraction: CardExtraction; schemaVersion?: number } | null | undefined,
+  pageHash: string,
+): boolean {
+  if (!prev || prev.hash !== pageHash) return false;
+  const version = prev.schemaVersion ?? extractionSchemaVersionOf(prev.extraction);
+  return version === EXTRACTION_SCHEMA_VERSION;
+}

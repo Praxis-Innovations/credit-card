@@ -23,6 +23,8 @@ export interface PreviousDiscovery {
 export interface PreviousCard {
   hash: string;
   extraction: CardExtraction;
+  /** When set, must match EXTRACTION_SCHEMA_VERSION for hash reuse. */
+  schemaVersion?: number;
   /** Model that produced `extraction`; null when the row was a hash-skip reuse. */
   model: string | null;
 }
