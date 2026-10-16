@@ -13,7 +13,7 @@ import { MissingClaudeCredentialsError, runCrawl, type RunSummary, type Trigger 
 import { LocalCache, SupabaseStore, type RequestedRun, type ScheduleStore } from "./store";
 import type { CrawlSource } from "./types";
 
-const HELP = `Usage: pnpm --filter crawler ci -- --mode <requested|monthly|both> [options]
+const HELP = `Usage: pnpm --filter crawler run ci -- --mode <requested|monthly|both> [options]
 
   GitHub Actions entrypoint. Claims crawl_runs with status=requested and/or
   crawls active sources whose schedule is monthly. Claude auth is Workload

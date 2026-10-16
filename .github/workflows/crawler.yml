@@ -89,7 +89,8 @@ jobs:
           if [ -n "${CRAWLER_LIMIT}" ]; then
             args+=(--limit "$CRAWLER_LIMIT")
           fi
-          pnpm --filter crawler ci -- "${args[@]}"
+          # `pnpm ci` is a built-in (frozen install); must use `run` for the script.
+          pnpm --filter crawler run ci -- "${args[@]}"
 
       - name: Upload crawl output
         if: always()

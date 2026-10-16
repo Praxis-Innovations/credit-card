@@ -229,7 +229,8 @@ stored. The crawler fetches a fresh GitHub OIDC token itself whenever the SDK
 needs to re-exchange, so long runs outlive GitHub's roughly 5-minute token
 lifetime.
 
-Entrypoint: `pnpm --filter crawler ci -- --mode both` (see `src/ci.ts`). An
+Entrypoint: `pnpm --filter crawler run ci -- --mode both` (see `src/ci.ts`;
+`pnpm ci` is a built-in frozen-install command, so the script needs `run`). An
 admin-inserted `crawl_runs` row (`status = 'requested'`) is claimed
 (`requested` → `running`) and finished in place; scheduled crawls insert a
 new row with `trigger = 'schedule'`.
