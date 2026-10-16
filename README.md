@@ -77,6 +77,40 @@ Regenerate catalog SQL seed (requires `NORTHTAP_SEED_API_KEY` in the environment
 pnpm seed:catalog
 ```
 
+## Vercel deploys
+
+Four Vercel projects share this monorepo (`northtap`, `northtap-app`,
+`northtap-admin`, `northtap-api`). **Preview deployments are disabled** on all
+four (`previewDeploymentsDisabled=true`) — do not re-enable them. Only
+production deploys from `main` run.
+
+Each project’s Root Directory is its app folder. On production, each
+`apps/*/vercel.json` sets an **Ignored Build Step** so a push to `main` only
+builds a project when that app or shared root workspace files changed
+(`pnpm-lock.yaml`, `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`
+— there is no `packages/` directory in this repo):
+
+| Vercel project | Root Directory | Builds when these paths change |
+|----------------|----------------|--------------------------------|
+| `northtap` | `apps/web` | `apps/web`, `pnpm-lock.yaml`, `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json` |
+| `northtap-app` | `apps/mobile` | `apps/mobile`, `pnpm-lock.yaml`, `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json` |
+| `northtap-admin` | `apps/admin` | `apps/admin`, `pnpm-lock.yaml`, `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json` |
+| `northtap-api` | `apps/api` | `apps/api`, `pnpm-lock.yaml`, `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json` |
+
+Command (exit `0` = skip build, `1` = proceed), from each `vercel.json`.
+Uses `VERCEL_GIT_PREVIOUS_SHA` (last successful deploy for this project/branch)
+so multi-commit pushes still build when an earlier commit touched the app;
+falls back to `HEAD^` when unset. If that SHA is missing from the shallow
+clone, `git` exits non-zero and the build proceeds:
+
+```bash
+cd ../.. && git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD -- apps/<app> pnpm-lock.yaml package.json pnpm-workspace.yaml tsconfig.base.json
+```
+
+A merge to `main` that only touches `apps/crawler`, `docs/`, `e2e/`, or other
+non-listed paths triggers no production builds — which avoids hitting Vercel’s
+deployment rate limit when every project would otherwise rebuild on every push.
+
 ## CI
 
 Every PR and push to `main` runs typecheck, lint, unit tests, code-health
