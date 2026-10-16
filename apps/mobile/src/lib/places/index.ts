@@ -8,6 +8,13 @@ export type {
   PlacesProvider,
 } from "./types";
 export { createOverpassPlacesProvider } from "./overpass";
+export {
+  categoryForPlaceType,
+  classifyOsmTags,
+  displayCategoryForMcc,
+  formatOsmTag,
+  osmTagForPlaceType,
+} from "./categories";
 
 /**
  * Active places backend. Default is Overpass (free, no API key).

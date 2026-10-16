@@ -51,10 +51,17 @@ test.describe("first-run flow (guest)", () => {
     await sheet.getByRole("button", { name: "Maybe later" }).click();
     await expect(sheet).toBeHidden();
 
-    // v1 ranks by category only: no merchant / location on the wire.
+    // App sends store + amount only (in-store assumed); no location on the wire.
     const body = rec.bodies.at(-1)!;
-    expect(Object.keys(body).sort()).toEqual(["amountCad", "category", "limit", "ownedCardIds"]);
-    expect(body).toMatchObject({ amountCad: 100, category: "gas" });
+    expect(Object.keys(body).sort()).toEqual([
+      "amountCad",
+      "limit",
+      "merchantQuery",
+      "ownedCardIds",
+    ]);
+    expect(body).toMatchObject({ amountCad: 100, merchantQuery: "Shell" });
+    expect(body).not.toHaveProperty("category");
+    expect(body).not.toHaveProperty("mcc");
     expect([...(body.ownedCardIds as string[])].sort()).toEqual([
       "scotia-gold-amex",
       "triangle-we",
@@ -76,7 +83,8 @@ test.describe("first-run flow (guest)", () => {
     const best = page.getByRole("region", { name: "Best card" });
     await expect(best.getByText("Gold American Express")).toBeVisible();
     await expect(best.getByText("$5.00")).toBeVisible();
-    expect(rec.bodies.at(-1)).toMatchObject({ category: "groceries" });
+    expect(rec.bodies.at(-1)).toMatchObject({ categoryFallback: "groceries" });
+    expect(rec.bodies.at(-1)).not.toHaveProperty("category");
     rec.dispose();
   });
 
@@ -104,7 +112,12 @@ test.describe("first-run flow (guest)", () => {
     await page.getByRole("button", { name: "$50" }).click();
     await page.getByRole("button", { name: "Show my best card" }).click();
     await expect(page.getByLabel("Best card").getByText("back on your $50")).toBeVisible();
-    expect(rec.bodies.at(-1)).toMatchObject({ amountCad: 50, category: "gas" });
+    expect(rec.bodies.at(-1)).toMatchObject({
+      amountCad: 50,
+      merchantQuery: "Shell",
+      osmTag: "amenity=fuel",
+    });
+    expect(rec.bodies.at(-1)).not.toHaveProperty("category");
 
     for (const body of rec.bodies) {
       const text = JSON.stringify(body);

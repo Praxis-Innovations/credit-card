@@ -27,13 +27,32 @@ export type RecommendResult =
     }
   | { error: ApiErrorBody["error"]; status: number };
 
-/** The request for a picked store: amount, the store's category and the wallet — nothing else. */
+/**
+ * Request for a picked store: amount + store identity only.
+ * Nearby/browse/search send `merchantQuery` (and `osmTag` when known).
+ * Bare category chips send `categoryFallback`. In-store is assumed.
+ */
 export function recommendationRequestFor(
-  store: Pick<StoreChoice, "category">,
+  store: Pick<StoreChoice, "name" | "category" | "osmTag" | "source">,
   amountCad: number,
   ownedCardIds: string[],
 ): RecommendationRequest {
-  return { amountCad, category: store.category, ownedCardIds, limit: 10 };
+  if (store.source === "category") {
+    return {
+      amountCad,
+      categoryFallback: store.category,
+      ownedCardIds,
+      limit: 10,
+    };
+  }
+  return {
+    amountCad,
+    merchantQuery: store.name,
+    ...(store.osmTag ? { osmTag: store.osmTag } : {}),
+    ...(store.source === "search" ? { categoryFallback: store.category } : {}),
+    ownedCardIds,
+    limit: 10,
+  };
 }
 
 function isNetworkFailure(err: unknown): boolean {
@@ -44,6 +63,15 @@ function isNetworkFailure(err: unknown): boolean {
   return /network|fetch|offline|failed to fetch|load failed/i.test(e.message);
 }
 
+function hasStoreIdentity(input: RecommendationRequest): boolean {
+  return Boolean(
+    input.merchantQuery?.trim() ||
+      input.osmTag?.trim() ||
+      input.merchant?.trim() ||
+      input.categoryFallback,
+  );
+}
+
 /**
  * Prefer apps/api server-side ranking. On network failure, show the last
  * successful response labeled stale — no on-device re-ranking.
@@ -52,7 +80,7 @@ export async function requestRecommendation(
   input: RecommendationRequest,
   store: StoreChoice | null = null,
 ): Promise<RecommendResult> {
-  const { amountCad, category, ownedCardIds } = input;
+  const { amountCad, ownedCardIds } = input;
 
   if (typeof amountCad !== "number" || !(amountCad > 0) || !Number.isFinite(amountCad)) {
     return {
@@ -61,10 +89,23 @@ export async function requestRecommendation(
     };
   }
 
-  if (!isCategory(category)) {
+  if (!hasStoreIdentity(input)) {
     return {
       status: 400,
-      error: { code: "bad_request", message: "category must be a known spend category" },
+      error: {
+        code: "bad_request",
+        message: "Provide merchantQuery/osmTag or categoryFallback",
+      },
+    };
+  }
+
+  if (
+    input.categoryFallback !== undefined &&
+    !isCategory(input.categoryFallback)
+  ) {
+    return {
+      status: 400,
+      error: { code: "bad_request", message: "categoryFallback must be a known spend category" },
     };
   }
 

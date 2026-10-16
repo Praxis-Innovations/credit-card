@@ -24,7 +24,10 @@ pnpm --filter mobile start   # or: pnpm --filter mobile web
 All data comes from the API (`src/lib/api-client.ts`). The only local config is the
 short "Common cards" list of card ids in `src/lib/common-cards.ts`. Nearby stores come
 from OpenStreetMap (Overpass), which the device calls directly. The user's location is
-never sent to NorthTap's API.
+never sent to NorthTap's API. The OSM tags requested, and the store-type MCC each maps
+to, live in `src/lib/places/categories.ts`. Recommendations send store + amount only
+(`merchantQuery` / `osmTag`); the API resolves the approved brand code, then the
+store-type estimate.
 
 ## Google sign-in setup
 

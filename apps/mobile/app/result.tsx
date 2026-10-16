@@ -108,7 +108,8 @@ export default function ResultScreen() {
 
   const ready = state.status === "ready" ? state : null;
   const shownStore = ready ? ready.store : store;
-  const category = ready?.response.purchase.category ?? store?.category ?? "other";
+  const category =
+    ready?.response.purchase.displayCategory ?? store?.category ?? "other";
   const purchase: Purchase = {
     name: shownStore?.name ?? CATEGORY_LABELS[category],
     logoUrl: shownStore?.logoUrl ?? null,
