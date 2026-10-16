@@ -136,3 +136,91 @@ describe("applyApprovedFindingToCatalog", () => {
     expect(res).toEqual({ ok: false, message: "Could not update the catalog. Refresh and try again." });
   });
 });
+
+const RULE_CARD = {
+  reward_categories: [
+    {
+      category: "groceries",
+      earnRate: 5,
+      mccs: ["5411"],
+      mccSource: "terms",
+      capMonthly: 2000,
+      quote: "5x groceries",
+    },
+  ],
+  welcome_offer: {
+    summary: "40,000 points",
+    points: 40000,
+    validTo: "2026-03-31",
+    newCardholdersOnly: true,
+  },
+};
+
+const RULE_EXTRACTED = {
+  earn_rates: [
+    {
+      category: "groceries",
+      rate: 5,
+      unit: "points_per_dollar",
+      quote: "5x groceries",
+      mccs: ["5411"],
+      mcc_source: "terms" as const,
+      cap_amount: 2000,
+      cap_period: "monthly",
+    },
+  ],
+  welcome_bonus: {
+    value: {
+      summary: "40,000 points",
+      points: 40000,
+      valid_to: "2026-03-31",
+      new_cardholders_only: true,
+    },
+    quote: "40,000 points",
+  },
+};
+
+describe("applyApprovedFindingToCatalog card rules", () => {
+  it("round-trips existing MCC fields and writes approved rule edits via the RPC", async () => {
+    Object.assign(state.cards[0]!, RULE_CARD);
+    const res = await applyApprovedFindingToCatalog(fakeSupabase() as never, {
+      findingId: FINDING_ID,
+      linkedCardId: "scotia-gold-amex",
+      diffKind: "changed",
+      cardName: "Gold American Express",
+      issuerName: "Scotiabank",
+      fields: {
+        fields: [
+          { key: "earn_rates[0].mccs", save: true, page_value: "5411", value: "5411, 5812" },
+          { key: "earn_rates[0].tier_threshold", save: true, page_value: "", value: "25000" },
+          { key: "welcome_bonus.valid_to", save: true, page_value: "2026-03-31", value: "2026-12-31" },
+        ],
+      },
+      extracted: RULE_EXTRACTED,
+    });
+    expect(res.ok).toBe(true);
+    expect(state.calls[0]!.args.p_card_op).toMatchObject({
+      op: "update",
+      id: "scotia-gold-amex",
+      set: {
+        reward_categories: [
+          {
+            category: "groceries",
+            earnRate: 5,
+            mccs: ["5411", "5812"],
+            mccSource: "terms",
+            capMonthly: 2000,
+            tierThreshold: 25000,
+            quote: "5x groceries",
+          },
+        ],
+        welcome_offer: {
+          summary: "40,000 points",
+          points: 40000,
+          validTo: "2026-12-31",
+          newCardholdersOnly: true,
+        },
+      },
+    });
+  });
+});
