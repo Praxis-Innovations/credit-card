@@ -84,8 +84,6 @@ function buildValidated(
   const categoryShown = input.categoryShown.trim();
   const parsed = chainFromStatement(statement);
   const chain = input.brandName.trim() || parsed.chain;
-  // Screenshots need a private Storage upload path; omit until that exists
-  // rather than storing a local filename nobody can open.
   const proposed = {
     date,
     card: card.name,
@@ -94,7 +92,6 @@ function buildValidated(
     statement_text: statement,
     mcc_shown: shown || null,
     category_shown: categoryShown || null,
-    screenshot_file: null,
     ...parsed,
     chain,
     merchant_brand_id: input.brandId,
