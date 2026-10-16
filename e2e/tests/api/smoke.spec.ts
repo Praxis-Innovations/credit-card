@@ -23,4 +23,25 @@ test.describe("api smoke", () => {
     expect(Array.isArray(body.data)).toBeTruthy();
     expect(body.data.length).toBeGreaterThan(0);
   });
+
+  test("POST /v1/recommendations accepts mcc", { tag: "@smoke" }, async ({ request }) => {
+    const res = await request.post(apiUrl("/v1/recommendations"), {
+      headers: {
+        ...apiAuthHeaders(),
+        "content-type": "application/json",
+      },
+      data: {
+        amountCad: 100,
+        mcc: "5411",
+        ownedCardIds: ["amex-cobalt", "tangerine-moneyback"],
+      },
+    });
+    expect(res.ok()).toBeTruthy();
+    const body = (await res.json()) as {
+      bestCardId: string;
+      purchase: { mcc: string };
+    };
+    expect(body.purchase.mcc).toBe("5411");
+    expect(body.bestCardId).toBe("amex-cobalt");
+  });
 });
