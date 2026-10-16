@@ -77,6 +77,55 @@ describe("widenQuoteToContainNumber", () => {
     expect(widenQuoteToContainNumber(quote, 99, page)).toBe(quote);
     expect(numberInQuote(99, quote)).toBe(false);
   });
+
+  it("does not confirm a wrong rate by borrowing a neighbouring row's number", () => {
+    const page = `Earn 5 points on dining
+
+Earn 3 points on gas
+
+Other purchases earn rewards.
+`;
+    const quote = "Other purchases earn rewards.";
+    // Claude claimed 3 (from the gas row) for "other"; real rate is 1.
+    const widened = widenQuoteToContainNumber(quote, 3, page);
+    expect(widened).toBe(quote);
+    expect(numberInQuote(3, widened)).toBe(false);
+
+    const extraction: CardExtraction = {
+      card_name: null,
+      issuer: null,
+      network: null,
+      annual_fee: null,
+      additional_card_fee: null,
+      purchase_apr: null,
+      cash_advance_apr: null,
+      balance_transfer_apr: null,
+      fx_fee_percent: null,
+      min_personal_income: null,
+      min_household_income: null,
+      min_credit_limit: null,
+      reward_currency: null,
+      earn_rates: [
+        {
+          category: "other",
+          description: "other purchases",
+          rate: 3,
+          unit: "points_per_dollar",
+          cap: null,
+          quote,
+        },
+      ],
+      welcome_bonus: null,
+      insurance_highlights: [],
+      notes: null,
+    };
+    const checks = checkExtraction(selectQuoteSpans(extraction, page), page);
+    expect(checks.fields.find((f) => f.field === "earn_rates[0] other")).toMatchObject({
+      value_in_quote: false,
+      ok: false,
+      issues: ["value does not appear in its quote"],
+    });
+  });
 });
 
 describe("selectQuoteSpans", () => {

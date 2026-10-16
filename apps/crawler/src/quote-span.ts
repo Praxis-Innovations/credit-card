@@ -57,33 +57,11 @@ function rateCellAbove(page: string, starts: number[], qTop: number): number | n
   return null;
 }
 
-/** Nearest line outside [qTop, qBot] that contains `value`; prefer above on ties. */
-function nearestLineWithNumber(
-  page: string,
-  starts: number[],
-  qTop: number,
-  qBot: number,
-  value: number,
-): number | null {
-  let best: { dist: number; above: boolean; i: number } | null = null;
-  for (let i = 0; i < starts.length; i++) {
-    if (i >= qTop && i <= qBot) continue;
-    if (!numberInQuote(value, lineAt(page, starts, i))) continue;
-    const dist = i < qTop ? qTop - i : i - qBot;
-    if (dist > MAX_LINE_DISTANCE) continue;
-    const above = i < qTop;
-    if (!best || dist < best.dist || (dist === best.dist && above && !best.above)) {
-      best = { dist, above, i };
-    }
-  }
-  return best?.i ?? null;
-}
-
 /**
- * Widen a quote so it contains `value`, by growing to the table row (rate cell
- * above the description) or the nearest nearby line with the number.
- * Returns the original quote when the number is already present, or when no
- * nearby span contains it — callers then flag the field honestly.
+ * Widen a quote to its table row: the short rate cell above the description.
+ * Does not scan neighbouring rows for the claimed number — that would confirm
+ * a wrong rate borrowed from another category. No rate cell → leave unchanged
+ * so the check flags honestly.
  */
 export function widenQuoteToContainNumber(quote: string, value: number, pageText: string): string {
   if (numberInQuote(value, quote)) return quote;
@@ -95,11 +73,8 @@ export function widenQuoteToContainNumber(quote: string, value: number, pageText
   const qBot = lineIndex(starts, start + quote.length - 1);
 
   const rateLine = rateCellAbove(pageText, starts, qTop);
-  if (rateLine !== null) return sliceLines(pageText, starts, rateLine, qBot);
-
-  const near = nearestLineWithNumber(pageText, starts, qTop, qBot, value);
-  if (near === null) return quote;
-  return sliceLines(pageText, starts, Math.min(near, qTop), Math.max(near, qBot));
+  if (rateLine === null) return quote;
+  return sliceLines(pageText, starts, rateLine, qBot);
 }
 
 function widenQuotedNumber<T>(field: Quoted<T> | null, value: number | null | undefined, pageText: string): Quoted<T> | null {
