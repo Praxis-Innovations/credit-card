@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
+    "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
     "@types/node": "^22.15.32",
     "typescript": "^5.8.3"

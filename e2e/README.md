@@ -68,3 +68,11 @@ e2e/
 
 Add new coverage under the matching `tests/<project>/` folder. Tag PR-blocking
 cases with `{ tag: "@smoke" }`.
+
+### Admin regression (`tests/admin/`)
+
+Full suite (nightly / `test:e2e`) covers signed-out redirect, non-admin blocked
+and signed out, Sources add/edit/pause/resume and domain validation, Review
+approve and reject-with-reason, and an app user reading zero admin rows under
+RLS. Auth uses the seeded `admin@northtap.test` password session written into
+Supabase SSR cookies (no live Google OAuth).
