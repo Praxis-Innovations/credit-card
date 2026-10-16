@@ -61,14 +61,15 @@ To create a file, start from `apps/<app>/.env.example`:
 | `mobile` | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_NORTHTAP_API_URL`, `EXPO_PUBLIC_NORTHTAP_API_KEY` |
 | `crawler` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Anthropic settings are not needed locally: local crawls use `--dry-run`; live crawls run in GitHub Actions only (see `apps/crawler/README.md`) |
 
-The Supabase URL, publishable key, and production API URL also come from the
-`northtap-app` Vercel project (`vercel env pull --project northtap-app
---environment=production`). Production sets
-`EXPO_PUBLIC_NORTHTAP_API_URL=https://northtap-api.vercel.app` (plus the
-matching `EXPO_PUBLIC_NORTHTAP_API_KEY`). The service-role key is never
-committed. `EXPO_PUBLIC_NORTHTAP_API_KEY` must equal `NORTHTAP_STATIC_API_KEY`
-and hash-match an active row in `public.api_keys` (SHA-256 of the plaintext,
-see `apps/api/src/lib/auth.ts`).
+The Supabase URL, publishable key, production API URL, and API key also come
+from the `northtap-app` Vercel project (`vercel env pull --project northtap-app
+--environment=production`). Production (and Preview, though preview deploys
+are disabled — see below) must set
+`EXPO_PUBLIC_NORTHTAP_API_URL=https://northtap-api.vercel.app` and
+`EXPO_PUBLIC_NORTHTAP_API_KEY`. The service-role key is never committed.
+`EXPO_PUBLIC_NORTHTAP_API_KEY` must equal `NORTHTAP_STATIC_API_KEY` on
+`northtap-api` and hash-match an active row in `public.api_keys` (SHA-256 of
+the plaintext, see `apps/api/src/lib/auth.ts`).
 
 Root scripts: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm test`,
 `pnpm pipeline:run | pipeline:source-health | pipeline:promote`

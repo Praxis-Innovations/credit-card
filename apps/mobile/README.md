@@ -17,8 +17,8 @@ pnpm --filter mobile start   # or: pnpm --filter mobile web
 | Variable | Purpose |
 | --- | --- |
 | `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Supabase project (auth + `user_cards`). Production uses NorthTap project `bshxaqjufibgsxeauyux`. |
-| `EXPO_PUBLIC_NORTHTAP_API_URL` | NorthTap API. Local: `http://localhost:8787`. Production (`northtap-app` on Vercel): `https://northtap-api.vercel.app`. |
-| `EXPO_PUBLIC_NORTHTAP_API_KEY` | Static API key. Keep it in `.env.local` / Vercel env — never commit it. |
+| `EXPO_PUBLIC_NORTHTAP_API_URL` | NorthTap API. Local: `http://localhost:8787`. Production (`northtap-app` on Vercel): `https://northtap-api.vercel.app`. Preview deploys for this project are disabled. |
+| `EXPO_PUBLIC_NORTHTAP_API_KEY` | Static API key (must match `NORTHTAP_STATIC_API_KEY` on `northtap-api`). Keep it in `.env.local` / Vercel env — never commit it. |
 | `EXPO_PUBLIC_TERMS_URL` / `EXPO_PUBLIC_PRIVACY_URL` | Optional. The consent line on the Save sheet only shows when both are set. |
 
 All data comes from the API (`src/lib/api-client.ts`). The only local config is the
