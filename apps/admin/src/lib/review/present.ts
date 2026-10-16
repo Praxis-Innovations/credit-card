@@ -13,6 +13,8 @@ export type FieldRow = {
   changed: boolean;
 };
 
+export type FieldSection = "needs_look" | "looks_right";
+
 export const DIFF_LABELS: Record<DiffKind, { label: string; tone: PillTone }> = {
   new: { label: "New card", tone: "warn" },
   changed: { label: "Changed", tone: "neutral" },
@@ -57,7 +59,7 @@ function candidatesFor(x: Extraction): Map<string, Candidate> {
   return out;
 }
 
-/** Field rows for the expanded detail: changed fields first, vs the catalog value they replace. */
+/** Field rows for the review card: changed fields first, vs the catalog value they replace. */
 export function buildFieldRows(finding: Pick<PendingFinding, "extracted" | "check_results" | "diff">): FieldRow[] {
   const checks = new Map((finding.check_results?.fields ?? []).map((f) => [f.field, f]));
   const x = finding.extracted;
@@ -95,6 +97,26 @@ export function buildFieldRows(finding: Pick<PendingFinding, "extracted" | "chec
     });
   }
   return rows;
+}
+
+/**
+ * Needs a look: warnings (failed checks) and catalog changes.
+ * Looks right: values found in their quotes with no change to apply.
+ */
+export function fieldSection(row: FieldRow): FieldSection {
+  if (row.changed) return "needs_look";
+  if (row.check && !row.check.ok) return "needs_look";
+  return "looks_right";
+}
+
+export function splitFieldRows(rows: FieldRow[]): { needsLook: FieldRow[]; looksRight: FieldRow[] } {
+  const needsLook: FieldRow[] = [];
+  const looksRight: FieldRow[] = [];
+  for (const row of rows) {
+    if (fieldSection(row) === "needs_look") needsLook.push(row);
+    else looksRight.push(row);
+  }
+  return { needsLook, looksRight };
 }
 
 /** Fields that differ from the catalog; for a new card, every extracted field. */

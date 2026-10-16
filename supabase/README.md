@@ -86,11 +86,13 @@ Written by `apps/crawler` with its own server-side key (migration
 | Table | Purpose |
 | --- | --- |
 | `crawl_runs` | One crawl run: scope, trigger, status (`requested` → `running` → `done` / `failed`), counts, tokens, cost estimate, skipped pages, error. |
-| `card_findings` | Per-card output of a run: page hash, extraction (each value with a verbatim quote), check results, diff vs `cards` (`new` / `changed` / `unchanged` / `possibly_discontinued`), linked card, `review_status` (`pending` for new / changed / possibly discontinued; `checked` for unchanged, which never enter the review queue), `checked_at` (when the crawler diffed it). |
+| `card_findings` | Per-card output of a run: page hash, extraction (each value with a verbatim quote), check results, diff vs `cards` (`new` / `changed` / `unchanged` / `possibly_discontinued`), linked card, `review_status` (`pending` for new / changed / possibly discontinued; `checked` for unchanged, which never enter the review queue), `checked_at` (when the crawler diffed it), `review_fields` (per-field save/edit decisions from the review card; audited on approve/reject). |
 
 RLS matches the admin tables: console roles read; only admins insert or
 delete (admins may only insert runs as `requested`); validators may update a
-finding's `review_status` / `reviewed_by` / `reviewed_at` and no other column.
+finding's decision columns (`review_status` / `review_note` / `review_fields` /
+`reviewed_by` / `reviewed_at`) and no other column. Approval never writes
+`cards`.
 
 Catalog images (card art, brand and program logos) are stored in the public
 Storage bucket `brand-assets`, which only the service role can write to. The
