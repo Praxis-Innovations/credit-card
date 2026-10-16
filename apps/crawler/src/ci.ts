@@ -13,7 +13,7 @@ import { MissingClaudeCredentialsError, runCrawl, type RunSummary, type Trigger 
 import { LocalCache, SupabaseStore, type RequestedRun, type ScheduleStore } from "./store";
 import type { CrawlSource } from "./types";
 
-const HELP = `Usage: pnpm --filter crawler ci -- --mode <requested|monthly|both> [options]
+const HELP = `Usage: pnpm --filter crawler run ci --mode <requested|monthly|both> [options]
 
   GitHub Actions entrypoint. Claims crawl_runs with status=requested and/or
   crawls active sources whose schedule is monthly. Claude auth is Workload
@@ -140,7 +140,12 @@ export async function runCi(opts: CiOptions, deps: CiDeps): Promise<CiResult> {
 }
 
 async function main(): Promise<number> {
+  // pnpm 9 `run` passes a literal `--` through when callers use the separator;
+  // strip it so parseArgs still sees --mode / --help as options.
+  const argv = process.argv.slice(2);
+  if (argv[0] === "--") argv.shift();
   const { values } = parseArgs({
+    args: argv,
     options: {
       mode: { type: "string" },
       source: { type: "string" },
