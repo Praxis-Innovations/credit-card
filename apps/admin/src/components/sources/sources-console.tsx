@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, useTransition } from "react";
-import { setSourcePaused, type ActionResult } from "@/app/(console)/sources/actions";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { setSourcePaused } from "@/app/(console)/sources/actions";
+import { ActionNotice, LoadError, usePendingAction } from "@/components/action-feedback";
 import { displayUrl, formatDate, statusPill } from "@/lib/sources/present";
 import {
   SOURCES_PAGE_SIZE,
@@ -34,12 +35,10 @@ export function SourcesConsole({
   loadError: string | null;
 }) {
   const [form, setForm] = useState<FormMode>(null);
-  const [notice, setNotice] = useState<{ ok: boolean; message: string } | null>(null);
-  const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<SourceStatusFilter>("all");
   const [page, setPage] = useState(1);
-  const [, startTransition] = useTransition();
+  const { notice, setNotice, pendingKey, run } = usePendingAction();
   const triggerRef = useRef<HTMLElement | null>(null);
 
   const restoreFocus = () => {
@@ -63,23 +62,8 @@ export function SourcesConsole({
       setNotice({ ok: true, message });
       closeForm();
     },
-    [closeForm],
+    [closeForm, setNotice],
   );
-
-  const run = (key: string, action: () => Promise<ActionResult>) => {
-    setPendingKey(key);
-    setNotice(null);
-    startTransition(async () => {
-      try {
-        const res = await action();
-        setNotice({ ok: res.ok, message: res.message });
-      } catch {
-        setNotice({ ok: false, message: "Something went wrong. Refresh and try again." });
-      } finally {
-        setPendingKey(null);
-      }
-    });
-  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -139,23 +123,8 @@ export function SourcesConsole({
         />
       ) : null}
 
-      <p
-        role="status"
-        aria-live="polite"
-        className={
-          notice
-            ? `rounded-lg px-4 py-2.5 text-sm font-medium ${notice.ok ? "bg-ok-bg text-ok-fg" : "bg-bad-bg text-bad-fg"}`
-            : "sr-only"
-        }
-      >
-        {notice?.message ?? ""}
-      </p>
-
-      {loadError ? (
-        <p role="alert" className="rounded-lg bg-bad-bg px-4 py-2.5 text-sm font-medium text-bad-fg">
-          {loadError}
-        </p>
-      ) : null}
+      <ActionNotice notice={notice} />
+      <LoadError message={loadError} />
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex min-w-[220px] flex-1 flex-col gap-1">

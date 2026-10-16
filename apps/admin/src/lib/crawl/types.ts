@@ -1,5 +1,4 @@
-export const CRAWL_RUN_STATUSES = ["requested", "running", "done", "failed"] as const;
-export type CrawlRunStatus = (typeof CRAWL_RUN_STATUSES)[number];
+export type CrawlRunStatus = "requested" | "running" | "done" | "failed";
 
 export type CrawlRun = {
   id: string;

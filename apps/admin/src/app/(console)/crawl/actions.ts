@@ -28,7 +28,7 @@ async function insertRequested(
   supabase: SupabaseClient,
   source: SourcePick,
   email: string,
-): Promise<{ ok: true } | { ok: false; message: string }> {
+): Promise<ActionResult> {
   const { error } = await supabase.from("crawl_runs").insert({
     source_id: source.id,
     source_scope: source.issuer_name,
@@ -36,8 +36,40 @@ async function insertRequested(
     status: "requested",
     requested_by: email,
   });
-  if (error) return { ok: false, message: `Could not queue a crawl for ${source.issuer_name}. Try again.` };
-  return { ok: true };
+  if (error) return failure(`Could not queue a crawl for ${source.issuer_name}. Try again.`);
+  return {
+    ok: true,
+    message: `Queued a crawl for ${source.issuer_name}. The GitHub Actions crawler will pick it up.`,
+  };
+}
+
+type LoadedSource = { ok: true; source: SourcePick } | { ok: false; message: string };
+
+/** Active source with a compare URL, or a failure explaining why it can't be crawled. */
+async function loadCrawlableSource(
+  supabase: SupabaseClient,
+  sourceId: string,
+  missingMessage: string,
+): Promise<LoadedSource> {
+  const { data: source, error } = await supabase
+    .from("crawl_sources")
+    .select("id, issuer_name, compare_url, status")
+    .eq("id", sourceId)
+    .maybeSingle<SourcePick>();
+  if (error || !source) return { ok: false, message: missingMessage };
+  if (source.status !== "active" || !source.compare_url) {
+    return {
+      ok: false,
+      message: `${source.issuer_name} must be active with a compare page before you can crawl it.`,
+    };
+  }
+  if (await activeQueueBlocked(supabase, source.id)) {
+    return {
+      ok: false,
+      message: `${source.issuer_name} already has a crawl requested or running.`,
+    };
+  }
+  return { ok: true, source };
 }
 
 function revalidateCrawl() {
@@ -45,71 +77,66 @@ function revalidateCrawl() {
   revalidatePath("/review");
 }
 
+async function requestAllActive(supabase: SupabaseClient, email: string): Promise<ActionResult> {
+  const { data: sources, error } = await supabase
+    .from("crawl_sources")
+    .select("id, issuer_name, compare_url, status")
+    .eq("status", "active")
+    .order("issuer_name")
+    .returns<SourcePick[]>();
+  if (error) return failure("Could not load active issuers. Try again.");
+  const list = (sources ?? []).filter((s) => s.compare_url);
+  if (list.length === 0) return failure("No active issuers with a compare page to crawl.");
+
+  let queued = 0;
+  let skipped = 0;
+  for (const source of list) {
+    if (await activeQueueBlocked(supabase, source.id)) {
+      skipped++;
+      continue;
+    }
+    const res = await insertRequested(supabase, source, email);
+    if (!res.ok) return res;
+    queued++;
+  }
+  if (queued === 0) {
+    return failure(
+      skipped > 0
+        ? "Every active issuer already has a crawl requested or running."
+        : "No active issuers with a compare page to crawl.",
+    );
+  }
+  const skipNote = skipped > 0 ? ` Skipped ${skipped} already queued.` : "";
+  return {
+    ok: true,
+    message: `Queued ${queued} crawl${queued === 1 ? "" : "s"}. The GitHub Actions crawler will pick ${queued === 1 ? "it" : "them"} up.${skipNote}`,
+  };
+}
+
+async function requestOne(supabase: SupabaseClient, email: string, sourceId: string): Promise<ActionResult> {
+  const loaded = await loadCrawlableSource(supabase, sourceId, "That issuer no longer exists.");
+  if (!loaded.ok) return failure(loaded.message);
+  return insertRequested(supabase, loaded.source, email);
+}
+
 /** Queue one issuer (or every active issuer) as crawl_runs status=requested. */
 export async function requestCrawl(scope: string): Promise<ActionResult> {
   const auth = await authorizeMutation("admin");
   if (!auth.ok) return failure(auth.message);
   if (typeof scope !== "string" || !scope.trim()) return failure("Choose what to crawl.");
+
   const { supabase, email } = auth;
-
+  let result: ActionResult;
   if (scope === ALL_ACTIVE_SCOPE) {
-    const { data: sources, error } = await supabase
-      .from("crawl_sources")
-      .select("id, issuer_name, compare_url, status")
-      .eq("status", "active")
-      .order("issuer_name")
-      .returns<SourcePick[]>();
-    if (error) return failure("Could not load active issuers. Try again.");
-    const list = (sources ?? []).filter((s) => s.compare_url);
-    if (list.length === 0) return failure("No active issuers with a compare page to crawl.");
-
-    let queued = 0;
-    let skipped = 0;
-    for (const source of list) {
-      if (await activeQueueBlocked(supabase, source.id)) {
-        skipped++;
-        continue;
-      }
-      const res = await insertRequested(supabase, source, email);
-      if (!res.ok) return failure(res.message);
-      queued++;
-    }
-    if (queued === 0) {
-      return failure(
-        skipped > 0
-          ? "Every active issuer already has a crawl requested or running."
-          : "No active issuers with a compare page to crawl.",
-      );
-    }
-    revalidateCrawl();
-    const skipNote = skipped > 0 ? ` Skipped ${skipped} already queued.` : "";
-    return {
-      ok: true,
-      message: `Queued ${queued} crawl${queued === 1 ? "" : "s"}. The GitHub Actions crawler will pick ${queued === 1 ? "it" : "them"} up.${skipNote}`,
-    };
+    result = await requestAllActive(supabase, email);
+  } else if (!isUuid(scope)) {
+    result = failure("Choose what to crawl.");
+  } else {
+    result = await requestOne(supabase, email, scope);
   }
 
-  if (!isUuid(scope)) return failure("Choose what to crawl.");
-  const { data: source, error } = await supabase
-    .from("crawl_sources")
-    .select("id, issuer_name, compare_url, status")
-    .eq("id", scope)
-    .maybeSingle<SourcePick>();
-  if (error || !source) return failure("That issuer no longer exists.");
-  if (source.status !== "active" || !source.compare_url) {
-    return failure(`${source.issuer_name} must be active with a compare page before you can crawl it.`);
-  }
-  if (await activeQueueBlocked(supabase, source.id)) {
-    return failure(`${source.issuer_name} already has a crawl requested or running.`);
-  }
-
-  const res = await insertRequested(supabase, source, email);
-  if (!res.ok) return failure(res.message);
-  revalidateCrawl();
-  return {
-    ok: true,
-    message: `Queued a crawl for ${source.issuer_name}. The GitHub Actions crawler will pick it up.`,
-  };
+  if (result.ok) revalidateCrawl();
+  return result;
 }
 
 /** Delete a still-requested run so the workflow never claims it. */
@@ -160,24 +187,18 @@ export async function retryCrawl(runId: string): Promise<ActionResult> {
   }
   if (!run.source_id) return failure(`Could not retry ${run.source_scope}: the source is missing.`);
 
-  const { data: source, error } = await supabase
-    .from("crawl_sources")
-    .select("id, issuer_name, compare_url, status")
-    .eq("id", run.source_id)
-    .maybeSingle<SourcePick>();
-  if (error || !source) return failure(`Could not retry ${run.source_scope}: the issuer is gone.`);
-  if (source.status !== "active" || !source.compare_url) {
-    return failure(`${source.issuer_name} must be active with a compare page before you can crawl it.`);
-  }
-  if (await activeQueueBlocked(supabase, source.id)) {
-    return failure(`${source.issuer_name} already has a crawl requested or running.`);
-  }
+  const loaded = await loadCrawlableSource(
+    supabase,
+    run.source_id,
+    `Could not retry ${run.source_scope}: the issuer is gone.`,
+  );
+  if (!loaded.ok) return failure(loaded.message);
 
-  const res = await insertRequested(supabase, source, email);
-  if (!res.ok) return failure(res.message);
+  const res = await insertRequested(supabase, loaded.source, email);
+  if (!res.ok) return res;
   revalidateCrawl();
   return {
     ok: true,
-    message: `Queued another crawl for ${source.issuer_name}. The GitHub Actions crawler will pick it up.`,
+    message: `Queued another crawl for ${loaded.source.issuer_name}. The GitHub Actions crawler will pick it up.`,
   };
 }

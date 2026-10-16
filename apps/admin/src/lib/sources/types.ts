@@ -1,19 +1,14 @@
 export const SOURCE_STATUSES = ["active", "paused", "not_set_up", "blocked"] as const;
 export type SourceStatus = (typeof SOURCE_STATUSES)[number];
 
-export const SCHEDULES = ["monthly", "manual"] as const;
-export type Schedule = (typeof SCHEDULES)[number];
-
-export type RobotsStatus = "allowed" | "disallowed" | "unreachable";
-
 export type CrawlSource = {
   id: string;
   issuer_name: string;
   compare_url: string | null;
   url_pattern: string | null;
-  schedule: Schedule;
+  schedule: "monthly" | "manual";
   status: SourceStatus;
-  robots_status: RobotsStatus | null;
+  robots_status: "allowed" | "disallowed" | "unreachable" | null;
   robots_checked_at: string | null;
   last_crawled_at: string | null;
   notes: string | null;
