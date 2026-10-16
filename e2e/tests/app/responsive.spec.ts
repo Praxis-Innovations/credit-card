@@ -77,7 +77,8 @@ async function expectCardAspect(page: Page) {
     .toBe(true);
 }
 
-async function tilesInFirstRow(page: Page): Promise<number> {
+/** Store rows in the first list row (1 on phone/tablet, 2 on desktop). */
+async function storesInFirstRow(page: Page): Promise<number> {
   const tiles = page.getByTestId("store-tile-grid").last().getByRole("button");
   const tops = await tiles.evaluateAll((els) =>
     els.map((el) => Math.round(el.getBoundingClientRect().top)),
@@ -235,7 +236,7 @@ for (const vp of VIEWPORTS) {
         expect(tabs.x + tabs.width).toBeCloseTo((vp.width + 1040) / 2, 0);
       }
 
-      expect(await tilesInFirstRow(page)).toBe({ phone: 3, tablet: 4, desktop: 6 }[vp.size]);
+      expect(await storesInFirstRow(page)).toBe({ phone: 1, tablet: 1, desktop: 2 }[vp.size]);
 
       const chipGroup = page.getByRole("group", { name: "Categories" });
       if (vp.size === "phone") {

@@ -5,7 +5,7 @@ vi.mock("react-native", () => ({ Platform: { OS: "web" }, useWindowDimensions: v
 const { layoutFor } = await import("./responsive");
 
 describe("layoutFor", () => {
-  it("keeps web phones full width with three tiles per row", () => {
+  it("keeps web phones full width with one store column", () => {
     for (const width of [320, 390, 599]) {
       expect(layoutFor(width, true)).toMatchObject({
         size: "phone",
@@ -13,31 +13,31 @@ describe("layoutFor", () => {
         desktop: false,
         contentWidth: undefined,
         columnMaxWidth: undefined,
-        tilesPerRow: 3,
+        storeColumns: 1,
       });
     }
   });
 
-  it("uses the fixed 704px tablet content width with four tiles", () => {
+  it("uses the fixed 704px tablet content width with one store column", () => {
     for (const width of [752, 820, 1023]) {
       expect(layoutFor(width, true)).toMatchObject({
         size: "tablet",
         wide: true,
         desktop: false,
         contentWidth: 704,
-        tilesPerRow: 4,
+        storeColumns: 1,
       });
     }
   });
 
-  it("uses the fixed 1040px desktop content width with six tiles", () => {
+  it("uses the fixed 1040px desktop content width with two store columns", () => {
     for (const width of [1104, 1440, 1920]) {
       expect(layoutFor(width, true)).toMatchObject({
         size: "desktop",
         wide: true,
         desktop: true,
         contentWidth: 1040,
-        tilesPerRow: 6,
+        storeColumns: 2,
       });
     }
   });
@@ -54,7 +54,7 @@ describe("layoutFor", () => {
         wide: false,
         contentWidth: undefined,
         columnMaxWidth: 480,
-        tilesPerRow: 3,
+        storeColumns: 1,
       });
     }
   });

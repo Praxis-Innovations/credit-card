@@ -25,10 +25,11 @@ export interface Layout {
   contentWidth: number | undefined;
   /** Native column cap; undefined on web phones (full width). */
   columnMaxWidth: number | undefined;
-  tilesPerRow: number;
+  /** Store-step list columns (DS4: one list on phone/tablet, two on desktop). */
+  storeColumns: number;
 }
 
-const TILES: Record<LayoutSize, number> = { phone: 3, tablet: 4, desktop: 6 };
+const STORE_COLUMNS: Record<LayoutSize, number> = { phone: 1, tablet: 1, desktop: 2 };
 
 /**
  * Web-only breakpoints. Native always gets the phone layout (with the
@@ -52,7 +53,7 @@ export function layoutFor(width: number, web: boolean): Layout {
     desktop: size === "desktop",
     contentWidth,
     columnMaxWidth: web ? undefined : PHONE_COLUMN,
-    tilesPerRow: TILES[size],
+    storeColumns: STORE_COLUMNS[size],
   };
 }
 

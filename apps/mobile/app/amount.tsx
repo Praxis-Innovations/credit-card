@@ -172,6 +172,7 @@ export default function AmountScreen() {
                 name={store.name}
                 logoUrl={store.logoUrl}
                 logoAlt={store.logoAlt}
+                category={store.category}
                 size={52}
               />
               <View style={styles.flexText}>
@@ -228,7 +229,13 @@ export default function AmountScreen() {
           <Text style={styles.lead}>The amount helps us show the real dollars you get back.</Text>
         </View>
         <View style={styles.storeCard} role="region" aria-label="Selected store">
-          <StoreLogo name={store.name} logoUrl={store.logoUrl} logoAlt={store.logoAlt} size={48} />
+          <StoreLogo
+            name={store.name}
+            logoUrl={store.logoUrl}
+            logoAlt={store.logoAlt}
+            category={store.category}
+            size={48}
+          />
           <View style={styles.flexText}>
             <Text style={styles.storeName}>{store.name}</Text>
             <Text style={styles.storeMeta}>{metaWide}</Text>
@@ -248,6 +255,7 @@ export default function AmountScreen() {
           meta={meta}
           logoUrl={store.logoUrl}
           logoAlt={store.logoAlt}
+          category={store.category}
           action={changeStoreButton}
         />
         {centredAmount}

@@ -1,7 +1,8 @@
 import { Children, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import type { Category } from "../../lib/api-types";
 import { useLayout } from "../../lib/responsive";
-import { colors, fonts } from "../../lib/theme";
+import { colors, fonts, TOUCH } from "../../lib/theme";
 import { StoreLogo } from "./Logos";
 import { pressState } from "./press-state";
 
@@ -10,11 +11,20 @@ interface StoreTileProps {
   meta: string;
   logoUrl: string | null | undefined;
   logoAlt?: string | null;
+  /** MCC display group for the category-icon fallback. */
+  category: Category;
   onPress: () => void;
 }
 
-/** One cell of the store grid. */
-export function StoreTile({ name, meta, logoUrl, logoAlt, onPress }: StoreTileProps) {
+/** One store row: 40px logo left of the name (DS4 / MO3). */
+export function StoreTile({
+  name,
+  meta,
+  logoUrl,
+  logoAlt,
+  category,
+  onPress,
+}: StoreTileProps) {
   return (
     <Pressable
       onPress={onPress}
@@ -22,28 +32,36 @@ export function StoreTile({ name, meta, logoUrl, logoAlt, onPress }: StoreTilePr
       accessibilityLabel={`${name}, ${meta}`}
       style={(state) => {
         const { pressed, hovered } = pressState(state);
-        return [styles.tile, hovered && styles.hovered, pressed && styles.pressed];
+        return [styles.row, hovered && styles.hovered, pressed && styles.pressed];
       }}
     >
-      <StoreLogo name={name} logoUrl={logoUrl} logoAlt={logoAlt} />
-      <Text style={styles.name} numberOfLines={2}>
-        {name}
-      </Text>
-      <Text style={styles.meta} numberOfLines={1}>
-        {meta}
-      </Text>
+      <StoreLogo
+        name={name}
+        logoUrl={logoUrl}
+        logoAlt={logoAlt}
+        category={category}
+        size={40}
+      />
+      <View style={styles.text}>
+        <Text style={styles.name} numberOfLines={1}>
+          {name}
+        </Text>
+        <Text style={styles.meta} numberOfLines={1}>
+          {meta}
+        </Text>
+      </View>
     </Pressable>
   );
 }
 
 const GAP = 10;
 
-/** Lays tiles out 3 (phone), 4 (tablet) or 6 (desktop) to a row with 10px gaps. */
+/** Lays store rows out in 1 (phone/tablet) or 2 (desktop) columns. */
 export function TileGrid({ children }: { children: ReactNode }) {
-  const { tilesPerRow } = useLayout();
+  const { storeColumns } = useLayout();
   const [width, setWidth] = useState(0);
-  const tileWidth =
-    width > 0 ? Math.floor((width - GAP * (tilesPerRow - 1)) / tilesPerRow) : undefined;
+  const colWidth =
+    width > 0 ? Math.floor((width - GAP * (storeColumns - 1)) / storeColumns) : undefined;
   return (
     <View
       style={styles.grid}
@@ -52,7 +70,11 @@ export function TileGrid({ children }: { children: ReactNode }) {
     >
       {Children.map(children, (child) =>
         child ? (
-          <View style={{ width: tileWidth ?? (`${Math.floor(100 / tilesPerRow) - 2}%` as const) }}>
+          <View
+            style={{
+              width: colWidth ?? (`${Math.floor(100 / storeColumns) - 2}%` as const),
+            }}
+          >
             {child}
           </View>
         ) : null,
@@ -67,19 +89,17 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: GAP,
   },
-  tile: {
-    position: "relative",
-    flex: 1,
+  row: {
+    flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    paddingTop: 14,
-    paddingBottom: 12,
-    paddingHorizontal: 6,
-    borderRadius: 14,
+    gap: 12,
+    minHeight: TOUCH,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
-    minHeight: 44,
   },
   hovered: {
     borderColor: colors.primary,
@@ -88,17 +108,20 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     backgroundColor: colors.tint,
   },
+  text: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
   name: {
     fontFamily: fonts.semibold,
-    fontSize: 14,
-    lineHeight: 17,
+    fontSize: 15,
+    lineHeight: 18,
     color: colors.text,
-    textAlign: "center",
   },
   meta: {
     fontFamily: fonts.body,
-    fontSize: 12,
+    fontSize: 13,
     color: colors.textMuted,
-    textAlign: "center",
   },
 });
