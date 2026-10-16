@@ -225,12 +225,26 @@ describe("runCrawl", () => {
     expect(extractor.extractCard).toHaveBeenCalledTimes(2);
   });
 
+  it("re-extracts when the model differs even if the page hash matches", async () => {
+    const cache = new LocalCache(null);
+    await runCrawl({ source: "scotiabank", dryRun: true }, deps({ cache }));
+    const haiku = mockExtractor();
+    haiku.model = "claude-haiku-5-5";
+    const mem = memoryStore();
+    const summary = await runCrawl({ source: "scotiabank", dryRun: false }, deps({ cache, extractor: haiku, store: mem.store }));
+    expect(haiku.extractCard).toHaveBeenCalled();
+    expect(summary.counts.hash_skips).toBe(1); // compare-page discovery only
+    expect(mem.findings.some((f) => f.model === "claude-haiku-5-5")).toBe(true);
+  });
+
   it("uses database history for the hash skip", async () => {
     const mem = memoryStore();
     const { cleanPage } = await import("./clean");
     const { contentHash } = await import("./hash");
     vi.mocked(mem.store.previousCard).mockImplementation(async (_s, url) =>
-      url === GOLD ? { hash: contentHash(cleanPage(goldHtml, GOLD).text), extraction: goldExtraction() } : null,
+      url === GOLD
+        ? { hash: contentHash(cleanPage(goldHtml, GOLD).text), extraction: goldExtraction(), model: "claude-sonnet-5-5" }
+        : null,
     );
     const extractor = mockExtractor();
     await runCrawl({ source: "scotiabank", dryRun: false }, deps({ store: mem.store, extractor }));

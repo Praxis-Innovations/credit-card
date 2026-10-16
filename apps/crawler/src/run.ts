@@ -224,7 +224,9 @@ export async function runCrawl(opts: RunOptions, deps: RunDeps): Promise<RunSumm
       let callCost = 0;
       let reused = false;
       const prev = (await deps.store.previousCard(source.id, link.url)) ?? deps.cache.getCard(link.url);
-      if (prev && prev.hash === hash) {
+      // Only reuse when the page is unchanged AND the prior extraction used this
+      // same model — otherwise Sonnet↔Haiku compares would silently skip Claude.
+      if (prev && prev.hash === hash && prev.model === model) {
         extraction = prev.extraction;
         reused = true;
         counts.hash_skips++;
@@ -246,7 +248,7 @@ export async function runCrawl(opts: RunOptions, deps: RunDeps): Promise<RunSumm
           continue;
         }
       }
-      deps.cache.setCard(link.url, { hash, extraction });
+      deps.cache.setCard(link.url, { hash, extraction, model });
       counts.cards_extracted++;
 
       const checks = checkExtraction(extraction, cleaned.text);

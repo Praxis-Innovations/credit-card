@@ -23,6 +23,8 @@ export interface PreviousDiscovery {
 export interface PreviousCard {
   hash: string;
   extraction: CardExtraction;
+  /** Model that produced `extraction`; null when the row was a hash-skip reuse. */
+  model: string | null;
 }
 
 export type RunStatus = "requested" | "running" | "done" | "failed";
@@ -200,18 +202,21 @@ export class SupabaseStore implements ScheduleStore {
 
   async previousCard(sourceId: string | null, productUrl: string): Promise<PreviousCard | null> {
     if (!sourceId) return null;
+    // Prefer a row that actually called Claude so model-vs-model compares
+    // (e.g. Sonnet vs Haiku) do not reuse another model's extraction.
     const { data, error } = await this.db
       .from("card_findings")
-      .select("page_hash, extracted")
+      .select("page_hash, extracted, model")
       .eq("source_id", sourceId)
       .eq("product_url", productUrl)
       .not("extracted", "is", null)
       .not("page_hash", "is", null)
+      .not("model", "is", null)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     if (error) fail("read card_findings", error);
-    return data ? { hash: data.page_hash, extraction: data.extracted } : null;
+    return data ? { hash: data.page_hash, extraction: data.extracted, model: data.model } : null;
   }
 
   async createRun(run: Parameters<Store["createRun"]>[0]): Promise<void> {

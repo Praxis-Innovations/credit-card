@@ -206,7 +206,7 @@ revokes their access without touching the Console.
 | --- | --- |
 | Cron `0 */6 * * *` | Pick up `crawl_runs` with `status = 'requested'` (oldest first). |
 | Cron `0 16 1 * *` (1st of month) | Those requested runs, then every active `crawl_sources` row with `schedule = 'monthly'`. |
-| `workflow_dispatch` | Choose `requested` / `monthly` / `both`; optional issuer and `--limit`. |
+| `workflow_dispatch` | Choose `requested` / `monthly` / `both`; optional issuer, `--limit`, and `model` (`CRAWLER_MODEL`, e.g. `claude-haiku-5-5`). |
 
 ```yaml
 permissions:
