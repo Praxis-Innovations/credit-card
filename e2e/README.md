@@ -76,3 +76,16 @@ and signed out, Sources add/edit/pause/resume and domain validation, Review
 approve and reject-with-reason, and an app user reading zero admin rows under
 RLS. Auth uses the seeded `admin@northtap.test` password session written into
 Supabase SSR cookies (no live Google OAuth).
+
+### App project (`tests/app/`)
+
+Regression for the Expo web export (served on `:8082` by `stack:up`):
+
+- First-run guest flow (intro → cards → location/store → amount → best card → save)
+- Location denied, browse-instead-of-nearby, offline cached result, card-art fallback
+- No saved cards (guest CTA + signed-in empty wallet)
+- Google sign-in / Save your wallet (OAuth authorize is stubbed; session + `user_cards` use local Supabase)
+- Responsive layouts (phone / tablet / desktop), overflow 320–1920px, and keyboard focus trap
+
+Overpass (OSM) is mocked; the NorthTap API and local Supabase are real. Wide viewports use
+`test.use({ viewport })` / `page.setViewportSize` inside `tests/app/` (default project is 390×844).

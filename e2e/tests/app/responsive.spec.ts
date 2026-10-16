@@ -1,7 +1,6 @@
-import { expect, type Locator, type Page, test } from "@playwright/test";
-import { installNorthtapApiMock } from "./helpers/api-mock";
-import { expectNoForbiddenText, SCOTIA_GOLD, TRIANGLE } from "./helpers/flow";
-import { installSupabaseMock } from "./helpers/supabase-mock";
+import type { Locator, Page } from "@playwright/test";
+import { expect, test } from "../../src/fixtures";
+import { expectNoForbiddenText, SCOTIA_GOLD, TRIANGLE } from "../../src/helpers/app/flow";
 
 type Size = "phone" | "tablet" | "desktop";
 
@@ -18,13 +17,14 @@ const OVERFLOW_WIDTHS = [320, 390, 599, 600, 820, 1023, 1024, 1440, 1920];
  * content inside intentional horizontal scrollers (the phone category chips).
  */
 async function horizontalOverflow(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
+  // String evaluate: e2e tsconfig has no DOM lib.
+  return page.evaluate(`(() => {
     const vw = document.documentElement.clientWidth;
-    const offenders: string[] = [];
+    const offenders = [];
     if (document.documentElement.scrollWidth > vw) {
-      offenders.push(`document scrollWidth ${document.documentElement.scrollWidth} > ${vw}`);
+      offenders.push("document scrollWidth " + document.documentElement.scrollWidth + " > " + vw);
     }
-    const inHorizontalScroller = (el: Element) => {
+    const inHorizontalScroller = (el) => {
       for (let p = el.parentElement; p; p = p.parentElement) {
         const { overflowX } = getComputedStyle(p);
         if ((overflowX === "auto" || overflowX === "scroll") && p.scrollWidth > p.clientWidth) {
@@ -40,11 +40,13 @@ async function horizontalOverflow(page: Page): Promise<string[]> {
         if (inHorizontalScroller(el)) continue;
         const label =
           el.getAttribute("aria-label") ?? el.textContent?.trim().slice(0, 40) ?? el.tagName;
-        offenders.push(`${el.tagName} "${label}" ${Math.round(rect.left)}–${Math.round(rect.right)}`);
+        offenders.push(
+          el.tagName + ' "' + label + '" ' + Math.round(rect.left) + "–" + Math.round(rect.right),
+        );
       }
     }
     return offenders.slice(0, 10);
-  });
+  })()`) as Promise<string[]>;
 }
 
 async function expectNoOverflowAt(page: Page, widths: number[], height = 900) {
@@ -137,10 +139,13 @@ for (const vp of VIEWPORTS) {
     test("happy path: intro → cards → location → browse Gas → Shell → Skip → Triangle $4.00", async ({
       page,
     }) => {
-      await installNorthtapApiMock(page);
-      await installSupabaseMock(page, { googleEnabled: true });
+      test.setTimeout(120_000);
 
       await page.goto("/");
+      await expect(
+        page.getByRole("heading", { name: /right card for every purchase/i }),
+      ).toBeVisible({ timeout: 45_000 });
+
       const banner = page.getByRole("banner");
       if (vp.size === "phone") {
         await expect(banner).toHaveCount(0);
@@ -158,9 +163,7 @@ for (const vp of VIEWPORTS) {
       } else if (vp.size === "tablet") {
         // In the bottom action bar, at the column's right edge.
         expect(start.x + start.width).toBeCloseTo((vp.width + 704) / 2, 0);
-        await expect(actionBar(page)).toContainText(
-          "Takes about a minute · no account needed",
-        );
+        await expect(actionBar(page)).toContainText("Takes about a minute · no account needed");
       } else {
         // Inline under the copy, at the column's left edge.
         expect(start.x).toBeCloseTo((vp.width - 1040) / 2, 0);
@@ -285,9 +288,7 @@ for (const vp of VIEWPORTS) {
       await expectCardAspect(page);
 
       if (vp.size === "desktop") {
-        await expect(
-          page.getByRole("heading", { name: "Your best card at Shell" }),
-        ).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Your best card at Shell" })).toBeVisible();
         await expect(best.getByText("How you get $4.00")).toBeVisible();
         await expect(best.getByLabel("Total back: $4.00")).toBeVisible();
         const table = page.getByRole("table", { name: "Compare your cards for this purchase" });
@@ -341,11 +342,12 @@ for (const vp of VIEWPORTS) {
 
 test.describe("no horizontal scrolling from 320px to 1920px", () => {
   test("every screen fits at every width", async ({ page }) => {
-    await installNorthtapApiMock(page);
-    await installSupabaseMock(page, { googleEnabled: true });
+    test.setTimeout(180_000);
 
     await page.goto("/");
-    await expect(page.getByRole("button", { name: "Get started" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Get started" })).toBeVisible({
+      timeout: 45_000,
+    });
     await expectNoOverflowAt(page, OVERFLOW_WIDTHS);
 
     await page.setViewportSize({ width: 390, height: 844 });
@@ -389,7 +391,10 @@ test.describe("no horizontal scrolling from 320px to 1920px", () => {
 /** Press Tab until `target` has focus, then return (fails after `max` presses). */
 async function tabTo(page: Page, target: Locator, max = 80) {
   for (let i = 0; i < max; i++) {
-    if (await target.evaluate((el) => el === document.activeElement).catch(() => false)) return;
+    const focused = await target
+      .evaluate((el) => el === el.ownerDocument.activeElement)
+      .catch(() => false);
+    if (focused) return;
     await page.keyboard.press("Tab");
   }
   await expect(target).toBeFocused();
@@ -401,9 +406,11 @@ test.describe("keyboard", () => {
   test("Tab/Enter through the whole flow; the Save dialog traps focus and closes on Escape", async ({
     page,
   }) => {
-    await installNorthtapApiMock(page);
-    await installSupabaseMock(page, { googleEnabled: true });
+    test.setTimeout(120_000);
     await page.goto("/");
+    await expect(
+      page.getByRole("heading", { name: /right card for every purchase/i }),
+    ).toBeVisible({ timeout: 45_000 });
 
     await tabTo(page, page.getByRole("button", { name: "Get started" }));
     await page.keyboard.press("Enter");
@@ -438,11 +445,11 @@ test.describe("keyboard", () => {
 
     for (let i = 0; i < 8; i++) {
       await page.keyboard.press("Tab");
-      const inside = await dialog.evaluate((el) => el.contains(document.activeElement));
+      const inside = await dialog.evaluate((el) => el.contains(el.ownerDocument.activeElement));
       expect(inside, `focus left the dialog after ${i + 1} Tab presses`).toBe(true);
     }
     await page.keyboard.press("Shift+Tab");
-    expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+    expect(await dialog.evaluate((el) => el.contains(el.ownerDocument.activeElement))).toBe(true);
 
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();

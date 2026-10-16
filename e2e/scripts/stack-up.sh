@@ -47,7 +47,7 @@ start() {
 start api pnpm --filter api start
 start web pnpm --filter web exec next start --port 3000
 start admin pnpm --filter admin start
-start app pnpm --filter mobile exec serve dist -s -l 8082 --no-port-switching
+start app pnpm --filter mobile serve:dist
 
 wait_url() {
   local url="$1"

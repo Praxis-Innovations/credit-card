@@ -1,9 +1,7 @@
-import { expect, type Locator, test } from "@playwright/test";
-import { installNorthtapApiMock } from "./helpers/api-mock";
-import { browseShellAndSkip, COSTCO_MC, pickCards, SCOTIA_GOLD } from "./helpers/flow";
-import { installSupabaseMock } from "./helpers/supabase-mock";
-
-const GENERATED_SCOTIA = "/cards/generated/scotia-gold-amex-0123456789ab.png";
+import type { Locator } from "@playwright/test";
+import { expect, test } from "../../src/fixtures";
+import { CARD_ART, installCardArtFixtures } from "../../src/helpers/app/card-art";
+import { browseShellAndSkip, COSTCO_MC, pickCards, SCOTIA_GOLD } from "../../src/helpers/app/flow";
 
 async function expectCardShape(art: Locator, width: number) {
   const box = await art.boundingBox();
@@ -24,23 +22,19 @@ async function expectFallback(art: Locator) {
 }
 
 test("renders API card art at 1.586:1 and falls back when an image fails", async ({ page }) => {
-  const api = await installNorthtapApiMock(page);
-  await installSupabaseMock(page, { googleEnabled: true });
+  const art = await installCardArtFixtures(page);
 
   await page.goto("/");
   await page.getByRole("button", { name: "Get started" }).click();
   await expect(page.getByText("Common cards")).toBeVisible();
 
-  // Gold Amex has a generated illustration from the brand-assets bucket.
   const pickerScotia = page.getByTestId("card-art-scotia-gold-amex").first();
-  await expectRealArt(pickerScotia, GENERATED_SCOTIA);
+  await expectRealArt(pickerScotia, CARD_ART.scotia.path);
   await expectCardShape(pickerScotia, 64);
-  await expect(pickerScotia).toHaveAccessibleName(
-    "Scotiabank Gold American Express card (illustration)",
-  );
+  await expect(pickerScotia).toHaveAccessibleName(CARD_ART.scotia.alt);
   await expectFallback(page.getByTestId("card-art-cibc-costco-mc").first());
   await expectFallback(page.getByTestId("card-art-triangle-we").first());
-  expect(api.imageRequests).toContain("/assets/cards/cibc-costco-mc-missing.png");
+  expect(art.imageRequests).toContain(CARD_ART.costco.path);
 
   await pickCards(page, [SCOTIA_GOLD, COSTCO_MC]);
   await page.getByRole("button", { name: "Choose a store instead" }).click();
@@ -52,6 +46,6 @@ test("renders API card art at 1.586:1 and falls back when an image fails", async
   await expectCardShape(best, 112);
 
   const other = page.getByTestId("card-art-scotia-gold-amex").last();
-  await expectRealArt(other, GENERATED_SCOTIA);
+  await expectRealArt(other, CARD_ART.scotia.path);
   await expectCardShape(other, 56);
 });
