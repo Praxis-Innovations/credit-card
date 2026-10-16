@@ -139,6 +139,8 @@ $$;
 -- don't falsely conflict — amex_mcc exists precisely because Amex can differ:
 --   conflict  = same network-family + channel has disagreeing non-null MCCs
 --   verified  = ≥2 distinct source_types agree on one MCC within a partition
+--               OR the brand was already verified and there is no conflict
+--               (seeded catalog brands must stay public when a first MCC finding lands)
 --   else      = pending
 -- Network family: amex alone; visa | mastercard | visa_mc | all together.
 create or replace function public.mcc_evidence_network_family(p_network public.mcc_network)
@@ -159,8 +161,13 @@ as $$
 declare
   v_conflict boolean := false;
   v_agree_sources int := 0;
+  v_prior public.catalog_status;
   v_status public.catalog_status := 'pending';
 begin
+  select status into v_prior
+  from public.merchant_brands
+  where id = p_brand_id;
+
   select exists (
     select 1
     from public.merchant_code_evidence e1
@@ -192,6 +199,9 @@ begin
     limit 1;
 
     if coalesce(v_agree_sources, 0) >= 2 then
+      v_status := 'verified';
+    elsif v_prior = 'verified' then
+      -- Keep seeded / already-live brands on the public catalog until conflict.
       v_status := 'verified';
     else
       v_status := 'pending';

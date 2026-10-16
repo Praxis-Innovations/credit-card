@@ -98,6 +98,25 @@ describe("approve_merchant_code_finding", () => {
     expect(status).toBe("conflict");
   });
 
+  it("keeps a pre-existing verified brand verified after one MCC finding", async () => {
+    // Seed catalog includes Shell as verified with no MCC evidence.
+    const before = await db.query<{ status: string }>(
+      `select status::text from public.merchant_brands where id = 'shell'`,
+    );
+    expect(before.rows[0]?.status).toBe("verified");
+
+    const id = await insertStoreFinding("Shell", "5541", "blog");
+    const after = await asRole(db, "authenticated", VALIDATOR, async (tx) => {
+      await tx.query(`select public.approve_merchant_code_finding($1::uuid, null)`, [id]);
+      const { rows } = await tx.query<{ status: string; mcc: string }>(
+        `select status::text, mcc from public.merchant_brands where id = 'shell'`,
+      );
+      return rows[0];
+    });
+
+    expect(after).toMatchObject({ status: "verified", mcc: "5541" });
+  });
+
   it("does not Conflict when Visa and Amex codes differ", async () => {
     const visa = await insertStoreFinding(
       "AD6 Amex Override",
