@@ -277,7 +277,7 @@ export function SourcesConsole({
                 type="button"
                 className={rowButton}
                 disabled={safePage <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => setPage(Math.max(1, safePage - 1))}
               >
                 Previous
               </button>
@@ -288,7 +288,7 @@ export function SourcesConsole({
                 type="button"
                 className={rowButton}
                 disabled={safePage >= pageCount}
-                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                onClick={() => setPage(Math.min(pageCount, safePage + 1))}
               >
                 Next
               </button>
