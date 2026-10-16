@@ -56,7 +56,7 @@ To create a file, start from `apps/<app>/.env.example`:
 | `web` | nothing yet (empty file) |
 | `admin` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `ADMIN_ORIGIN` |
 | `mobile` | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_NORTHTAP_API_URL`, `EXPO_PUBLIC_NORTHTAP_API_KEY` |
-| `crawler` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, Anthropic workload-identity settings (see `apps/crawler/README.md`) |
+| `crawler` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Anthropic settings are not needed locally: local crawls use `--dry-run`; live crawls run in GitHub Actions only (see `apps/crawler/README.md`) |
 
 The Supabase URL and publishable key also come from the `northtap-app` Vercel
 project (`vercel env pull --project northtap-app --environment=production`).

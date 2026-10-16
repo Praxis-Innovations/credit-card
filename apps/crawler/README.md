@@ -43,6 +43,9 @@ cheaper comparison), `--no-llm`, `--dry-run`.
 | `CRAWLER_MODEL` | Optional model override. |
 | `CRAWLER_PRICE_INPUT_PER_MTOK`, `CRAWLER_PRICE_OUTPUT_PER_MTOK` | Optional cost-estimate override (USD per million tokens). |
 
+Locally, leave the Anthropic variables empty and use `--dry-run`; live
+(Claude-calling) crawls run in GitHub Actions only.
+
 The service-role key lives only in the crawler's environment. No app imports
 the crawler, and the crawler imports no app.
 
