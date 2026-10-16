@@ -63,15 +63,19 @@ async function brandStatus(tx: Transaction, chain: string) {
   return rows[0];
 }
 
-describe("approve_merchant_code_finding", () => {
+async function approve(tx: Transaction, id: string, note: string | null = null) {
+  await tx.query(`select public.approve_merchant_code_finding($1::uuid, $2)`, [id, note]);
+}
+
+describe("approve_merchant_code_finding status", () => {
   it("writes evidence and audits; Verified needs 2 sources", async () => {
     const id1 = await insertStoreFinding("AD6 Test Chain", "5411", "issuer_merchant_list");
     const id2 = await insertStoreFinding("AD6 Test Chain", "5411", "blog");
 
     const result = await asRole(db, "authenticated", VALIDATOR, async (tx) => {
-      await tx.query(`select public.approve_merchant_code_finding($1::uuid, 'first')`, [id1]);
+      await approve(tx, id1, "first");
       const afterOne = await brandStatus(tx, "AD6 Test Chain");
-      await tx.query(`select public.approve_merchant_code_finding($1::uuid, 'second')`, [id2]);
+      await approve(tx, id2, "second");
       const afterTwo = await brandStatus(tx, "AD6 Test Chain");
       await tx.exec("reset role");
       const audits = await tx.query<{ n: number }>(
@@ -91,15 +95,14 @@ describe("approve_merchant_code_finding", () => {
     const idA = await insertStoreFinding("AD6 Conflict Chain", "5310", "issuer_merchant_list");
     const idB = await insertStoreFinding("AD6 Conflict Chain", "5411", "blog");
     const status = await asRole(db, "authenticated", VALIDATOR, async (tx) => {
-      await tx.query(`select public.approve_merchant_code_finding($1::uuid, null)`, [idA]);
-      await tx.query(`select public.approve_merchant_code_finding($1::uuid, null)`, [idB]);
+      await approve(tx, idA);
+      await approve(tx, idB);
       return (await brandStatus(tx, "AD6 Conflict Chain"))?.status;
     });
     expect(status).toBe("conflict");
   });
 
   it("keeps a pre-existing verified brand verified after one MCC finding", async () => {
-    // Seed catalog includes Shell as verified with no MCC evidence.
     const before = await db.query<{ status: string }>(
       `select status::text from public.merchant_brands where id = 'shell'`,
     );
@@ -107,27 +110,23 @@ describe("approve_merchant_code_finding", () => {
 
     const id = await insertStoreFinding("Shell", "5541", "blog");
     const after = await asRole(db, "authenticated", VALIDATOR, async (tx) => {
-      await tx.query(`select public.approve_merchant_code_finding($1::uuid, null)`, [id]);
+      await approve(tx, id);
       const { rows } = await tx.query<{ status: string; mcc: string }>(
         `select status::text, mcc from public.merchant_brands where id = 'shell'`,
       );
       return rows[0];
     });
-
     expect(after).toMatchObject({ status: "verified", mcc: "5541" });
   });
+});
 
+describe("approve_merchant_code_finding network and auth", () => {
   it("does not Conflict when Visa and Amex codes differ", async () => {
-    const visa = await insertStoreFinding(
-      "AD6 Amex Override",
-      "5411",
-      "issuer_merchant_list",
-      "visa",
-    );
+    const visa = await insertStoreFinding("AD6 Amex Override", "5411", "issuer_merchant_list", "visa");
     const amex = await insertStoreFinding("AD6 Amex Override", "5300", "blog", "amex");
     const brand = await asRole(db, "authenticated", VALIDATOR, async (tx) => {
-      await tx.query(`select public.approve_merchant_code_finding($1::uuid, null)`, [visa]);
-      await tx.query(`select public.approve_merchant_code_finding($1::uuid, null)`, [amex]);
+      await approve(tx, visa);
+      await approve(tx, amex);
       const { rows } = await tx.query<{ status: string; mcc: string; amex_mcc: string }>(
         `select status::text, mcc, amex_mcc from public.merchant_brands
          where lower(name) = lower('AD6 Amex Override')`,
