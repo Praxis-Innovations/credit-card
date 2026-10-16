@@ -6,12 +6,12 @@ import { signOut } from "@/app/auth/actions";
 import { ROLE_LABELS, type AdminRole } from "@/lib/auth/roles";
 import { BrandLogo } from "./brand-logo";
 
-const NAV_ITEMS = [
+const NAV_ITEMS: readonly { label: string; href: string | null }[] = [
   { label: "Review queue", href: "/review" },
-  { label: "Cards", href: null },
+  { label: "Cards", href: "/cards" },
   { label: "Sources", href: "/sources" },
   { label: "Crawl", href: "/crawl" },
-] as const;
+];
 
 const itemBase =
   "relative flex min-h-10 items-center justify-between gap-3 whitespace-nowrap rounded-lg px-3 text-[15px] lg:min-h-11";

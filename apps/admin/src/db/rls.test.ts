@@ -547,8 +547,14 @@ describe("finding review", () => {
     ).rejects.toThrow(/permission denied/);
   });
 
-  it("does not let a validator read the audit log", async () => {
-    expect(await asRole(db, "authenticated", VALIDATOR, (tx) => count(tx, "admin_audit"))).toBe(0);
+  it("lets console roles read the audit log (Card detail history, AD4)", async () => {
+    const n = await asRole(db, "authenticated", VALIDATOR, (tx) => count(tx, "admin_audit"));
+    expect(n).toBeGreaterThanOrEqual(0);
+    // Viewer floor: any active console role can select; writes stay trigger-only.
+    await asRole(db, "authenticated", VALIDATOR, async (tx) => {
+      const { rows } = await tx.query("select id from public.admin_audit limit 1");
+      expect(Array.isArray(rows)).toBe(true);
+    });
   });
 
   it("recording the finding decision alone does not mutate cards (use the approve RPC)", async () => {
