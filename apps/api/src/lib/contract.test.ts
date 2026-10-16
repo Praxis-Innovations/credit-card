@@ -115,7 +115,6 @@ async function ok<T = Row>(res: Response): Promise<T> {
 // Tangerine's 2% + 3¢/L beats it.
 const SHELL_AT_PUMP = {
   amountCad: 60,
-  category: "gas",
   merchantQuery: "Shell",
   fuelGrade: "premium",
   ownedCardIds: ["scotia-scene-vi", "tangerine-moneyback"],
@@ -243,7 +242,11 @@ describe("contract: static catalog (assets null)", () => {
   it("POST /v1/recommendations without a merchant has null brand / program", async () => {
     const body = await ok<{ purchase: Row; recommendations: Row[] }>(
       await postRecommendations(
-        recommend({ amountCad: 50, category: "dining", ownedCardIds: ["amex-cobalt"] }),
+        recommend({
+          amountCad: 50,
+          categoryFallback: "dining",
+          ownedCardIds: ["amex-cobalt"],
+        }),
       ),
     );
     expectSchema("RecommendationResponse", body);

@@ -85,6 +85,7 @@ export function mapCard(row: Record<string, unknown>): CreditCard {
 }
 
 export function mapBrand(row: Record<string, unknown>): MerchantBrand {
+  const accepted = row.accepted_networks;
   return {
     id: row.id as string,
     name: row.name as string,
@@ -94,6 +95,15 @@ export function mapBrand(row: Record<string, unknown>): MerchantBrand {
     sourceUrl: row.source_url as string,
     lastVerified: String(row.last_verified).slice(0, 10),
     logo: mapAsset(row, "logo"),
+    mcc: (row.mcc as string | null) ?? null,
+    amexMcc: (row.amex_mcc as string | null) ?? null,
+    certainty:
+      typeof row.certainty === "string"
+        ? (row.certainty as MerchantBrand["certainty"])
+        : "unknown",
+    acceptedNetworks: Array.isArray(accepted)
+      ? (accepted as MerchantBrand["acceptedNetworks"])
+      : null,
   };
 }
 

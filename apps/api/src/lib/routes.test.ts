@@ -264,7 +264,7 @@ describe("POST /v1/recommendations", () => {
         },
         body: JSON.stringify({
           amountCad: 100,
-          category: "dining",
+          categoryFallback: "dining",
           ownedCardIds: ["amex-cobalt", "tangerine-moneyback"],
         }),
       }),
@@ -288,7 +288,6 @@ describe("POST /v1/recommendations", () => {
         },
         body: JSON.stringify({
           amountCad: 60,
-          category: "gas",
           merchantQuery: "Shell",
           ownedCardIds: ["scotia-scene-vi", "tangerine-moneyback"],
         }),
@@ -342,7 +341,6 @@ describe("POST /v1/recommendations", () => {
           headers: { ...authHeaders(), "Content-Type": "application/json" },
           body: JSON.stringify({
             amountCad: 100,
-            category: "gas",
             merchantQuery: "Shell",
             ownedCardIds: ["scotia-gold-amex", "triangle-we"],
             ...extra,
@@ -413,7 +411,6 @@ describe("POST /v1/recommendations", () => {
     it("leaves non-fuel merchants unaffected", async () => {
       const base = {
         amountCad: 80,
-        category: "groceries",
         merchantQuery: "Loblaws",
         ownedCardIds: ["pc-financial-we", "scotia-gold-amex", "amex-cobalt"],
       };
@@ -446,7 +443,7 @@ describe("POST /v1/recommendations", () => {
         },
         body: JSON.stringify({
           amountCad: 50,
-          category: "dining",
+          categoryFallback: "dining",
           ownedCardIds: [],
         }),
       }),
@@ -461,7 +458,7 @@ describe("POST /v1/recommendations", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amountCad: 50,
-          category: "dining",
+          categoryFallback: "dining",
           ownedCardIds: ["amex-cobalt"],
         }),
       }),

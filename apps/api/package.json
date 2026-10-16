@@ -17,7 +17,12 @@
     "assets:upload": "tsx src/assets/cli.ts upload",
     "assets:clear": "tsx src/assets/cli.ts clear",
     "assets:generate-card-art": "tsx src/assets/generate-card-art.ts",
-    "assets:contact-sheet": "tsx src/assets/contact-sheet.ts"
+    "assets:contact-sheet": "tsx src/assets/contact-sheet.ts",
+    "import:store_codes": "tsx src/lib/mcc-import-cli.ts store_codes",
+    "import:test_purchases": "tsx src/lib/mcc-import-cli.ts test_purchases",
+    "import:mcc_codes": "tsx src/lib/mcc-import-cli.ts mcc_codes",
+    "import:category_mccs": "tsx src/lib/mcc-import-cli.ts category_mccs",
+    "import:store_type_mccs": "tsx src/lib/mcc-import-cli.ts store_type_mccs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

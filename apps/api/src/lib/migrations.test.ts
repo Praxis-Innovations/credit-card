@@ -81,10 +81,32 @@ async function count(sql: string): Promise<number> {
 }
 
 describe("supabase migrations", () => {
-  it("applies every migration in order, including catalog_assets", () => {
+  it("applies every migration in order, including catalog_assets and mcc", () => {
     expect(migrationFiles.some((f) => f.endsWith("_catalog_assets.sql"))).toBe(
       true,
     );
+    expect(migrationFiles.some((f) => f.endsWith("_mcc_recommend.sql"))).toBe(
+      true,
+    );
+  });
+
+  it("creates empty MCC tables with no seed rows", async () => {
+    for (const table of [
+      "mcc_codes",
+      "category_mccs",
+      "store_type_mccs",
+      "merchant_code_evidence",
+      "merchant_code_findings",
+    ]) {
+      expect(await count(`select count(*) as n from public.${table}`)).toBe(0);
+    }
+    expect(
+      await count(
+        `select count(*) as n from information_schema.columns
+         where table_schema = 'public' and table_name = 'merchant_brands'
+           and column_name in ('mcc', 'amex_mcc', 'certainty', 'accepted_networks')`,
+      ),
+    ).toBe(4);
   });
 
   it.each([
