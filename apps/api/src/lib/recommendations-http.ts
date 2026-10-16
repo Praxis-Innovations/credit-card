@@ -5,8 +5,6 @@ import {
 } from "./recommend-route-shared";
 import { withAuth } from "./route";
 
-export const recommendationRuntime = "nodejs";
-
 export function recommendationOptions(request: Request) {
   return recommendationRouteOptions(request);
 }

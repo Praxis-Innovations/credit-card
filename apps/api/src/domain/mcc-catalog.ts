@@ -40,7 +40,8 @@ export const CATEGORY_MCCS: readonly CategoryMccRow[] = [
  */
 export const STORE_TYPE_MCCS: readonly StoreTypeMccRow[] = [
   { osmTag: "shop=supermarket", mcc: "5411" },
-  { osmTag: "shop=convenience", mcc: "5411" },
+  // Convenience terminals almost always post 5499 (misc. food), not grocery 5411.
+  { osmTag: "shop=convenience", mcc: "5499" },
   { osmTag: "shop=greengrocer", mcc: "5422" },
   { osmTag: "shop=bakery", mcc: "5462" },
   { osmTag: "amenity=restaurant", mcc: "5812" },

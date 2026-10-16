@@ -3,7 +3,6 @@ import { mapSharedStoreFields } from "@/lib/recommend-request";
 import {
   handleRecommendationPost,
   recommendationOptions,
-  recommendationRuntime,
 } from "@/lib/recommendations-http";
 import {
   createRecommendation,
@@ -12,7 +11,7 @@ import {
   type RecommendationRequestBody,
 } from "@/lib/recommend";
 
-export const runtime = recommendationRuntime;
+export const runtime = "nodejs";
 
 export function OPTIONS(request: Request) {
   return recommendationOptions(request);
