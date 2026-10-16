@@ -1,14 +1,11 @@
-export const CATALOG_STATUSES = ["pending", "verified", "stale", "rejected"] as const;
-export type CatalogStatus = (typeof CATALOG_STATUSES)[number];
+export type CatalogStatus = "pending" | "verified" | "stale" | "rejected";
 
-export const ASSET_RIGHTS = [
-  "licensed",
-  "issuer_provided",
-  "placeholder",
-  "unknown",
-  "generated",
-] as const;
-export type AssetRightsStatus = (typeof ASSET_RIGHTS)[number];
+export type AssetRightsStatus =
+  | "licensed"
+  | "issuer_provided"
+  | "placeholder"
+  | "unknown"
+  | "generated";
 
 export type RewardCategory = {
   category: string;

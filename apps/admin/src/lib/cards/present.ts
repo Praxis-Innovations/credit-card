@@ -68,15 +68,22 @@ function showEarnRate(r: RewardCategory): string {
   return rate;
 }
 
+type QuotedField = { quote?: string } | null | undefined;
+
+function putQuote(out: Map<string, string>, key: string, field: QuotedField) {
+  const quote = field?.quote;
+  if (quote) out.set(key, quote);
+}
+
 /** Map extraction quotes onto catalog field keys for the Source column. */
 export function quotesFromExtraction(extracted: Extraction | null | undefined): Map<string, string> {
   const out = new Map<string, string>();
   if (!extracted) return out;
-  if (extracted.card_name?.quote) out.set("name", extracted.card_name.quote);
-  if (extracted.network?.quote) out.set("network", extracted.network.quote);
-  if (extracted.annual_fee?.quote) out.set("annual_fee", extracted.annual_fee.quote);
-  if (extracted.reward_currency?.quote) out.set("point_currency", extracted.reward_currency.quote);
-  if (extracted.welcome_bonus?.quote) out.set("welcome_offer", extracted.welcome_bonus.quote);
+  putQuote(out, "name", extracted.card_name);
+  putQuote(out, "network", extracted.network);
+  putQuote(out, "annual_fee", extracted.annual_fee);
+  putQuote(out, "point_currency", extracted.reward_currency);
+  putQuote(out, "welcome_offer", extracted.welcome_bonus);
   for (const e of extracted.earn_rates ?? []) {
     const key = `earn_rate.${e.category}`;
     if (e.quote && !out.has(key)) out.set(key, e.quote);
