@@ -78,17 +78,39 @@ describe("approve_merchant_code_finding status", () => {
       await approve(tx, id2, "second");
       const afterTwo = await brandStatus(tx, "AD6 Test Chain");
       await tx.exec("reset role");
-      const audits = await tx.query<{ n: number }>(
+      const findings = await tx.query<{ review_status: string }>(
+        `select review_status from public.merchant_code_findings
+         where id in ($1, $2)`,
+        [id1, id2],
+      );
+      const findingAudits = await tx.query<{ n: number }>(
         `select count(*)::int as n from public.admin_audit
          where entity = 'merchant_code_findings' and entity_id in ($1, $2)`,
         [id1, id2],
       );
-      return { afterOne, afterTwo, auditCount: audits.rows[0]?.n ?? 0 };
+      const brandAudits = await tx.query<{ action: string }>(
+        `select action from public.admin_audit
+         where entity = 'merchant_brands'
+           and action = 'merchant_brand.approve_store_code'
+           and entity_id = (
+             select id from public.merchant_brands
+             where lower(name) = lower('AD6 Test Chain')
+           )`,
+      );
+      return {
+        afterOne,
+        afterTwo,
+        findings: findings.rows,
+        findingAuditCount: findingAudits.rows[0]?.n ?? 0,
+        brandAudits: brandAudits.rows,
+      };
     });
 
     expect(result.afterOne).toMatchObject({ status: "pending", mcc: "5411" });
     expect(result.afterTwo).toMatchObject({ status: "verified", mcc: "5411" });
-    expect(result.auditCount).toBe(2);
+    expect(result.findings.every((f) => f.review_status === "approved")).toBe(true);
+    expect(result.findingAuditCount).toBe(2);
+    expect(result.brandAudits.length).toBeGreaterThanOrEqual(1);
   });
 
   it("sets Conflict when approved evidence disagrees on MCC", async () => {
