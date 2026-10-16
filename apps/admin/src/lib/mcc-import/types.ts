@@ -32,6 +32,8 @@ export type ImportResult = {
   inserted: number;
   updated: number;
   unchanged: number;
+  /** Already approved/rejected/ignored — left alone so evidence stays consistent. */
+  skipped: number;
   rejected: ImportRejection[];
 };
 
