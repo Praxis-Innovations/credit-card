@@ -105,7 +105,6 @@
   "knip|type|apps/crawler/src/extract/schema.ts|Quoted": 1,
   "knip|type|apps/crawler/src/extract/schema.ts|StringField": 1,
   "knip|type|apps/crawler/src/extract/schema.ts|WelcomeBonus": 1,
-  "knip|type|apps/crawler/src/run.ts|Trigger": 1,
   "knip|type|apps/crawler/src/store.ts|RunStatus": 1,
   "knip|type|apps/crawler/src/types.ts|SourceStatus": 1
 }

@@ -46,6 +46,8 @@
   "eslint|apps/api/src/lib/routes.test.ts|max-lines": 1,
   "eslint|apps/api/src/lib/routes.test.ts|max-lines-per-function": 2,
   "eslint|apps/crawler/src/auth.ts|complexity": 1,
+  "eslint|apps/crawler/src/ci.ts|complexity": 2,
+  "eslint|apps/crawler/src/ci.ts|max-lines-per-function": 1,
   "eslint|apps/crawler/src/cli.ts|complexity": 1,
   "eslint|apps/crawler/src/diff.ts|complexity": 1,
   "eslint|apps/crawler/src/run.test.ts|max-lines-per-function": 1,

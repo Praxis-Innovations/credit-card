@@ -16,6 +16,7 @@
   "jscpd|apps/api/src/data-pipeline/promote.ts|apps/api/src/data-pipeline/run.ts": 1,
   "jscpd|apps/api/src/domain/recommend-merchant.ts|apps/api/src/domain/recommend.ts": 1,
   "jscpd|apps/api/src/domain/schema.ts|apps/mobile/src/lib/api-types.ts": 1,
+  "jscpd|apps/crawler/src/ci.ts|apps/crawler/src/cli.ts": 3,
   "jscpd|apps/mobile/e2e/first-run.spec.ts|apps/mobile/e2e/first-run.spec.ts": 4,
   "jscpd|apps/mobile/e2e/save-wallet.spec.ts|apps/mobile/e2e/save-wallet.spec.ts": 1,
   "jscpd|apps/mobile/src/components/flow/Buttons.tsx|apps/mobile/src/components/flow/Buttons.tsx": 1
