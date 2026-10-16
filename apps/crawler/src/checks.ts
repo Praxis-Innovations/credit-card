@@ -91,7 +91,7 @@ const STRING_ALIASES: Record<string, string[]> = {
  * Catalog issuer name → legal / trade names that count as the same issuer in a
  * quote. Big-six Canadian banks; keyed by the loose form of the catalog name.
  */
-export const ISSUER_ALIASES: Record<string, readonly string[]> = {
+const ISSUER_ALIASES: Record<string, readonly string[]> = {
   scotiabank: ["bankofnovascotia", "thebankofnovascotia", "scotia"],
   rbc: ["royalbankofcanada", "royalbank"],
   td: ["torontodominionbank", "thetorontodominionbank", "tdbank"],

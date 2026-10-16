@@ -45,6 +45,40 @@ function sliceLines(page: string, starts: number[], from: number, to: number): s
   return page.slice(a, b).trim();
 }
 
+/** Rate cell above a description (Scotiabank table layout). Pair even on mismatch. */
+function rateCellAbove(page: string, starts: number[], qTop: number): number | null {
+  for (let dist = 1; dist <= MAX_LINE_DISTANCE; dist++) {
+    const i = qTop - dist;
+    if (i < 0) return null;
+    const line = lineAt(page, starts, i);
+    if (!line.trim()) continue;
+    if (isRateCell(line)) return i;
+  }
+  return null;
+}
+
+/** Nearest line outside [qTop, qBot] that contains `value`; prefer above on ties. */
+function nearestLineWithNumber(
+  page: string,
+  starts: number[],
+  qTop: number,
+  qBot: number,
+  value: number,
+): number | null {
+  let best: { dist: number; above: boolean; i: number } | null = null;
+  for (let i = 0; i < starts.length; i++) {
+    if (i >= qTop && i <= qBot) continue;
+    if (!numberInQuote(value, lineAt(page, starts, i))) continue;
+    const dist = i < qTop ? qTop - i : i - qBot;
+    if (dist > MAX_LINE_DISTANCE) continue;
+    const above = i < qTop;
+    if (!best || dist < best.dist || (dist === best.dist && above && !best.above)) {
+      best = { dist, above, i };
+    }
+  }
+  return best?.i ?? null;
+}
+
 /**
  * Widen a quote so it contains `value`, by growing to the table row (rate cell
  * above the description) or the nearest nearby line with the number.
@@ -56,36 +90,16 @@ export function widenQuoteToContainNumber(quote: string, value: number, pageText
 
   const start = pageText.indexOf(quote);
   if (start < 0) return quote;
-  const end = start + quote.length;
   const starts = lineStartsOf(pageText);
   const qTop = lineIndex(starts, start);
-  const qBot = lineIndex(starts, end - 1);
+  const qBot = lineIndex(starts, start + quote.length - 1);
 
-  // Table row: rate cell immediately above the description (Scotiabank layout).
-  // Pair with that cell even when the value does not match — so a wrong rate
-  // stays flagged instead of latching onto a number in the next row.
-  for (let dist = 1; dist <= MAX_LINE_DISTANCE; dist++) {
-    const i = qTop - dist;
-    if (i < 0) break;
-    const line = lineAt(pageText, starts, i);
-    if (!line.trim()) continue;
-    if (isRateCell(line)) return sliceLines(pageText, starts, i, qBot);
-  }
+  const rateLine = rateCellAbove(pageText, starts, qTop);
+  if (rateLine !== null) return sliceLines(pageText, starts, rateLine, qBot);
 
-  // Fallback: nearest line (prefer above) that already contains the number.
-  let best: { dist: number; above: boolean; i: number } | null = null;
-  for (let i = 0; i < starts.length; i++) {
-    if (i >= qTop && i <= qBot) continue;
-    if (!numberInQuote(value, lineAt(pageText, starts, i))) continue;
-    const dist = i < qTop ? qTop - i : i - qBot;
-    if (dist > MAX_LINE_DISTANCE) continue;
-    const above = i < qTop;
-    if (!best || dist < best.dist || (dist === best.dist && above && !best.above)) {
-      best = { dist, above, i };
-    }
-  }
-  if (!best) return quote;
-  return sliceLines(pageText, starts, Math.min(best.i, qTop), Math.max(best.i, qBot));
+  const near = nearestLineWithNumber(pageText, starts, qTop, qBot, value);
+  if (near === null) return quote;
+  return sliceLines(pageText, starts, Math.min(near, qTop), Math.max(near, qBot));
 }
 
 function widenQuotedNumber<T>(field: Quoted<T> | null, value: number | null | undefined, pageText: string): Quoted<T> | null {
