@@ -293,8 +293,7 @@ export function ReviewCard({
         </div>
         {isNew ? (
           <p role="note" className="mt-3 rounded-lg bg-warn-bg px-4 py-2.5 text-sm text-warn-fg">
-            Is this a separate card? Approving records the decision only — nothing is added to the live catalog until
-            a later promote step.
+            Is this a separate card? Approving writes the saved field values to the live catalog immediately.
           </p>
         ) : null}
         {discontinued ? (

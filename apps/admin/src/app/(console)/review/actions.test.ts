@@ -8,6 +8,13 @@ const FIELDS = {
   fields: [{ key: "annual_fee", save: true, page_value: "59", value: "599" }],
 };
 
+const { applyApprovedFindingToCatalog } = vi.hoisted(() => ({
+  applyApprovedFindingToCatalog: vi.fn(
+    async (): Promise<{ ok: true } | { ok: false; message: string }> => ({ ok: true }),
+  ),
+}));
+vi.mock("@/lib/review/apply-to-catalog", () => ({ applyApprovedFindingToCatalog }));
+
 type Write = {
   table: string;
   op: "update" | "insert" | "delete";
@@ -23,10 +30,14 @@ const state = {
   matched: [{ id: FINDING_ID, card_name: "Scotiabank Gold American Express Card" }] as Array<Record<string, unknown>>,
   pendingFinding: {
     id: FINDING_ID,
+    card_name: "Scotiabank Gold American Express Card",
     extracted: { annual_fee: { value: 59, quote: "$59" } },
     check_results: null,
     diff: { kind: "new", linked_card_id: null, match: null, changes: [] },
+    diff_kind: "new",
+    linked_card_id: null,
     review_status: "pending",
+    source: { issuer_name: "Scotiabank" },
   } as Record<string, unknown> | null,
   nextIds: [] as Array<{ id: string }>,
   dbError: null as { code: string } | null,
@@ -102,14 +113,20 @@ beforeEach(() => {
   state.matched = [{ id: FINDING_ID, card_name: "Scotiabank Gold American Express Card" }];
   state.pendingFinding = {
     id: FINDING_ID,
+    card_name: "Scotiabank Gold American Express Card",
     extracted: { annual_fee: { value: 59, quote: "$59" } },
     check_results: null,
     diff: { kind: "new", linked_card_id: null, match: null, changes: [] },
+    diff_kind: "new",
+    linked_card_id: null,
     review_status: "pending",
+    source: { issuer_name: "Scotiabank" },
   };
   state.nextIds = [];
   state.dbError = null;
   state.writes = [];
+  applyApprovedFindingToCatalog.mockClear();
+  applyApprovedFindingToCatalog.mockResolvedValue({ ok: true });
 });
 
 describe.each(Object.entries(ACTIONS))("%s", (_name, run) => {
@@ -158,13 +175,23 @@ describe.each(Object.entries(ACTIONS))("%s", (_name, run) => {
 });
 
 describe("approveFinding", () => {
-  it("records field decisions with a conditional update on pending, and touches only card_findings", async () => {
+  it("applies accepted values to the catalog, then records field decisions on pending", async () => {
     const res = await approveFinding(FINDING_ID, FIELDS);
     expect(res).toEqual({
       ok: true,
       message: "Approved Scotiabank Gold American Express Card.",
       nextId: null,
     });
+    expect(applyApprovedFindingToCatalog).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        findingId: FINDING_ID,
+        diffKind: "new",
+        cardName: "Scotiabank Gold American Express Card",
+        issuerName: "Scotiabank",
+        fields: FIELDS,
+      }),
+    );
     expect(state.writes).toHaveLength(1);
     const [write] = state.writes;
     expect(write!.table).toBe("card_findings");
@@ -181,6 +208,15 @@ describe("approveFinding", () => {
     ]);
   });
 
+  it("does not record the decision when the catalog write fails", async () => {
+    applyApprovedFindingToCatalog.mockResolvedValueOnce({ ok: false, message: "Could not update the catalog." });
+    expect(await approveFinding(FINDING_ID, FIELDS)).toEqual({
+      ok: false,
+      message: "Could not update the catalog.",
+    });
+    expect(state.writes).toEqual([]);
+  });
+
   it("returns the next pending id for Approve and next", async () => {
     state.nextIds = [{ id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee" }];
     const res = await approveFinding(FINDING_ID, FIELDS);
@@ -192,6 +228,7 @@ describe("approveFinding", () => {
     expect((await approveFinding(FINDING_ID, { fields: [{ key: "nope", save: true, page_value: "1", value: "1" }] })).ok).toBe(
       false,
     );
+    expect(applyApprovedFindingToCatalog).not.toHaveBeenCalled();
     expect(state.writes).toEqual([]);
   });
 
@@ -213,13 +250,14 @@ describe("rejectFinding", () => {
     expect(state.writes).toEqual([]);
   });
 
-  it("stores the trimmed reason and the reviewer, conditional on pending", async () => {
+  it("stores the trimmed reason and the reviewer, conditional on pending, without touching the catalog", async () => {
     const res = await rejectFinding(FINDING_ID, "  Quote is from the footnotes.  ");
     expect(res).toEqual({
       ok: true,
       message: "Rejected Scotiabank Gold American Express Card.",
       nextId: null,
     });
+    expect(applyApprovedFindingToCatalog).not.toHaveBeenCalled();
     const [write] = state.writes;
     expect(write!.payload).toMatchObject({
       review_status: "rejected",

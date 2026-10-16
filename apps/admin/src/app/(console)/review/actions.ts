@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { authorizeMutation, type ConsoleSession } from "@/lib/auth/guard";
+import { applyApprovedFindingToCatalog } from "@/lib/review/apply-to-catalog";
 import { buildFieldRows } from "@/lib/review/present";
-import type { ReviewFields } from "@/lib/review/types";
+import type { DiffKind, ReviewFields } from "@/lib/review/types";
 import { validateRejectReason, validateReviewFields } from "@/lib/review/validation";
 import { isUuid } from "@/lib/sources/validation";
 
@@ -35,7 +36,11 @@ async function nextPendingId(auth: AuthorizedSession, exceptId: string): Promise
  * Records a decision on a pending finding. Validators and admins may review
  * (the least privilege that matches the database policy; viewers read only).
  * The update is conditional on review_status = 'pending', so two reviewers
- * cannot both decide the same finding. Nothing is written to `cards`.
+ * cannot both decide the same finding.
+ *
+ * On approve, {@link applyApprovedFindingToCatalog} runs first so accepted
+ * values go live with Approve and next (AD2 owns that write). Reject leaves
+ * the live catalog unchanged.
  */
 async function decide(
   auth: AuthorizedSession,
@@ -79,7 +84,9 @@ export async function approveFinding(id: string, fields: unknown): Promise<Revie
 
   const { data: finding, error } = await auth.supabase
     .from("card_findings")
-    .select("id, extracted, check_results, diff, review_status")
+    .select(
+      "id, card_name, extracted, check_results, diff, diff_kind, linked_card_id, review_status, source:crawl_sources(issuer_name)",
+    )
     .eq("id", id)
     .eq("review_status", "pending")
     .maybeSingle();
@@ -90,6 +97,19 @@ export async function approveFinding(id: string, fields: unknown): Promise<Revie
   const allowed = new Set(rows.map((r) => r.key));
   const parsed = validateReviewFields(fields, allowed);
   if (!parsed.ok) return failure(parsed.error);
+
+  const source = finding.source as { issuer_name: string } | { issuer_name: string }[] | null;
+  const issuerName = Array.isArray(source) ? (source[0]?.issuer_name ?? null) : (source?.issuer_name ?? null);
+
+  const applied = await applyApprovedFindingToCatalog(auth.supabase, {
+    findingId: id,
+    linkedCardId: (finding.linked_card_id as string | null) ?? null,
+    diffKind: (finding.diff_kind as DiffKind | null) ?? null,
+    cardName: (finding.card_name as string | null) ?? null,
+    issuerName,
+    fields: parsed.fields,
+  });
+  if (!applied.ok) return failure(applied.message);
 
   return decide(auth, id, "approved", null, parsed.fields);
 }

@@ -91,8 +91,9 @@ Written by `apps/crawler` with its own server-side key (migration
 RLS matches the admin tables: console roles read; only admins insert or
 delete (admins may only insert runs as `requested`); validators may update a
 finding's decision columns (`review_status` / `review_note` / `review_fields` /
-`reviewed_by` / `reviewed_at`) and no other column. Approval never writes
-`cards`.
+`reviewed_by` / `reviewed_at`) and no other column. Approve and next applies
+accepted values to `cards` in the same step (AD2); there is no separate promote
+UI.
 
 Catalog images (card art, brand and program logos) are stored in the public
 Storage bucket `brand-assets`, which only the service role can write to. The

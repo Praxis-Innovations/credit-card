@@ -32,7 +32,7 @@ export function ReviewConsole({
         <p className="text-[15px] text-body">
           New, changed and possibly discontinued cards the crawler found, waiting for a human. Cards that match the
           catalog are recorded as checked and don&apos;t appear here. Open a card to correct values and choose which
-          fields to save — nothing here changes the live catalog until a later promote step.
+          fields to save — Approve writes those values to the live catalog immediately.
         </p>
       </div>
 

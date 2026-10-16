@@ -1,6 +1,7 @@
 -- Field-by-field review (AD1): store which fields the reviewer saves, any
--- corrected values, and write those decisions into admin_audit. Approval still
--- only records the decision — nothing is written to public.cards.
+-- corrected values, and write those decisions into admin_audit. Approve and
+-- next makes accepted values live; the cards write is AD2 (called from the
+-- admin approve action — no separate promote step).
 
 alter table public.card_findings
   add column if not exists review_fields jsonb
