@@ -25,12 +25,17 @@ npx supabase migration up
 
 `supabase start` prints local API URL, `anon` key, and Studio URL. Use those in app env vars (never commit real project keys).
 
+`seed.sql` loads **local-only** fixtures after migrations: an E2E API key hash,
+`user@northtap.test` / `admin@northtap.test` (password `local-e2e-password`),
+and a Google identity on the admin so `is_admin()` works without real OAuth.
+See [`e2e/README.md`](../e2e/README.md). Prefer the pinned CLI in CI and docs:
+`npx -y supabase@2.121.0`.
+
 Stop the stack:
 
 ```bash
-npx supabase stop
+npx -y supabase@2.121.0 stop
 ```
-
 ## Linking a remote project (later)
 
 When a hosted Supabase project exists:

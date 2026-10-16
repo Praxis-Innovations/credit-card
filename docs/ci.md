@@ -7,12 +7,18 @@ request, every push to `main`, merge-queue builds and manual dispatch.
 
 | Job | Command |
 |-----|---------|
-| `typecheck` | `pnpm turbo run typecheck` for api, admin, crawler, mobile, web |
-| `lint` | `pnpm turbo run lint` for the same apps |
-| `test` | `pnpm turbo run test` (Vitest unit tests) for the same apps |
+| `typecheck` | `pnpm turbo run typecheck` for api, admin, crawler, mobile, web, e2e |
+| `lint` | `pnpm turbo run lint` for the same packages |
+| `test` | `pnpm turbo run test` (Vitest unit tests) for the apps that define it |
 | `api coverage` | `pnpm --filter api test:coverage` — prints a text report and uploads `coverage-summary.json` |
 | `code-health` | `pnpm code-health` — ESLint size/complexity, knip, jscpd, dependency-cruiser; fails only on findings not in `code-health/baselines/` |
+| `e2e smoke` | Local Supabase (`supabase start`) + Playwright `@smoke` across api/web/admin/app — see [`e2e/README.md`](../e2e/README.md) |
 | `CI gate` | Fails unless every job above succeeded |
+
+The full E2E suite runs nightly in
+[`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml) (not part of the
+PR gate). Both E2E jobs use Dockerized local Supabase only — never the shared
+hosted project.
 
 Each job installs with `pnpm install --frozen-lockfile` via the shared
 [`setup` action](../.github/actions/setup/action.yml). The pnpm store is cached
@@ -36,7 +42,7 @@ No secrets are needed; unit tests must not depend on network services or
 
 ## Adding jobs
 
-Later checks (e2e, …) go in the same workflow as new jobs:
+Later checks go in the same workflow as new jobs:
 
 1. Start the job with `actions/checkout` and `uses: ./.github/actions/setup`
    (pick a unique `turbo-cache-key`).

@@ -50,6 +50,7 @@ jobs:
           --filter=crawler
           --filter=mobile
           --filter=web
+          --filter=e2e
 
   api-coverage:
     name: api coverage
@@ -90,10 +91,57 @@ jobs:
       - name: Code-health (new violations vs baseline)
         run: pnpm code-health
 
+  # Playwright smoke against local Supabase (Docker). Full suite: e2e.yml (nightly).
+  e2e-smoke:
+    name: e2e smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          turbo-cache-key: e2e-smoke
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter e2e exec playwright install --with-deps chromium
+
+      - name: Start local Supabase + seed
+        uses: ./.github/actions/e2e-supabase
+
+      - name: Build and start app stack
+        run: bash e2e/scripts/stack-up.sh
+
+      - name: Run Playwright smoke
+        run: |
+          eval "$(bash e2e/scripts/export-supabase-env.sh)"
+          pnpm --filter e2e run test:smoke
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report-smoke-${{ github.run_id }}
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Stop app stack
+        if: always()
+        run: bash e2e/scripts/stack-down.sh || true
+
+      - name: Stop local Supabase
+        if: always()
+        run: npx -y supabase@2.121.0 stop || true
+
   ci-gate:
     name: CI gate
     if: always()
-    needs: [unit, api-coverage, code-health]
+    needs: [unit, api-coverage, code-health, e2e-smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

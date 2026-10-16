@@ -1,0 +1,21 @@
+name: E2E local Supabase
+description: >
+  Start the local Supabase stack in Docker, apply migrations + seed, and export
+  connection settings into GITHUB_ENV for later steps. Never uses the shared
+  hosted project.
+
+runs:
+  using: composite
+  steps:
+    - name: Start local Supabase
+      shell: bash
+      run: npx -y supabase@2.121.0 start
+
+    - name: Reset DB (migrations + seed)
+      shell: bash
+      run: npx -y supabase@2.121.0 db reset
+
+    - name: Export local Supabase env
+      shell: bash
+      run: |
+        E2E_ENV_FORMAT=github bash e2e/scripts/export-supabase-env.sh >> "$GITHUB_ENV"

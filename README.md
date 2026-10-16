@@ -15,6 +15,7 @@ rank descending. Merchant partnerships can boost or replace category rates.
 | `apps/mobile` | Expo — HTTP client of `apps/api` for catalog + recommendations; wallet via Supabase Auth+RLS only |
 | `apps/admin` | Next.js — internal admin console (Google sign-in, allow-listed admins). Talks to Supabase as the signed-in admin under RLS; owns all admin write paths. Imports nothing from `apps/web` or `apps/mobile`. |
 | `apps/crawler` | Node CLI — card-data crawler (Playwright + Claude). Reads `crawl_sources`, writes `crawl_runs` / `card_findings` for review with its own server-side key. Never writes `cards`. See [`apps/crawler/README.md`](./apps/crawler/README.md). |
+| `e2e` | Playwright — api / web / admin / app against local Supabase. See [`e2e/README.md`](./e2e/README.md). |
 | `docs/api` | OpenAPI 3.1 contract (implemented by `apps/api`) |
 | `supabase` | Auth, `user_cards` (wallet), catalog tables, `api_keys` |
 
@@ -78,11 +79,14 @@ pnpm seed:catalog
 
 ## CI
 
-Every PR and push to `main` runs typecheck, lint, unit tests, and code-health
+Every PR and push to `main` runs typecheck, lint, unit tests, code-health
 checks (ESLint size/complexity, knip, jscpd, dependency-cruiser with a committed
-baseline) for api, admin, crawler, mobile and web
-([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)). Make the **`CI gate`**
-check required on `main` to block merges on failures — see [`docs/ci.md`](./docs/ci.md).
+baseline), and the Playwright E2E smoke suite (local Supabase in Docker) for
+api, admin, crawler, mobile and web
+([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)). The full E2E suite
+runs nightly ([`.github/workflows/e2e.yml`](./.github/workflows/e2e.yml)).
+Make the **`CI gate`** check required on `main` to block merges on failures —
+see [`docs/ci.md`](./docs/ci.md).
 
 ```bash
 pnpm code-health:report   # full local report

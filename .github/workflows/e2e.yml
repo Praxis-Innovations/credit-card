@@ -1,0 +1,69 @@
+name: E2E nightly
+
+# Full Playwright suite against local Supabase (Docker). Smoke runs on every PR
+# via ci.yml → e2e-smoke (CI gate). Never uses the shared hosted project.
+
+on:
+  schedule:
+    # Nightly full suite (06:00 UTC).
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-nightly
+  cancel-in-progress: false
+
+env:
+  TURBO_TELEMETRY_DISABLED: "1"
+  TURBO_CACHE_DIR: .turbo/cache
+  CI: "true"
+
+jobs:
+  e2e-full:
+    name: e2e full
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          turbo-cache-key: e2e-full
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter e2e exec playwright install --with-deps chromium
+
+      - name: Start local Supabase + seed
+        uses: ./.github/actions/e2e-supabase
+
+      - name: Build and start app stack
+        run: bash e2e/scripts/stack-up.sh
+
+      - name: Run Playwright (full)
+        run: |
+          eval "$(bash e2e/scripts/export-supabase-env.sh)"
+          pnpm --filter e2e run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report-full-${{ github.run_id }}
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Stop app stack
+        if: always()
+        run: bash e2e/scripts/stack-down.sh || true
+
+      - name: Stop local Supabase
+        if: always()
+        run: npx -y supabase@2.121.0 stop || true
