@@ -1,6 +1,6 @@
+import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { colors, fonts } from "../../lib/theme";
-import { InlineAction } from "./Buttons";
 import { StoreLogo } from "./Logos";
 
 interface StoreSummaryProps {
@@ -8,51 +8,41 @@ interface StoreSummaryProps {
   meta: string;
   logoUrl: string | null | undefined;
   logoAlt?: string | null;
-  actionLabel: string;
-  actionAccessibilityLabel: string;
-  onAction: () => void;
+  /** Outline "Change store" button (or similar), shown under the store row. */
+  action: ReactNode;
 }
 
-export function StoreSummary({
-  name,
-  meta,
-  logoUrl,
-  logoAlt,
-  actionLabel,
-  actionAccessibilityLabel,
-  onAction,
-}: StoreSummaryProps) {
+export function StoreSummary({ name, meta, logoUrl, logoAlt, action }: StoreSummaryProps) {
   return (
-    <View style={[styles.row, styles.card]}>
-      <StoreLogo name={name} logoUrl={logoUrl} logoAlt={logoAlt} size={40} />
-      <View style={styles.text}>
-        <Text style={styles.name} numberOfLines={1}>
-          {name}
-        </Text>
-        <Text style={styles.meta}>{meta}</Text>
+    <View style={styles.card} role="region" aria-label="Selected store">
+      <View style={styles.row}>
+        <StoreLogo name={name} logoUrl={logoUrl} logoAlt={logoAlt} size={40} />
+        <View style={styles.text}>
+          <Text style={styles.name} numberOfLines={1}>
+            {name}
+          </Text>
+          <Text style={styles.meta}>{meta}</Text>
+        </View>
       </View>
-      <InlineAction
-        label={actionLabel}
-        accessibilityLabel={actionAccessibilityLabel}
-        onPress={onAction}
-      />
+      {action}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
   card: {
-    paddingVertical: 10,
+    gap: 12,
+    paddingVertical: 12,
     paddingHorizontal: 14,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   text: {
     flex: 1,
