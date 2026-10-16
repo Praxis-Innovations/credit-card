@@ -90,7 +90,8 @@ jobs:
             args+=(--limit "$CRAWLER_LIMIT")
           fi
           # `pnpm ci` is a built-in (frozen install); must use `run` for the script.
-          pnpm --filter crawler run ci -- "${args[@]}"
+          # No `--` separator: pnpm 9 passes a literal `--` through to the script.
+          pnpm --filter crawler run ci "${args[@]}"
 
       - name: Upload crawl output
         if: always()
