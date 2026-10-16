@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { applyApprovedFindingToCatalog } from "./apply-to-catalog";
 
 const FINDING_ID = "7a1c2e3d-4b5f-4a6b-8c7d-9e0f1a2b3c4d";
@@ -13,7 +13,7 @@ const state = {
 
 function fakeSupabase() {
   return {
-    from: (table: string) => {
+    from: () => {
       const filters: Array<[string, unknown]> = [];
       return {
         select: () => ({

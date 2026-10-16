@@ -255,12 +255,15 @@ describe("runCrawl", () => {
     const mem = memoryStore();
     const { cleanPage } = await import("./clean");
     const { contentHash } = await import("./hash");
-    const { promotions: _drop, ...preMc2 } = goldExtraction();
+    const preMc2 = { ...goldExtraction() } as ReturnType<typeof goldExtraction> & {
+      promotions?: unknown;
+    };
+    delete preMc2.promotions;
     vi.mocked(mem.store.previousCard).mockImplementation(async (_s, url) =>
       url === GOLD
         ? {
             hash: contentHash(cleanPage(goldHtml, GOLD).text),
-            extraction: preMc2 as ReturnType<typeof goldExtraction>,
+            extraction: preMc2,
           }
         : null,
     );
