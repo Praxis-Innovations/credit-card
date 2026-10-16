@@ -69,6 +69,26 @@ e2e/
 Add new coverage under the matching `tests/<project>/` folder. Tag PR-blocking
 cases with `{ tag: "@smoke" }`.
 
+### Web regression (`tests/web/`)
+
+Marketing site (Next on `:3000`):
+
+- Hero **Try it** widget (default Gas ranking, category re-rank, keyboard radios)
+- Theme toggle (`data-theme` + localStorage)
+- Full-height hero (`min-h-hero` below the header)
+- Key CTAs / brand home link / How it works section
+- Basic SEO (`title`, description, Open Graph, `lang`)
+
+### API regression (`tests/api/`)
+
+`/v1` contract against the local stack (static catalog + seeded E2E API key):
+
+- Auth (missing / invalid / valid key; public health)
+- Cards list, get-by-id, not_found
+- Merchant brands list/search, get-by-id, not_found
+- Recommendations with `mcc` / `merchantQuery` (legacy `category` rejected)
+- Shared error envelope (`unauthorized`, `not_found`, `bad_request`, `empty_wallet`)
+
 ### Admin regression (`tests/admin/`)
 
 Full suite (nightly / `test:e2e`) covers signed-out redirect, non-admin blocked
