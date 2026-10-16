@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { ReviewTabs } from "@/components/review/review-tabs";
 import { StatusPill } from "@/components/sources/status-pill";
 import { buildFieldRows, changedFieldCount, DIFF_LABELS, failedCheckCount } from "@/lib/review/present";
 import type { PendingFinding } from "@/lib/review/types";
@@ -15,6 +16,7 @@ export function ReviewConsole({
   truncated,
   loadError,
   checkedBannerCount,
+  storeCount = 0,
 }: {
   findings: PendingFinding[];
   canReview: boolean;
@@ -22,6 +24,7 @@ export function ReviewConsole({
   loadError: string | null;
   /** Optional count of unchanged cards kept out of this queue (CR1). */
   checkedBannerCount?: number | null;
+  storeCount?: number;
 }) {
   const router = useRouter();
 
@@ -35,6 +38,8 @@ export function ReviewConsole({
           fields to save — Approve writes those values to the live catalog immediately.
         </p>
       </div>
+
+      <ReviewTabs active="cards" cardCount={findings.length} storeCount={storeCount} />
 
       {typeof checkedBannerCount === "number" && checkedBannerCount > 0 ? (
         <p role="status" className="rounded-lg bg-ok-bg px-4 py-2.5 text-sm text-ok-fg">
