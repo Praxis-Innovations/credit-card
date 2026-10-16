@@ -10,7 +10,7 @@ rank descending. Merchant partnerships can boost or replace category rates.
 
 | Package | Role |
 |---------|------|
-| `apps/api` | Next.js — standalone public catalog + recommendation API (`/v1/*`). Owns the domain engine under `src/domain` and the Big Six data pipeline under `src/data-pipeline` (CI/CLI only, never imported by routes). Never reads wallets. |
+| `apps/api` | Next.js — standalone public catalog + recommendation API (`/v1/*`). Owns the domain engine under `src/domain`. Never reads wallets. Card-data crawls live in `apps/crawler`. |
 | `apps/web` | Next.js — marketing site (no domain package dependency) |
 | `apps/mobile` | Expo — HTTP client of `apps/api` for catalog + recommendations; wallet via Supabase Auth+RLS only |
 | `apps/admin` | Next.js — internal admin console (Google sign-in, allow-listed admins). Talks to Supabase as the signed-in admin under RLS; owns all admin write paths. Imports nothing from `apps/web` or `apps/mobile`. |
@@ -71,9 +71,8 @@ are disabled — see below) must set
 `northtap-api` and hash-match an active row in `public.api_keys` (SHA-256 of
 the plaintext, see `apps/api/src/lib/auth.ts`).
 
-Root scripts: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm test`,
-`pnpm pipeline:run | pipeline:source-health | pipeline:promote`
-(see [`apps/api/src/data-pipeline/README.md`](./apps/api/src/data-pipeline/README.md)).
+Root scripts: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm test`.
+Card crawls: `pnpm --filter crawler crawl` (see [`apps/crawler/README.md`](./apps/crawler/README.md)).
 
 Regenerate catalog SQL seed (requires `NORTHTAP_SEED_API_KEY` in the environment):
 

@@ -11,7 +11,6 @@ Consumers on `main`:
 - `apps/api/src/domain/merchant-match.ts` — matches merchant names to `MERCHANT_BRANDS`.
 - `apps/api/src/domain/recommend-merchant.ts` — partnership-aware card ranking using `MERCHANT_PARTNERSHIPS`.
 - `apps/api/src/lib/catalog.ts` — serves partnerships to the `/v1/partnerships` and `/v1/merchant-brands/{id}/partnerships` API routes.
-- `apps/api/src/data-pipeline/extract/partnerships.ts` — staging crawl diffs against `MERCHANT_PARTNERSHIPS`; conflicts are flagged for review, never auto-promoted.
 
 ---
 

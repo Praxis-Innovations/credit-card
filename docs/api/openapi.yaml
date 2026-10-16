@@ -215,7 +215,7 @@ paths:
       operationId: createCard
       summary: Create a catalog card
       description: |
-        Admin / data-pipeline only. Creates a card with a stable slug `id`.
+        Admin only. Creates a card with a stable slug `id`.
         Clients that only recommend should not call this.
       security:
         - BearerAuth: []
