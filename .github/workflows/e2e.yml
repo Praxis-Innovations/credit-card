@@ -2,6 +2,7 @@ name: E2E nightly
 
 # Full Playwright suite against local Supabase (Docker). Smoke runs on every PR
 # via ci.yml → e2e-smoke (CI gate). Never uses the shared hosted project.
+# On failure on main, opens/updates one GitHub issue per failing suite (E2E5).
 
 on:
   schedule:
@@ -11,6 +12,8 @@ on:
 
 permissions:
   contents: read
+  actions: read
+  issues: write
 
 concurrency:
   group: e2e-nightly
@@ -67,3 +70,10 @@ jobs:
       - name: Stop local Supabase
         if: always()
         run: npx -y supabase@2.121.0 stop || true
+
+      - name: Open or update failure issues
+        if: failure() && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESULTS_JSON: e2e/test-results/results.json
+        run: node .github/scripts/report-e2e-nightly-failures.mjs
