@@ -110,3 +110,9 @@ export {
   type StoreInput,
   type StoreTypeMccRow,
 } from "./recommend-mcc";
+
+export {
+  CATEGORY_MCCS,
+  STORE_TYPE_MCCS,
+  categoryForStaticMcc,
+} from "./mcc-catalog";

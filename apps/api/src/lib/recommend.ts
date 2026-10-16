@@ -25,6 +25,7 @@ import {
   listAllVerifiedCards,
   listAllVerifiedPartnerships,
   listLoyaltyPrograms,
+  listVerifiedMccCatalog,
 } from "./catalog";
 import {
   serializeCard,
@@ -198,11 +199,13 @@ export async function createRecommendation(
   const cardById = new Map(cards.map((c) => [c.id, c]));
   const knownIds = ownedCardIds.filter((id) => cardById.has(id));
 
-  const [brands, partnerships, loyaltyPrograms] = await Promise.all([
-    listAllVerifiedBrands(),
-    listAllVerifiedPartnerships(),
-    listLoyaltyPrograms(),
-  ]);
+  const [brands, partnerships, loyaltyPrograms, mccCatalog] =
+    await Promise.all([
+      listAllVerifiedBrands(),
+      listAllVerifiedPartnerships(),
+      listLoyaltyPrograms(),
+      listVerifiedMccCatalog(),
+    ]);
 
   const queryText = input.merchantQuery?.trim() || undefined;
   const brand = queryText
@@ -229,6 +232,7 @@ export async function createRecommendation(
     cards,
     brands,
     catalog: { brands, partnerships, loyaltyPrograms },
+    mccCatalog,
     limit: input.limit,
   });
 

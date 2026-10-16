@@ -433,6 +433,73 @@ describe("POST /v1/recommendations", () => {
     });
   });
 
+  it("mcc-only request maps displayCategory via category_mccs", async () => {
+    const res = await postRecommendations(
+      req("/v1/recommendations", {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amountCad: 100,
+          mcc: "5411",
+          ownedCardIds: ["amex-cobalt", "tangerine-moneyback"],
+        }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await jsonOf(res)) as {
+      purchase: {
+        mcc: string;
+        displayCategory: string;
+        matchKind: string;
+      };
+      bestCardId: string;
+      recommendations: Array<{ earnRate: number; matchKind: string }>;
+    };
+    expect(body.purchase).toMatchObject({
+      mcc: "5411",
+      displayCategory: "groceries",
+      matchKind: "mcc_list",
+    });
+    // Cobalt 5× groceries beats Tangerine base — not every card at base rate.
+    expect(body.bestCardId).toBe("amex-cobalt");
+    expect(body.recommendations[0]!.earnRate).toBe(5);
+  });
+
+  it("osmTag-only request uses store-type MCC estimate", async () => {
+    const res = await postRecommendations(
+      req("/v1/recommendations", {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amountCad: 40,
+          osmTag: "shop=supermarket",
+          ownedCardIds: ["amex-cobalt", "tangerine-moneyback"],
+        }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await jsonOf(res)) as {
+      purchase: {
+        mcc: string;
+        displayCategory: string;
+        matchKind: string;
+        certainty: string;
+      };
+      warnings: Array<{ kind: string }>;
+      bestCardId: string;
+      recommendations: Array<{ earnRate: number }>;
+    };
+    expect(body.purchase).toMatchObject({
+      mcc: "5411",
+      displayCategory: "groceries",
+      matchKind: "store_type_estimate",
+      certainty: "estimate",
+    });
+    expect(body.warnings.some((w) => w.kind === "certainty")).toBe(true);
+    expect(body.bestCardId).toBe("amex-cobalt");
+    expect(body.recommendations[0]!.earnRate).toBe(5);
+  });
+
   it("returns 422 for empty wallet", async () => {
     const res = await postRecommendations(
       req("/v1/recommendations", {
