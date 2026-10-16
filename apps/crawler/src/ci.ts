@@ -111,9 +111,30 @@ export async function runCi(opts: CiOptions, deps: CiDeps): Promise<CiResult> {
   let failed = 0;
   for (const job of jobs) {
     log(`── ${job.reason}: ${job.source}${job.runId ? ` (run ${job.runId})` : ""}`);
-    const summary = await deps.crawl(job);
-    summaries.push(summary);
-    if (summary.status !== "done") failed++;
+    try {
+      const summary = await deps.crawl(job);
+      summaries.push(summary);
+      if (summary.status !== "done") failed++;
+    } catch (err) {
+      failed++;
+      const message = err instanceof Error ? err.message : String(err);
+      log(`error: ${job.source} aborted — ${message}`);
+      // A throw before createRun leaves a requested row stuck in the queue;
+      // mark it failed so the next schedule does not retry the same poison pill.
+      if (job.runId) {
+        try {
+          await deps.store.updateRun(job.runId, {
+            status: "failed",
+            error: message,
+            finished_at: new Date().toISOString(),
+          });
+        } catch (markErr) {
+          log(
+            `warning: could not mark run ${job.runId} failed (${markErr instanceof Error ? markErr.message : markErr})`,
+          );
+        }
+      }
+    }
   }
   return { jobs, summaries, exitCode: failed > 0 ? 1 : 0 };
 }

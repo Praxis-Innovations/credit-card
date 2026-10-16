@@ -145,6 +145,33 @@ describe("runCi", () => {
     expect(result.exitCode).toBe(1);
   });
 
+  it("catches a rejecting requested job, marks the run failed, and continues", async () => {
+    const updateRun = vi.fn(async () => {});
+    const crawl = vi.fn(async (job: { source: string; runId?: string }) => {
+      if (job.runId === "run-1") throw new Error('Source "Scotiabank" is paused');
+      return summary(job.source);
+    });
+    const result = await runCi(
+      { mode: "requested" },
+      deps({
+        crawl,
+        store: { updateRun } as unknown as ScheduleStore,
+      }),
+    );
+    expect(crawl).toHaveBeenCalledTimes(2);
+    expect(updateRun).toHaveBeenCalledWith(
+      "run-1",
+      expect.objectContaining({
+        status: "failed",
+        error: 'Source "Scotiabank" is paused',
+        finished_at: expect.any(String),
+      }),
+    );
+    expect(result.summaries).toHaveLength(1);
+    expect(result.summaries[0]!.source).toBe("RBC");
+    expect(result.exitCode).toBe(1);
+  });
+
   it("skips listing monthly sources in requested-only mode", async () => {
     const d = deps();
     await runCi({ mode: "requested" }, d);
