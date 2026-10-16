@@ -54,6 +54,14 @@ Constants live in `src/env.ts`. Fixtures/helpers: `src/fixtures.ts`, `src/helper
 
 Traces, HTML report, and `test-results/` upload as artifacts on failure or success.
 
+When the nightly full suite fails on `main`,
+[`.github/scripts/report-e2e-nightly-failures.mjs`](../.github/scripts/report-e2e-nightly-failures.mjs)
+opens or updates **one GitHub issue per failing Playwright project** (`api`,
+`web`, `admin`, `app`) — no duplicates while an issue stays open. Each issue
+lists failing tests, trace paths inside the run artifact, the last green
+nightly commit, and labels `kind:agent` plus the matching `stream:` / `app:`
+labels. Setup failures (no JSON report) use a single `infra` issue instead.
+
 ## Layout
 
 ```

@@ -21,7 +21,8 @@ pushes cancel the older run (`concurrency.cancel-in-progress`).
 The full E2E suite runs nightly in
 [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml) (not part of the
 PR gate). Both E2E jobs use Dockerized local Supabase only — never the shared
-hosted project.
+hosted project. A failed nightly on `main` opens or updates one GitHub issue
+per failing suite (see `e2e/README.md`).
 
 Each job installs with `pnpm install --frozen-lockfile` via the shared
 [`setup` action](../.github/actions/setup/action.yml). The pnpm store is cached

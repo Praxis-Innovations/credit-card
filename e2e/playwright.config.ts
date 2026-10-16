@@ -15,7 +15,14 @@ export default defineConfig({
   workers: 1,
   timeout: 60_000,
   expect: { timeout: 15_000 },
-  reporter: isCI ? [["list"], ["html", { open: "never" }]] : [["list"]],
+  reporter: isCI
+    ? [
+        ["list"],
+        ["html", { open: "never" }],
+        // Machine-readable results for nightly failure → GitHub issue (E2E5).
+        ["json", { outputFile: "test-results/results.json" }],
+      ]
+    : [["list"]],
   outputDir: "test-results",
   use: {
     trace: "on-first-retry",
