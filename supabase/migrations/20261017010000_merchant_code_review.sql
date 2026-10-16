@@ -74,22 +74,13 @@ create trigger merchant_code_findings_audit_review
   after update on public.merchant_code_findings
   for each row execute function public.audit_merchant_code_finding_review();
 
--- Validators decide pending → approved|rejected (also done via SECURITY DEFINER RPCs).
--- Admins may upsert proposed payloads (re-import), including resetting status to pending.
+-- Admin-only UPDATE (CSV re-import of proposed). Validators decide via SECURITY DEFINER
+-- RPCs only — direct PATCH would mark approved without writing evidence/brands.
 drop policy if exists merchant_code_findings_update on public.merchant_code_findings;
 create policy merchant_code_findings_update on public.merchant_code_findings
   for update to authenticated
-  using (
-    (select public.is_admin('admin'))
-    or ((select public.is_admin('validator')) and review_status = 'pending')
-  )
-  with check (
-    (select public.is_admin('admin'))
-    or (
-      (select public.is_admin('validator'))
-      and review_status in ('approved', 'rejected')
-    )
-  );
+  using ((select public.is_admin('admin')))
+  with check ((select public.is_admin('admin')));
 
 -- Admin console may read all merchant_brands (not only verified) for Now vs Proposed.
 drop policy if exists merchant_brands_admin_select on public.merchant_brands;

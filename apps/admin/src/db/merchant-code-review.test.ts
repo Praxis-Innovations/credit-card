@@ -168,4 +168,22 @@ describe("approve_merchant_code_finding network and auth", () => {
       ),
     ).rejects.toThrow(/not authorized/i);
   });
+
+  it("does not let a validator approve via direct UPDATE", async () => {
+    const id = await insertStoreFinding("AD6 Direct Update Chain", "5411", "blog");
+    const status = await asRole(db, "authenticated", VALIDATOR, async (tx) => {
+      await tx.query(
+        `update public.merchant_code_findings
+         set review_status = 'approved'
+         where id = $1::uuid`,
+        [id],
+      );
+      const { rows } = await tx.query<{ review_status: string }>(
+        `select review_status from public.merchant_code_findings where id = $1`,
+        [id],
+      );
+      return rows[0]?.review_status;
+    });
+    expect(status).toBe("pending");
+  });
 });
