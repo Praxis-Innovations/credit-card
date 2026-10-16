@@ -47,7 +47,7 @@ test.describe("admin sources", () => {
     await page.getByRole("button", { name: "Save issuer" }).click();
 
     await expect(page.getByRole("status")).toContainText(`Added ${ISSUER}`);
-    await expect(page.getByRole("button", { name: ISSUER })).toBeVisible();
+    await expect(page.getByRole("button", { name: ISSUER, exact: true })).toBeVisible();
 
     // Edit
     await page.getByRole("button", { name: `Edit ${ISSUER}` }).click();
@@ -56,7 +56,7 @@ test.describe("admin sources", () => {
     await page.getByRole("button", { name: "Save issuer" }).click();
     await expect(page.getByRole("status")).toContainText(`Saved ${ISSUER}`);
 
-    await page.getByRole("button", { name: ISSUER }).click();
+    await page.getByRole("button", { name: ISSUER, exact: true }).click();
     await expect(page.getByText("E2E edited notes")).toBeVisible();
 
     // Pause
