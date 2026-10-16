@@ -27,13 +27,32 @@ export type RecommendResult =
     }
   | { error: ApiErrorBody["error"]; status: number };
 
-/** The request for a picked store: amount, the store's category and the wallet — nothing else. */
+/**
+ * Request for a picked store: amount + store identity only.
+ * Nearby/browse/search send `merchantQuery` (and `osmTag` when known).
+ * Bare category chips send `categoryFallback`. In-store is assumed.
+ */
 export function recommendationRequestFor(
-  store: Pick<StoreChoice, "category">,
+  store: Pick<StoreChoice, "name" | "category" | "osmTag" | "source">,
   amountCad: number,
   ownedCardIds: string[],
 ): RecommendationRequest {
-  return { amountCad, category: store.category, ownedCardIds, limit: 10 };
+  if (store.source === "category") {
+    return {
+      amountCad,
+      categoryFallback: store.category,
+      ownedCardIds,
+      limit: 10,
+    };
+  }
+  return {
+    amountCad,
+    merchantQuery: store.name,
+    ...(store.osmTag ? { osmTag: store.osmTag } : {}),
+    ...(store.source === "search" ? { categoryFallback: store.category } : {}),
+    ownedCardIds,
+    limit: 10,
+  };
 }
 
 function isNetworkFailure(err: unknown): boolean {
@@ -44,15 +63,19 @@ function isNetworkFailure(err: unknown): boolean {
   return /network|fetch|offline|failed to fetch|load failed/i.test(e.message);
 }
 
-/**
- * Prefer apps/api server-side ranking. On network failure, show the last
- * successful response labeled stale — no on-device re-ranking.
- */
-export async function requestRecommendation(
+function hasStoreIdentity(input: RecommendationRequest): boolean {
+  return Boolean(
+    input.merchantQuery?.trim() ||
+      input.osmTag?.trim() ||
+      input.merchant?.trim() ||
+      input.categoryFallback,
+  );
+}
+
+function validateRecommendationRequest(
   input: RecommendationRequest,
-  store: StoreChoice | null = null,
-): Promise<RecommendResult> {
-  const { amountCad, category, ownedCardIds } = input;
+): Extract<RecommendResult, { error: ApiErrorBody["error"] }> | null {
+  const { amountCad, ownedCardIds } = input;
 
   if (typeof amountCad !== "number" || !(amountCad > 0) || !Number.isFinite(amountCad)) {
     return {
@@ -61,10 +84,23 @@ export async function requestRecommendation(
     };
   }
 
-  if (!isCategory(category)) {
+  if (!hasStoreIdentity(input)) {
     return {
       status: 400,
-      error: { code: "bad_request", message: "category must be a known spend category" },
+      error: {
+        code: "bad_request",
+        message: "Provide merchantQuery/osmTag or categoryFallback",
+      },
+    };
+  }
+
+  if (
+    input.categoryFallback !== undefined &&
+    !isCategory(input.categoryFallback)
+  ) {
+    return {
+      status: 400,
+      error: { code: "bad_request", message: "categoryFallback must be a known spend category" },
     };
   }
 
@@ -78,31 +114,51 @@ export async function requestRecommendation(
     };
   }
 
+  return null;
+}
+
+async function recommendationFromNetworkFailure(
+  err: unknown,
+): Promise<RecommendResult> {
+  if (isNetworkFailure(err)) {
+    const cached = await loadLastRecommendation();
+    if (cached) return { ...cached, stale: true };
+    return {
+      status: 503,
+      error: {
+        code: "offline_cache_miss",
+        message:
+          "No network and no cached recommendation yet — connect once to warm the offline cache",
+      },
+    };
+  }
+
+  const e = err as Error & { status?: number; code?: string };
+  return {
+    status: e.status ?? 502,
+    error: {
+      code: e.code ?? "bad_gateway",
+      message: e.message || "Recommendation request failed",
+    },
+  };
+}
+
+/**
+ * Prefer apps/api server-side ranking. On network failure, show the last
+ * successful response labeled stale — no on-device re-ranking.
+ */
+export async function requestRecommendation(
+  input: RecommendationRequest,
+  store: StoreChoice | null = null,
+): Promise<RecommendResult> {
+  const invalid = validateRecommendationRequest(input);
+  if (invalid) return invalid;
+
   try {
     const response = await fetchRecommendation(input);
     await saveLastRecommendation({ response, store });
     return { response, store, stale: false };
   } catch (err) {
-    if (isNetworkFailure(err)) {
-      const cached = await loadLastRecommendation();
-      if (cached) return { ...cached, stale: true };
-      return {
-        status: 503,
-        error: {
-          code: "offline_cache_miss",
-          message:
-            "No network and no cached recommendation yet — connect once to warm the offline cache",
-        },
-      };
-    }
-
-    const e = err as Error & { status?: number; code?: string };
-    return {
-      status: e.status ?? 502,
-      error: {
-        code: e.code ?? "bad_gateway",
-        message: e.message || "Recommendation request failed",
-      },
-    };
+    return recommendationFromNetworkFailure(err);
   }
 }

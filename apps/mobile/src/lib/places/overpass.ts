@@ -1,3 +1,8 @@
+import {
+  OSM_PLACE_KEYS,
+  OSM_PLACE_TAGS,
+  classifyOsmTags,
+} from "./categories";
 import type {
   FindNearbyOptions,
   GeoPoint,
@@ -6,6 +11,12 @@ import type {
 } from "./types";
 
 const DEFAULT_RADIUS_M = 750;
+const DEFAULT_LIMIT = 100;
+/**
+ * Overpass returns elements in id order, not by distance, so this cap can drop
+ * near places in dense areas; priority store types are exempt from it.
+ */
+const SECONDARY_ELEMENT_CAP = 300;
 const DEFAULT_ENDPOINT = "https://overpass-api.de/api/interpreter";
 
 type OverpassElement = {
@@ -39,22 +50,40 @@ function haversineMeters(
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-function buildQuery(lat: number, lon: number, radiusMeters: number): string {
-  // Fuel + grocery / pharmacy / wholesale — the banners we can match in core.
-  return `
-[out:json][timeout:25];
-(
-  nwr(around:${radiusMeters},${lat},${lon})["amenity"="fuel"];
-  nwr(around:${radiusMeters},${lat},${lon})["shop"="supermarket"];
-  nwr(around:${radiusMeters},${lat},${lon})["shop"="convenience"];
-  nwr(around:${radiusMeters},${lat},${lon})["shop"="chemist"];
-  nwr(around:${radiusMeters},${lat},${lon})["shop"="pharmacy"];
-  nwr(around:${radiusMeters},${lat},${lon})["shop"="wholesale"];
-  nwr(around:${radiusMeters},${lat},${lon})["shop"="mall"];
-  nwr(around:${radiusMeters},${lat},${lon})["amenity"="pharmacy"];
-);
-out center tags;
-`.trim();
+/** One `nwr` clause per OSM key, matching that key's values with an anchored regex. */
+function tagClauses(around: string, priority: boolean): string[] {
+  const clauses: string[] = [];
+  for (const key of OSM_PLACE_KEYS) {
+    const values = Object.entries(OSM_PLACE_TAGS[key])
+      .filter(([, entry]) => Boolean(entry.priority) === priority)
+      .map(([value]) => value);
+    if (values.length === 0) continue;
+    clauses.push(`  nwr(${around})["${key}"~"^(${values.join("|")})$"];`);
+  }
+  return clauses;
+}
+
+/**
+ * Single request, two result sets: priority places (gas, groceries,
+ * drugstores) are returned in full; everything else is capped.
+ */
+export function buildOverpassQuery(
+  lat: number,
+  lon: number,
+  radiusMeters: number,
+): string {
+  const around = `around:${radiusMeters},${lat},${lon}`;
+  return [
+    "[out:json][timeout:25];",
+    "(",
+    ...tagClauses(around, true),
+    ")->.priority;",
+    "(",
+    ...tagClauses(around, false),
+    ")->.secondary;",
+    ".priority out center tags;",
+    `.secondary out center tags ${SECONDARY_ELEMENT_CAP};`,
+  ].join("\n");
 }
 
 function elementCoords(
@@ -69,21 +98,17 @@ function elementCoords(
   return null;
 }
 
-function toNearbyPlace(
-  el: OverpassElement,
-  origin: GeoPoint,
-): NearbyPlace | null {
-  const coords = elementCoords(el);
-  if (!coords) return null;
-  const tags = el.tags ?? {};
-  const name =
+function placeDisplayName(tags: Record<string, string>): string {
+  return (
     tags.name?.trim() ||
     tags.brand?.trim() ||
     tags.operator?.trim() ||
-    "";
-  if (!name) return null;
+    ""
+  );
+}
 
-  const brandHints = [
+function brandHintsFromTags(tags: Record<string, string>): string[] {
+  return [
     tags.brand,
     tags["brand:en"],
     tags.name,
@@ -91,8 +116,19 @@ function toNearbyPlace(
     tags.operator,
     tags["operator:en"],
   ].filter((v): v is string => Boolean(v && v.trim()));
+}
 
-  const placeType = tags.amenity || tags.shop || undefined;
+function toNearbyPlace(
+  el: OverpassElement,
+  origin: GeoPoint,
+): NearbyPlace | null {
+  const coords = elementCoords(el);
+  if (!coords) return null;
+  const tags = el.tags ?? {};
+  const name = placeDisplayName(tags);
+  if (!name) return null;
+
+  const classification = classifyOsmTags(tags);
 
   return {
     id: `${el.type}/${el.id}`,
@@ -105,8 +141,11 @@ function toNearbyPlace(
       coords.lat,
       coords.lon,
     ),
-    placeType,
-    brandHints,
+    placeType: classification?.placeType,
+    osmTag: classification?.osmTag,
+    mcc: classification?.mcc ?? undefined,
+    certainty: classification?.certainty ?? "unknown",
+    brandHints: brandHintsFromTags(tags),
     rawTags: tags,
   };
 }
@@ -130,7 +169,12 @@ export function createOverpassPlacesProvider(
     id: "overpass",
     async findNearby(point, findOptions: FindNearbyOptions = {}) {
       const radiusMeters = findOptions.radiusMeters ?? DEFAULT_RADIUS_M;
-      const query = buildQuery(point.latitude, point.longitude, radiusMeters);
+      const limit = findOptions.limit ?? DEFAULT_LIMIT;
+      const query = buildOverpassQuery(
+        point.latitude,
+        point.longitude,
+        radiusMeters,
+      );
 
       const response = await fetchImpl(endpoint, {
         method: "POST",
@@ -163,6 +207,7 @@ export function createOverpassPlacesProvider(
         if (seen.has(key)) continue;
         seen.add(key);
         deduped.push(place);
+        if (deduped.length >= limit) break;
       }
       return deduped;
     },

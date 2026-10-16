@@ -33,6 +33,24 @@ export const CATEGORY_LABELS: Record<Category, string> = {
 
 export type PointCurrency = string;
 
+export type MccCertainty =
+  | "confirmed"
+  | "varies_by_store"
+  | "varies_by_network"
+  | "varies_by_product"
+  | "estimate"
+  | "category_only"
+  | "unknown";
+
+export type MccMatchKind =
+  | "named_merchant"
+  | "mcc_list"
+  | "category_default"
+  | "store_type_estimate"
+  | "user_category"
+  | "base_rate"
+  | "network_not_accepted";
+
 export interface RewardCategory {
   category: Category;
   earnRate: number;
@@ -79,6 +97,9 @@ export interface MerchantBrand {
   lastVerified: string;
   logoUrl?: string | null;
   logoAlt?: string | null;
+  mcc?: string | null;
+  amexMcc?: string | null;
+  certainty?: MccCertainty;
 }
 
 /** GET /v1/loyalty-programs(/:id) */
@@ -105,13 +126,17 @@ export interface SpendToDate {
 }
 
 /**
- * v1 ranks purely by category earn rate: the app never sends the API's
- * merchant / merchantQuery / fuelGrade inputs.
+ * MCC recommend: amount + store (`merchantQuery` / `osmTag`) and/or optional
+ * `categoryFallback` when the store type is unknown. Legacy `category` is rejected.
+ * In-store is assumed; the app never sends `mcc` or brand ids.
  */
 export interface RecommendationRequest {
   amountCad: number;
-  category: Category;
   ownedCardIds?: string[];
+  merchantQuery?: string;
+  merchant?: string;
+  osmTag?: string;
+  categoryFallback?: Category;
   spendToDate?: SpendToDate;
   valuations?: Partial<Record<PointCurrency, number>>;
   limit?: number;
@@ -135,7 +160,7 @@ export interface ValueBreakdownItem {
 export interface RecommendationItem {
   rank: number;
   card: CreditCard;
-  /** Points per $1 (or % cash back) in the purchase category. */
+  /** Points per $1 (or % cash back) for the resolved MCC / display category. */
   earnRate: number;
   /** Cents per point (1 for cash back). */
   pointValue: number;
@@ -144,6 +169,9 @@ export interface RecommendationItem {
   estimatedRewardCad: number;
   capExhausted: boolean;
   reason: string;
+  matchKind?: MccMatchKind;
+  confidence?: MccCertainty;
+  effectiveMcc?: string | null;
   /** Always sent by current API; optional for cached responses from older builds. */
   valueBreakdown?: ValueBreakdownItem[];
 }
@@ -151,10 +179,16 @@ export interface RecommendationItem {
 export interface RecommendationResponse {
   purchase: {
     amountCad: number;
-    category: Category;
+    mcc: string | null;
+    displayCategory: Category;
+    merchant: string | null;
+    merchantQuery?: string | null;
+    certainty?: MccCertainty;
+    matchKind?: MccMatchKind;
   };
   recommendations: RecommendationItem[];
   bestCardId: string | null;
+  warnings?: Array<{ kind: string; message: string }>;
 }
 
 export interface ApiErrorBody {

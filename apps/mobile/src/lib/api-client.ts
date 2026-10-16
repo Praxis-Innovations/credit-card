@@ -141,9 +141,29 @@ export async function fetchLoyaltyPrograms(): Promise<LoyaltyProgram[]> {
 export async function fetchRecommendation(
   request: RecommendationRequest,
 ): Promise<RecommendationResponse> {
-  const { amountCad, category, ownedCardIds, spendToDate, valuations, limit } = request;
+  const {
+    amountCad,
+    ownedCardIds,
+    merchantQuery,
+    merchant,
+    osmTag,
+    categoryFallback,
+    spendToDate,
+    valuations,
+    limit,
+  } = request;
   return apiFetch<RecommendationResponse>("/v1/recommendations", {
     method: "POST",
-    body: JSON.stringify({ amountCad, category, ownedCardIds, spendToDate, valuations, limit }),
+    body: JSON.stringify({
+      amountCad,
+      ownedCardIds,
+      merchantQuery,
+      merchant,
+      osmTag,
+      categoryFallback,
+      spendToDate,
+      valuations,
+      limit,
+    }),
   });
 }

@@ -1,12 +1,24 @@
 import { CATEGORY_LABELS, type Category, type MerchantBrand } from "./api-types";
-import type { NearbyPlace } from "./places";
+import {
+  categoryForPlaceType,
+  displayCategoryForMcc,
+  osmTagForPlaceType,
+  type NearbyPlace,
+} from "./places";
+
+export { categoryForPlaceType, osmTagForPlaceType };
 
 /** A store the user picked: an OSM place, a catalog brand, a search, or a bare category. */
 export interface StoreChoice {
-  /** Display name. */
+  /** Display name (also sent as `merchantQuery` except for bare categories). */
   name: string;
-  /** The only purchase context sent to the API: v1 ranks by category earn rate. */
+  /**
+   * DS4 display group for UI (from brand category or store-type MCC group).
+   * Not sent as the ranking key — the API resolves MCC from the store.
+   */
   category: Category;
+  /** OSM tag for store-type MCC fallback, e.g. `shop=supermarket`. */
+  osmTag?: string;
   logoUrl: string | null;
   logoAlt: string | null;
   distanceMeters?: number;
@@ -18,6 +30,7 @@ export interface NearbyStore {
   id: string;
   name: string;
   category: Category;
+  osmTag?: string;
   distanceMeters: number;
   brand: MerchantBrand | null;
 }
@@ -31,38 +44,23 @@ export function normalizeName(value: string): string {
     .trim();
 }
 
-const OSM_CATEGORY: Record<string, Category> = {
-  fuel: "gas",
-  supermarket: "groceries",
-  convenience: "groceries",
-  wholesale: "groceries",
-  greengrocer: "groceries",
-  chemist: "drugstore",
-  pharmacy: "drugstore",
-  restaurant: "dining",
-  cafe: "dining",
-  fast_food: "dining",
-  bar: "dining",
-  pub: "dining",
-};
-
-/** Spend category for an OSM amenity/shop value; "other" when unknown. */
-export function categoryForPlaceType(placeType: string | undefined): Category {
-  return (placeType && OSM_CATEGORY[placeType]) || "other";
-}
-
 /**
- * Spend category for a picked store: the catalog brand's category, else the
- * OSM amenity/shop mapping, else the Browse category, else "other".
+ * Display category for a picked store: catalog brand first (approved store
+ * code's display group), else the place's MCC display group, else Browse, else
+ * "other".
  */
 export function storeCategory(input: {
   brand?: Pick<MerchantBrand, "category"> | null;
+  /** Store-type MCC estimate; display group comes from the MCC catalog. */
+  mcc?: string | null;
   placeType?: string;
   browseCategory?: Category;
 }): Category {
   if (input.brand) return input.brand.category;
-  const fromPlace = categoryForPlaceType(input.placeType);
-  if (fromPlace !== "other") return fromPlace;
+  const fromMcc = input.mcc
+    ? displayCategoryForMcc(input.mcc)
+    : categoryForPlaceType(input.placeType);
+  if (fromMcc !== "other") return fromMcc;
   return input.browseCategory ?? "other";
 }
 
@@ -116,15 +114,17 @@ export function toNearbyStores(
     const key = normalizeName(name);
     if (seen.has(key)) continue;
     seen.add(key);
-    const brand = matchBrand(
-      [...place.brandHints, name],
-      brands,
-      categoryForPlaceType(place.placeType),
-    );
+    const osmTag = place.osmTag ?? osmTagForPlaceType(place.placeType);
+    const placeCategory = storeCategory({
+      mcc: place.mcc,
+      placeType: place.placeType,
+    });
+    const brand = matchBrand([...place.brandHints, name], brands, placeCategory);
     stores.push({
       id: place.id,
       name,
-      category: storeCategory({ brand, placeType: place.placeType }),
+      category: storeCategory({ brand, mcc: place.mcc, placeType: place.placeType }),
+      osmTag,
       distanceMeters: place.distanceMeters,
       brand,
     });
@@ -137,6 +137,7 @@ export function choiceFromNearby(store: NearbyStore): StoreChoice {
   return {
     name: store.name,
     category: store.category,
+    osmTag: store.osmTag,
     logoUrl: store.brand?.logoUrl ?? null,
     logoAlt: store.brand?.logoAlt ?? null,
     distanceMeters: store.distanceMeters,

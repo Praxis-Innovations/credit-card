@@ -18,7 +18,7 @@ vi.mock("./ssr-safe-storage", () => ({
 
 import { recommendationRequestFor, requestRecommendation } from "./recommend";
 import { loadLastRecommendation } from "./last-recommendation-cache";
-import { choiceFromBrand } from "./stores";
+import { choiceForCategory, choiceFromBrand, choiceFromNearby } from "./stores";
 
 const API_KEY = "test-api-key-not-a-production-secret";
 
@@ -38,7 +38,9 @@ const cobaltCard = {
 const onlineResponse = {
   purchase: {
     amountCad: 100,
-    category: "dining" as const,
+    mcc: "5812",
+    displayCategory: "dining" as const,
+    merchant: "Joe's",
   },
   recommendations: [
     {
@@ -76,7 +78,7 @@ describe("requestRecommendation", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     const result = await requestRecommendation({
       amountCad: 50,
-      category: "dining",
+      merchantQuery: "Joe's",
     });
     expect("error" in result).toBe(true);
     if (!("error" in result)) return;
@@ -94,7 +96,7 @@ describe("requestRecommendation", () => {
     const cactus = { ...STORE, name: "Cactus Club", category: "dining" as const };
 
     const result = await requestRecommendation(
-      { amountCad: 100, category: "dining", ownedCardIds: ["amex-cobalt"] },
+      { amountCad: 100, merchantQuery: "Cactus Club", ownedCardIds: ["amex-cobalt"] },
       cactus,
     );
     expect("error" in result).toBe(false);
@@ -107,7 +109,7 @@ describe("requestRecommendation", () => {
     expect(cached?.store?.name).toBe("Cactus Club");
   });
 
-  it("sends only amount, category and wallet — no merchant query or fuel grade", async () => {
+  it("sends store + amount only — no mcc, no legacy category", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify(onlineResponse), {
         status: 200,
@@ -126,21 +128,44 @@ describe("requestRecommendation", () => {
     const request = recommendationRequestFor(shell, 60, ["triangle-we", "scotia-gold-amex"]);
     expect(request).toEqual({
       amountCad: 60,
-      category: "gas",
+      merchantQuery: "Shell",
       ownedCardIds: ["triangle-we", "scotia-gold-amex"],
       limit: 10,
     });
 
-    // Extra keys from an untyped caller are dropped before the request leaves.
-    await requestRecommendation(
-      { ...request, merchantQuery: "Shell", fuelGrade: "premium" } as typeof request,
-      shell,
-    );
+    await requestRecommendation(request, shell);
     const body = JSON.parse(String((fetchSpy.mock.calls[0]![1] as RequestInit).body));
     expect(body).toEqual({
       amountCad: 60,
-      category: "gas",
+      merchantQuery: "Shell",
       ownedCardIds: ["triangle-we", "scotia-gold-amex"],
+      limit: 10,
+    });
+    expect(body).not.toHaveProperty("category");
+    expect(body).not.toHaveProperty("mcc");
+  });
+
+  it("sends osmTag for nearby places and categoryFallback for bare categories", () => {
+    const nearby = choiceFromNearby({
+      id: "1",
+      name: "Shell",
+      category: "gas",
+      osmTag: "amenity=fuel",
+      distanceMeters: 80,
+      brand: null,
+    });
+    expect(recommendationRequestFor(nearby, 40, ["amex-cobalt"])).toEqual({
+      amountCad: 40,
+      merchantQuery: "Shell",
+      osmTag: "amenity=fuel",
+      ownedCardIds: ["amex-cobalt"],
+      limit: 10,
+    });
+
+    expect(recommendationRequestFor(choiceForCategory("groceries"), 100, ["amex-cobalt"])).toEqual({
+      amountCad: 100,
+      categoryFallback: "groceries",
+      ownedCardIds: ["amex-cobalt"],
       limit: 10,
     });
   });
@@ -153,14 +178,14 @@ describe("requestRecommendation", () => {
       }),
     );
     await requestRecommendation(
-      { amountCad: 100, category: "dining", ownedCardIds: ["amex-cobalt"] },
+      { amountCad: 100, merchantQuery: "Joe's", ownedCardIds: ["amex-cobalt"] },
       STORE,
     );
 
     vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
 
     const result = await requestRecommendation(
-      { amountCad: 40, category: "gas", ownedCardIds: ["amex-cobalt"] },
+      { amountCad: 40, merchantQuery: "Esso", ownedCardIds: ["amex-cobalt"] },
       { ...STORE, name: "Esso", category: "gas" },
     );
     expect("error" in result).toBe(false);
@@ -168,7 +193,7 @@ describe("requestRecommendation", () => {
     expect(result.stale).toBe(true);
     expect(result.response.bestCardId).toBe("amex-cobalt");
     // Stale payload is the previous success — not recomputed for the new query.
-    expect(result.response.purchase.category).toBe("dining");
+    expect(result.response.purchase.displayCategory).toBe("dining");
     expect(result.store?.name).toBe("Joe's");
   });
 
@@ -178,7 +203,7 @@ describe("requestRecommendation", () => {
     );
     const result = await requestRecommendation({
       amountCad: 50,
-      category: "dining",
+      merchantQuery: "Joe's",
       ownedCardIds: ["amex-cobalt"],
     });
     expect("error" in result).toBe(true);
@@ -197,7 +222,7 @@ describe("requestRecommendation", () => {
     );
     const result = await requestRecommendation({
       amountCad: 50,
-      category: "dining",
+      merchantQuery: "Joe's",
       ownedCardIds: ["amex-cobalt"],
     });
     expect("error" in result).toBe(true);
