@@ -1,6 +1,6 @@
 import { expect, test } from "../../src/fixtures";
 import { signInAdminBrowser } from "../../src/helpers/admin-auth";
-import { ensureReviewFixtures } from "../../src/helpers/admin-data";
+import { cleanupReviewFixtures, ensureReviewFixtures } from "../../src/helpers/admin-data";
 
 test.describe("admin review", () => {
   let approveName: string;
@@ -9,6 +9,10 @@ test.describe("admin review", () => {
   test.beforeEach(async ({ context }) => {
     ({ approveName, rejectName } = await ensureReviewFixtures());
     await signInAdminBrowser(context);
+  });
+
+  test.afterAll(async () => {
+    await cleanupReviewFixtures();
   });
 
   test("approve a pending finding", async ({ page }) => {

@@ -42,11 +42,17 @@ export async function ensureReviewFixtures(): Promise<{
     throw new Error(`Scotiabank source missing for review fixtures: ${sourceError?.message ?? "not found"}`);
   }
 
-  await service.from("card_findings").delete().in("id", [
+  const { error: delFindingsError } = await service.from("card_findings").delete().in("id", [
     E2E_REVIEW.approveFindingId,
     E2E_REVIEW.rejectFindingId,
   ]);
-  await service.from("crawl_runs").delete().eq("id", E2E_REVIEW.runId);
+  if (delFindingsError) {
+    throw new Error(`Failed to clear card_findings fixtures: ${delFindingsError.message}`);
+  }
+  const { error: delRunError } = await service.from("crawl_runs").delete().eq("id", E2E_REVIEW.runId);
+  if (delRunError) {
+    throw new Error(`Failed to clear crawl_runs fixture: ${delRunError.message}`);
+  }
 
   const { error: runError } = await service.from("crawl_runs").insert({
     id: E2E_REVIEW.runId,
@@ -132,6 +138,22 @@ export async function ensureReviewFixtures(): Promise<{
   return { approveName: APPROVE_CARD, rejectName: REJECT_CARD };
 }
 
+/** Delete the fixed review-queue fixtures (findings + run). */
+export async function cleanupReviewFixtures(): Promise<void> {
+  const service = createServiceClient();
+  const { error: delFindingsError } = await service.from("card_findings").delete().in("id", [
+    E2E_REVIEW.approveFindingId,
+    E2E_REVIEW.rejectFindingId,
+  ]);
+  if (delFindingsError) {
+    throw new Error(`Failed to cleanup card_findings fixtures: ${delFindingsError.message}`);
+  }
+  const { error: delRunError } = await service.from("crawl_runs").delete().eq("id", E2E_REVIEW.runId);
+  if (delRunError) {
+    throw new Error(`Failed to cleanup crawl_runs fixture: ${delRunError.message}`);
+  }
+}
+
 /** Remove a test issuer created by Sources E2E (service role). */
 export async function deleteIssuerByName(issuerName: string): Promise<void> {
   const service = createServiceClient();
@@ -159,7 +181,13 @@ export async function ensureAdminRlsFixtures(): Promise<void> {
     throw new Error(`Scotiabank source missing for RLS fixtures: ${sourceError?.message ?? "not found"}`);
   }
 
-  await service.from("discovered_card_urls").delete().eq("id", E2E_REVIEW.discoveredUrlId);
+  const { error: delUrlError } = await service
+    .from("discovered_card_urls")
+    .delete()
+    .eq("id", E2E_REVIEW.discoveredUrlId);
+  if (delUrlError) {
+    throw new Error(`Failed to clear discovered_card_urls fixture: ${delUrlError.message}`);
+  }
   const { error: urlError } = await service.from("discovered_card_urls").insert({
     id: E2E_REVIEW.discoveredUrlId,
     source_id: source.id,
@@ -180,22 +208,26 @@ export async function ensureAdminRlsFixtures(): Promise<void> {
   if (touchError) {
     throw new Error(`Failed to touch crawl_sources for admin_audit: ${touchError.message}`);
   }
-
-  for (const table of ADMIN_DATA_TABLES) {
-    const n = await countAsService(table);
-    if (n < 1) {
-      throw new Error(`Expected service role to see rows in ${table} after RLS fixtures; got ${n}`);
-    }
-  }
 }
 
-async function countAsService(table: AdminDataTable): Promise<number> {
+/** Remove RLS probe rows and restore the Scotiabank notes column. */
+export async function cleanupAdminRlsFixtures(): Promise<void> {
   const service = createServiceClient();
-  const { count, error } = await service.from(table).select("*", { count: "exact", head: true });
-  if (error) {
-    throw new Error(`Service-role count on ${table} failed: ${error.message}`);
+  const { error: delUrlError } = await service
+    .from("discovered_card_urls")
+    .delete()
+    .eq("id", E2E_REVIEW.discoveredUrlId);
+  if (delUrlError) {
+    throw new Error(`Failed to cleanup discovered_card_urls: ${delUrlError.message}`);
   }
-  return count ?? 0;
+  await cleanupReviewFixtures();
+  const { error: restoreError } = await service
+    .from("crawl_sources")
+    .update({ notes: null })
+    .eq("issuer_name", "Scotiabank");
+  if (restoreError) {
+    throw new Error(`Failed to restore Scotiabank notes: ${restoreError.message}`);
+  }
 }
 
 /** Count rows visible to the seeded app user under RLS. */
@@ -210,7 +242,12 @@ export async function countAsAppUser(table: AdminDataTable): Promise<number> {
 
 /** Count rows visible to the local service role (bypasses RLS). */
 export async function countAsServiceRole(table: AdminDataTable): Promise<number> {
-  return countAsService(table);
+  const service = createServiceClient();
+  const { count, error } = await service.from(table).select("*", { count: "exact", head: true });
+  if (error) {
+    throw new Error(`Service-role count on ${table} failed: ${error.message}`);
+  }
+  return count ?? 0;
 }
 
 export async function appUserAdminRole(): Promise<{

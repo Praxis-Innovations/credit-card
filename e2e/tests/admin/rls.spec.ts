@@ -2,12 +2,17 @@ import { expect, test } from "../../src/fixtures";
 import {
   ADMIN_DATA_TABLES,
   appUserAdminRole,
+  cleanupAdminRlsFixtures,
   countAsAppUser,
   countAsServiceRole,
   ensureAdminRlsFixtures,
 } from "../../src/helpers/admin-data";
 
 test.describe("admin RLS for app users", () => {
+  test.afterAll(async () => {
+    await cleanupAdminRlsFixtures();
+  });
+
   test("app user is not an admin and sees no admin data", async () => {
     await ensureAdminRlsFixtures();
 
