@@ -145,7 +145,7 @@ export default function AmountScreen() {
       label="Change store"
       onPress={back}
       icon={<StoreIcon />}
-      style={layout.desktop && styles.fullWidth}
+      style={(layout.desktop || !layout.wide) && styles.fullWidth}
     />
   );
 
@@ -248,9 +248,7 @@ export default function AmountScreen() {
           meta={meta}
           logoUrl={store.logoUrl}
           logoAlt={store.logoAlt}
-          actionLabel="Change"
-          actionAccessibilityLabel="Change store"
-          onAction={back}
+          action={changeStoreButton}
         />
         {centredAmount}
       </View>
