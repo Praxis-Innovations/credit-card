@@ -135,10 +135,21 @@ begin
 end
 $$;
 
--- Status rules (Done when #96):
---   verified  = ≥2 distinct source_types agreeing on the same non-null MCC
---   conflict  = approved evidence for the chain disagrees on MCC
---   else      = pending (single source or no MCC yet)
+-- Status rules (Done when #96), partitioned so Amex and Visa/MC (and channels)
+-- don't falsely conflict — amex_mcc exists precisely because Amex can differ:
+--   conflict  = same network-family + channel has disagreeing non-null MCCs
+--   verified  = ≥2 distinct source_types agree on one MCC within a partition
+--   else      = pending
+-- Network family: amex alone; visa | mastercard | visa_mc | all together.
+create or replace function public.mcc_evidence_network_family(p_network public.mcc_network)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select case when p_network = 'amex' then 'amex' else 'visa_mc' end;
+$$;
+
 create or replace function public.recompute_merchant_brand_mcc_status(p_brand_id text)
 returns public.catalog_status
 language plpgsql
@@ -147,7 +158,6 @@ set search_path = ''
 as $$
 declare
   v_conflict boolean := false;
-  v_agree_mcc public.mcc_code;
   v_agree_sources int := 0;
   v_status public.catalog_status := 'pending';
 begin
@@ -160,22 +170,28 @@ begin
      and e1.mcc is not null
      and e2.mcc is not null
      and e1.mcc is distinct from e2.mcc
+     and e1.channel = e2.channel
+     and public.mcc_evidence_network_family(e1.network)
+       = public.mcc_evidence_network_family(e2.network)
     where e1.merchant_brand_id = p_brand_id
   ) into v_conflict;
 
   if v_conflict then
     v_status := 'conflict';
   else
-    select e.mcc, count(distinct e.source_type)::int
-    into v_agree_mcc, v_agree_sources
+    select count(distinct e.source_type)::int
+    into v_agree_sources
     from public.merchant_code_evidence e
     where e.merchant_brand_id = p_brand_id
       and e.mcc is not null
-    group by e.mcc
+    group by
+      public.mcc_evidence_network_family(e.network),
+      e.channel,
+      e.mcc
     order by count(distinct e.source_type) desc
     limit 1;
 
-    if v_agree_sources >= 2 then
+    if coalesce(v_agree_sources, 0) >= 2 then
       v_status := 'verified';
     else
       v_status := 'pending';
@@ -193,6 +209,9 @@ begin
   return v_status;
 end
 $$;
+
+revoke all on function public.mcc_evidence_network_family(public.mcc_network)
+  from public, anon, authenticated;
 
 create or replace function public.ensure_merchant_brand_for_chain(
   p_chain text,

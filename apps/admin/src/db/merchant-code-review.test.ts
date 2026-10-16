@@ -23,7 +23,13 @@ afterAll(async () => {
 });
 
 /** Insert as service role (no RLS), like the research importer. */
-async function insertStoreFinding(chain: string, mcc: string, sourceType: string): Promise<string> {
+async function insertStoreFinding(
+  chain: string,
+  mcc: string,
+  sourceType: string,
+  network = "visa",
+  channel = "in_store",
+): Promise<string> {
   seq += 1;
   const url = `https://example.com/ad6/${seq}`;
   const { rows } = await db.query<{ id: string }>(
@@ -31,12 +37,20 @@ async function insertStoreFinding(chain: string, mcc: string, sourceType: string
      values (
        'store_code', $1,
        jsonb_build_object(
-         'chain', $2::text, 'mcc', $3::text, 'network', 'visa', 'channel', 'in_store',
+         'chain', $2::text, 'mcc', $3::text, 'network', $6::text, 'channel', $7::text,
          'certainty', 'confirmed', 'source_type', $4::text, 'url', $5::text,
          'observed_date', '2026-01-15', 'quote', 'quoted evidence'
        )
      ) returning id`,
-    [`${chain.toLowerCase()}|${url}|visa|in_store`, chain, mcc, sourceType, url],
+    [
+      `${chain.toLowerCase()}|${url}|${network}|${channel}`,
+      chain,
+      mcc,
+      sourceType,
+      url,
+      network,
+      channel,
+    ],
   );
   return rows[0]!.id;
 }
@@ -82,6 +96,27 @@ describe("approve_merchant_code_finding", () => {
       return (await brandStatus(tx, "AD6 Conflict Chain"))?.status;
     });
     expect(status).toBe("conflict");
+  });
+
+  it("does not Conflict when Visa and Amex codes differ", async () => {
+    const visa = await insertStoreFinding(
+      "AD6 Amex Override",
+      "5411",
+      "issuer_merchant_list",
+      "visa",
+    );
+    const amex = await insertStoreFinding("AD6 Amex Override", "5300", "blog", "amex");
+    const brand = await asRole(db, "authenticated", VALIDATOR, async (tx) => {
+      await tx.query(`select public.approve_merchant_code_finding($1::uuid, null)`, [visa]);
+      await tx.query(`select public.approve_merchant_code_finding($1::uuid, null)`, [amex]);
+      const { rows } = await tx.query<{ status: string; mcc: string; amex_mcc: string }>(
+        `select status::text, mcc, amex_mcc from public.merchant_brands
+         where lower(name) = lower('AD6 Amex Override')`,
+      );
+      return rows[0];
+    });
+    expect(brand?.status).not.toBe("conflict");
+    expect(brand).toMatchObject({ mcc: "5411", amex_mcc: "5300", status: "pending" });
   });
 
   it("rejects require a reason and leave the brand untouched", async () => {
