@@ -13,7 +13,7 @@ export const ADMIN_DATA_TABLES = [
 export type AdminDataTable = (typeof ADMIN_DATA_TABLES)[number];
 
 /** Fixed local-only UUIDs for review-queue fixtures (seeded via service role). */
-export const E2E_REVIEW = {
+const E2E_REVIEW = {
   runId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
   approveFindingId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1",
   rejectFindingId: "cccccccc-cccc-4ccc-8ccc-ccccccccccc1",

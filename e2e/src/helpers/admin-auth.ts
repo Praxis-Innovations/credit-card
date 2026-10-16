@@ -14,7 +14,7 @@ type CookieRow = {
  * Write a Supabase SSR session into the Playwright browser context so the
  * admin Next.js middleware sees the same cookies a real Google sign-in would.
  */
-export async function applySessionCookies(
+async function applySessionCookies(
   context: BrowserContext,
   session: Session,
 ): Promise<void> {
