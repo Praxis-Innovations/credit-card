@@ -165,27 +165,109 @@ export function checkExtraction(
     if (q) fields.push(checkQuoted(f, q, page, numberInQuote(q.value, q.quote), inRange(q.value, RANGES[f])));
   }
   extraction.earn_rates.forEach((e, i) => {
+    const prefix = `earn_rates[${i}] ${e.category}`;
     fields.push(
       checkQuoted(
-        `earn_rates[${i}] ${e.category}`,
+        prefix,
         e,
         page,
         numberInQuote(e.rate, e.quote),
         e.rate > 0 && inRange(e.rate, EARN_RANGES[e.unit]),
       ),
     );
+    for (const mcc of e.mccs ?? []) {
+      if (!/^\d{4}$/.test(mcc)) {
+        fields.push(
+          finish({
+            field: `${prefix}.mccs`,
+            quote_found: quoteInText(e.quote, page),
+            value_in_quote: false,
+            in_range: null,
+            issues: [`MCC ${mcc} is not a four-digit code`],
+          }),
+        );
+      } else if (!e.quote.includes(mcc)) {
+        fields.push(
+          finish({
+            field: `${prefix}.mccs`,
+            quote_found: quoteInText(e.quote, page),
+            value_in_quote: false,
+            in_range: null,
+            issues: [`MCC ${mcc} does not appear in its quote`],
+          }),
+        );
+      }
+    }
+    for (const merchant of e.merchants ?? []) {
+      if (!stringInQuote(merchant, e.quote)) {
+        fields.push(
+          finish({
+            field: `${prefix}.merchants`,
+            quote_found: quoteInText(e.quote, page),
+            value_in_quote: false,
+            in_range: null,
+            issues: [`merchant "${merchant}" does not appear in its quote`],
+          }),
+        );
+      }
+    }
+    if (e.cap_amount != null && !numberInQuote(e.cap_amount, e.quote)) {
+      fields.push(
+        finish({
+          field: `${prefix}.cap_amount`,
+          quote_found: quoteInText(e.quote, page),
+          value_in_quote: false,
+          in_range: inRange(e.cap_amount, [0, 1_000_000]),
+          issues: ["cap amount does not appear in its quote"],
+        }),
+      );
+    }
+    if (e.tier_threshold != null && !numberInQuote(e.tier_threshold, e.quote)) {
+      fields.push(
+        finish({
+          field: `${prefix}.tier_threshold`,
+          quote_found: quoteInText(e.quote, page),
+          value_in_quote: false,
+          in_range: inRange(e.tier_threshold, [0, 1_000_000]),
+          issues: ["tier threshold does not appear in its quote"],
+        }),
+      );
+    }
+    if (
+      e.mcc_source === "terms" &&
+      (e.mccs?.length ?? 0) === 0 &&
+      (e.merchants?.length ?? 0) === 0
+    ) {
+      fields.push(
+        finish({
+          field: `${prefix}.mcc_source`,
+          quote_found: quoteInText(e.quote, page),
+          value_in_quote: null,
+          in_range: null,
+          issues: ["mcc_source is terms but no MCCs or merchants were extracted"],
+        }),
+      );
+    }
   });
   const wb = extraction.welcome_bonus;
   if (wb) {
-    const nums = [wb.value.points, wb.value.cashback_cad].filter((n): n is number => n !== null);
+    const nums = [wb.value.points, wb.value.cashback_cad, wb.value.rate ?? null].filter(
+      (n): n is number => n !== null,
+    );
     const valueOk = nums.length ? nums.every((n) => numberInQuote(n, wb.quote)) : null;
     const rangeOk =
       nums.length === 0
         ? null
         : (wb.value.points === null || inRange(wb.value.points, BONUS_POINTS_RANGE)) &&
-          (wb.value.cashback_cad === null || inRange(wb.value.cashback_cad, BONUS_CASH_RANGE));
+          (wb.value.cashback_cad === null || inRange(wb.value.cashback_cad, BONUS_CASH_RANGE)) &&
+          (wb.value.rate == null || inRange(wb.value.rate, [0, 20]));
     fields.push(checkQuoted("welcome_bonus", wb, page, valueOk, rangeOk));
   }
+  (extraction.promotions ?? []).forEach((p, i) => {
+    const nums = [p.rate, p.points].filter((n): n is number => n !== null);
+    const valueOk = nums.length ? nums.every((n) => numberInQuote(n, p.quote)) : null;
+    fields.push(checkQuoted(`promotions[${i}]`, p, page, valueOk, null));
+  });
   extraction.insurance_highlights.forEach((h, i) => {
     fields.push(checkQuoted(`insurance_highlights[${i}]`, h, page, null, null));
   });

@@ -1,7 +1,13 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { MAX_CARD_TEXT_CHARS, MAX_COMPARE_LINKS, MAX_COMPARE_TEXT_CHARS } from "../config";
 import type { CardLink, PageLink, Usage } from "../types";
-import { CARD_TOOL_SCHEMA, coerceExtraction, LINKS_TOOL_SCHEMA, type CardExtraction } from "./schema";
+import {
+  CARD_TOOL_SCHEMA,
+  coerceExtraction,
+  LINKS_TOOL_SCHEMA,
+  stampSourceUrl,
+  type CardExtraction,
+} from "./schema";
 
 export interface Extractor {
   readonly model: string;
@@ -35,17 +41,22 @@ Rules:
 - card_name is the product's name as the page or link text gives it.
 - Answer only by calling report_card_pages. Write no other text.`;
 
-const CARD_SYSTEM = `You extract facts about one credit card from the text of its official product page.
+const CARD_SYSTEM = `You extract facts about one credit card from the text of its official product page (or linked terms / offer text included in the page).
 
 Rules:
 - Use only the page text provided. Never use outside knowledge, never infer, never compute.
 - Every value needs a quote: the shortest passage, copied character-for-character from the page text, that states the value (usually a sentence or a table row). One contiguous passage — no ellipses, no joining, no rewording.
 - If the page does not state a field, use null (or an empty list). A null is always better than a guess.
-- Amounts are CAD numbers without symbols; rates are percentages as numbers (20.99% -> 20.99).
+- Amounts are CAD numbers without symbols; rates are percentages as numbers (20.99% -> 20.99). Dates are YYYY-MM-DD.
 - APRs: standard rates only, not promotional or introductory rates.
 - annual_fee: the regular primary-card fee, even if the first year is waived.
-- earn_rates: ongoing earn rates only (not welcome or limited-time bonuses). Map each to the closest category; the base rate on all other purchases is "other". Cash back is percent_cashback.
-- welcome_bonus: the current sign-up offer; points is the maximum total bonus if stated.
+- earn_rates: ongoing earn rates only (not welcome or limited-time promotions). Map each to the closest category; the base rate on all other purchases is "other". Cash back is percent_cashback.
+  - mccs: four-digit codes only when the terms list them. merchants: named stores that qualify. exclusions: warehouse clubs, gift cards, superstores, etc. when stated.
+  - mcc_source is "terms" when mccs or merchants are listed; "network_default" when the page only names a category.
+  - Caps: set cap_amount + cap_period from numeric caps; put rates that share one combined pool in the same cap_group and set rate_after_cap when stated. Spend tiers use tier_threshold.
+  - valid_from / valid_to when an earn rate is dated so it can expire.
+- welcome_bonus: current sign-up offer (points and/or rate), valid_from / valid_to when dated, new_cardholders_only when the page says so.
+- promotions: public limited-time offers on the page (not the welcome bonus, not ongoing earn rates), each with dates when stated.
 - Answer only by calling record_card. Write no other text.`;
 
 function truncate(text: string, max: number): string {
@@ -126,6 +137,7 @@ export class ClaudeExtractor implements Extractor {
         },
       ],
     });
-    return { extraction: coerceExtraction(toolInput(msg, "record_card")), usage: usageOf(msg) };
+    const extraction = stampSourceUrl(coerceExtraction(toolInput(msg, "record_card")), input.pageUrl);
+    return { extraction, usage: usageOf(msg) };
   }
 }

@@ -37,14 +37,57 @@ export type DiffResult = {
 
 type Quoted<T> = { value: T; quote: string };
 
+/** Earn-rate MCC / cap / tier fields from the crawler (snake_case in findings JSON). */
+export type ExtractedEarnRate = {
+  category: string;
+  rate: number;
+  unit: string;
+  quote: string;
+  description?: string;
+  mccs?: string[];
+  merchants?: string[];
+  mcc_source?: "terms" | "network_default";
+  exclusions?: string[];
+  cap_amount?: number | null;
+  cap_period?: string | null;
+  cap_group?: string | null;
+  rate_after_cap?: number | null;
+  tier_threshold?: number | null;
+  valid_from?: string | null;
+  valid_to?: string | null;
+  source_url?: string | null;
+};
+
+export type ExtractedWelcomeBonus = {
+  summary: string;
+  points: number | null;
+  cashback_cad?: number | null;
+  rate?: number | null;
+  valid_from?: string | null;
+  valid_to?: string | null;
+  new_cardholders_only?: boolean | null;
+};
+
+export type ExtractedPromotion = {
+  summary: string;
+  rate: number | null;
+  points: number | null;
+  categories: string[];
+  valid_from: string | null;
+  valid_to: string | null;
+  quote: string;
+  source_url?: string | null;
+};
+
 /** Only the parts of the extraction the review page / approve path read. */
 export type Extraction = {
   card_name?: Quoted<string> | null;
   network?: Quoted<string> | null;
   annual_fee?: Quoted<number> | null;
   reward_currency?: Quoted<string> | null;
-  earn_rates?: Array<{ category: string; rate: number; unit: string; quote: string }>;
-  welcome_bonus?: Quoted<{ summary: string; points: number | null }> | null;
+  earn_rates?: ExtractedEarnRate[];
+  welcome_bonus?: Quoted<ExtractedWelcomeBonus> | null;
+  promotions?: ExtractedPromotion[];
 };
 
 export type PendingFinding = {
@@ -82,4 +125,5 @@ export const FINDING_COLUMNS =
   "id, run_id, product_url, card_name, extracted, check_results, flagged_count, diff_kind, diff, linked_card_id, created_at, source:crawl_sources(issuer_name), run:crawl_runs(created_at)";
 
 export const MAX_REVIEW_NOTE = 1000;
-export const MAX_FIELD_VALUE = 500;
+/** Long enough for comma-joined MCC lists and merchant names. */
+export const MAX_FIELD_VALUE = 1000;

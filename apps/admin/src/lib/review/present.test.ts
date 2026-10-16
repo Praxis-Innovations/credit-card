@@ -64,11 +64,84 @@ describe("splitFieldRows", () => {
 describe("counts", () => {
   it("counts diff changes for a changed card and all fields for a new one", () => {
     expect(changedFieldCount({ extracted, check_results: checks, diff })).toBe(2);
-    expect(changedFieldCount({ extracted, check_results: checks, diff: { ...diff, kind: "new", changes: [] } })).toBe(4);
+    expect(
+      changedFieldCount({ extracted, check_results: checks, diff: { ...diff, kind: "new", changes: [] } }),
+    ).toBe(buildFieldRows({ extracted, check_results: checks, diff: { ...diff, kind: "new", changes: [] } }).length);
   });
 
   it("counts failed checks, falling back to the stored flagged_count", () => {
     expect(failedCheckCount({ check_results: checks, flagged_count: 0 })).toBe(1);
     expect(failedCheckCount({ check_results: null, flagged_count: 3 })).toBe(3);
+  });
+});
+
+describe("card rule fields", () => {
+  it("shows MCC lists, merchants, caps, tiers and dated welcome/promotions beside their quotes", () => {
+    const rows = buildFieldRows({
+      extracted: {
+        card_name: { value: "Cobalt", quote: "Cobalt" },
+        earn_rates: [
+          {
+            category: "groceries",
+            rate: 5,
+            unit: "points_per_dollar",
+            quote: "5x groceries up to $2,500 monthly; MCC 5411; not warehouse clubs",
+            mccs: ["5411"],
+            merchants: [],
+            mcc_source: "terms",
+            exclusions: ["warehouse clubs"],
+            cap_amount: 2500,
+            cap_period: "monthly",
+            cap_group: "cobalt-5x",
+            rate_after_cap: 1,
+            source_url: "https://example.com/cobalt",
+          },
+          {
+            category: "groceries",
+            rate: 4,
+            unit: "percent_cashback",
+            quote: "4% after $25,000 annual spend",
+            description: "tier",
+            mcc_source: "network_default",
+            tier_threshold: 25000,
+          },
+        ],
+        welcome_bonus: {
+          value: {
+            summary: "30k",
+            points: 30000,
+            valid_from: "2026-01-01",
+            valid_to: "2026-03-31",
+            new_cardholders_only: true,
+          },
+          quote: "30,000 points for new cardmembers through March 31, 2026",
+        },
+        promotions: [
+          {
+            summary: "Spring grocery",
+            rate: 10,
+            points: null,
+            categories: ["groceries"],
+            valid_from: "2026-03-01",
+            valid_to: "2026-03-31",
+            quote: "10x groceries in March",
+            source_url: "https://example.com/offers",
+          },
+        ],
+      },
+      check_results: null,
+      diff: { kind: "new", linked_card_id: null, match: null, changes: [] },
+    });
+    const byKey = Object.fromEntries(rows.map((r) => [r.key, r]));
+    expect(byKey["earn_rates[0].mccs"]).toMatchObject({
+      proposed: "5411",
+      quote: expect.stringContaining("5411"),
+      label: expect.stringContaining("MCCs"),
+    });
+    expect(byKey["earn_rates[0].cap_group"]).toMatchObject({ proposed: "cobalt-5x" });
+    expect(byKey["earn_rates[1].tier_threshold"]).toMatchObject({ proposed: "25000" });
+    expect(byKey["welcome_bonus.valid_to"]).toMatchObject({ proposed: "2026-03-31" });
+    expect(byKey["welcome_bonus.new_cardholders_only"]).toMatchObject({ proposed: "yes" });
+    expect(byKey["promotion.0.valid_to"]).toMatchObject({ proposed: "2026-03-31" });
   });
 });
