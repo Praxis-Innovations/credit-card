@@ -48,6 +48,10 @@ lerna-debug.log*
 .tmp
 .DS_Store
 
+# Code-health transient reports (baselines under code-health/baselines/ are committed)
+code-health/.tmp/
+code-health/.jscpd-report/
+
 # IDE
 .idea
 .vscode/*

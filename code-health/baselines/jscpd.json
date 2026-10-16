@@ -1,0 +1,23 @@
+{
+  "jscpd|apps/admin/eslint.config.mjs|apps/web/eslint.config.mjs": 1,
+  "jscpd|apps/admin/src/components/review/review-console.tsx|apps/admin/src/components/sources/sources-console.tsx": 3,
+  "jscpd|apps/admin/vitest.config.ts|apps/api/vitest.config.ts": 1,
+  "jscpd|apps/api/src/app/v1/cards/[id]/route.ts|apps/api/src/app/v1/loyalty-programs/[id]/route.ts": 1,
+  "jscpd|apps/api/src/app/v1/cards/[id]/route.ts|apps/api/src/app/v1/merchant-brands/[id]/partnerships/route.ts": 1,
+  "jscpd|apps/api/src/app/v1/cards/[id]/route.ts|apps/api/src/app/v1/merchant-brands/[id]/route.ts": 1,
+  "jscpd|apps/api/src/app/v1/cards/route.ts|apps/api/src/app/v1/merchant-brands/route.ts": 1,
+  "jscpd|apps/api/src/app/v1/cards/route.ts|apps/api/src/app/v1/partnerships/route.ts": 1,
+  "jscpd|apps/api/src/app/v1/categories/route.ts|apps/api/src/app/v1/issuers/route.ts": 1,
+  "jscpd|apps/api/src/app/v1/loyalty-programs/[id]/route.ts|apps/api/src/app/v1/loyalty-programs/route.ts": 1,
+  "jscpd|apps/api/src/app/v1/merchant-brands/[id]/partnerships/route.ts|apps/api/src/app/v1/merchant-brands/[id]/route.ts": 1,
+  "jscpd|apps/api/src/app/v1/merchant-brands/[id]/partnerships/route.ts|apps/api/src/app/v1/partnerships/[id]/route.ts": 1,
+  "jscpd|apps/api/src/data-pipeline/extract/cards.ts|apps/api/src/data-pipeline/extract/partnerships.ts": 1,
+  "jscpd|apps/api/src/data-pipeline/promote.ts|apps/api/src/data-pipeline/run-source-health.ts": 1,
+  "jscpd|apps/api/src/data-pipeline/promote.ts|apps/api/src/data-pipeline/run.ts": 1,
+  "jscpd|apps/api/src/domain/recommend-merchant.ts|apps/api/src/domain/recommend.ts": 1,
+  "jscpd|apps/api/src/domain/schema.ts|apps/mobile/src/lib/api-types.ts": 1,
+  "jscpd|apps/crawler/src/ci.ts|apps/crawler/src/cli.ts": 3,
+  "jscpd|apps/mobile/e2e/first-run.spec.ts|apps/mobile/e2e/first-run.spec.ts": 4,
+  "jscpd|apps/mobile/e2e/save-wallet.spec.ts|apps/mobile/e2e/save-wallet.spec.ts": 1,
+  "jscpd|apps/mobile/src/components/flow/Buttons.tsx|apps/mobile/src/components/flow/Buttons.tsx": 1
+}

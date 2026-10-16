@@ -1,0 +1,87 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/**/*.{ts,mjs,js}"],
+      "project": ["scripts/**/*.{ts,mjs,js}"]
+    },
+    "apps/api": {
+      "entry": [
+        "src/app/**/{page,layout,route,loading,error,not-found,default,template}.{ts,tsx}",
+        "src/app/**/opengraph-image.{ts,tsx}",
+        "src/**/*.test.{ts,tsx}",
+        "src/data-pipeline/{run,run-source-health,promote}.ts",
+        "src/assets/{cli,generate-card-art,contact-sheet}.ts",
+        "vitest.config.ts",
+        "next.config.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "*.{ts,tsx}"]
+    },
+    "apps/admin": {
+      "entry": [
+        "src/app/**/{page,layout,route,loading,error,not-found,default,template,middleware}.{ts,tsx}",
+        "src/middleware.ts",
+        "src/**/*.test.{ts,tsx}",
+        "vitest.config.ts",
+        "next.config.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "*.{ts,tsx}"]
+    },
+    "apps/web": {
+      "entry": [
+        "src/app/**/{page,layout,route,loading,error,not-found,default,template}.{ts,tsx}",
+        "src/app/**/{opengraph-image,manifest}.{ts,tsx}",
+        "src/**/*.test.{ts,tsx}",
+        "vitest.config.ts",
+        "next.config.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "*.{ts,tsx}"]
+    },
+    "apps/mobile": {
+      "entry": [
+        "app/**/*.{ts,tsx}",
+        "src/**/*.{ts,tsx}",
+        "src/**/*.test.{ts,tsx}",
+        "vitest.config.ts",
+        "metro.config.js",
+        "babel.config.js",
+        "playwright.config.ts",
+        "e2e/**/*.{ts,tsx}"
+      ],
+      "project": ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}", "e2e/**/*.{ts,tsx}", "*.{ts,tsx,js}"]
+    },
+    "apps/crawler": {
+      "entry": [
+        "src/cli.ts",
+        "src/auth-check.ts",
+        "src/index.ts",
+        "src/**/*.test.{ts,tsx}",
+        "vitest.config.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "*.{ts,tsx}"]
+    }
+  },
+  "ignore": [
+    "**/.next/**",
+    "**/dist/**",
+    "**/.expo/**",
+    "**/coverage/**",
+    "code-health/**",
+    "supabase/**",
+    "docs/**"
+  ],
+  "ignoreDependencies": [
+    "turbo",
+    "eslint",
+    "@eslint/js",
+    "typescript-eslint",
+    "globals",
+    "jscpd",
+    "knip",
+    "dependency-cruiser",
+    "expo-updates"
+  ],
+  "ignoreBinaries": [
+    "playwright"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "threshold": 0,
+  "reporters": ["json", "console"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/dist/**",
+    "**/.expo/**",
+    "**/.turbo/**",
+    "**/coverage/**",
+    "**/pnpm-lock.yaml",
+    "code-health/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/next-env.d.ts"
+  ],
+  "absolute": true,
+  "gitignore": true,
+  "minLines": 6,
+  "minTokens": 50,
+  "maxLines": 500,
+  "maxSize": "200kb",
+  "pattern": "**/*.{ts,tsx,js,mjs}",
+  "output": "code-health/.jscpd-report"
+}

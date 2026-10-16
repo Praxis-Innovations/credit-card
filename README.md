@@ -78,10 +78,16 @@ pnpm seed:catalog
 
 ## CI
 
-Every PR and push to `main` runs typecheck, lint and unit tests for api, admin,
-crawler, mobile and web ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)).
-Make the **`CI gate`** check required on `main` to block merges on failures —
-see [`docs/ci.md`](./docs/ci.md).
+Every PR and push to `main` runs typecheck, lint, unit tests, and code-health
+checks (ESLint size/complexity, knip, jscpd, dependency-cruiser with a committed
+baseline) for api, admin, crawler, mobile and web
+([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)). Make the **`CI gate`**
+check required on `main` to block merges on failures — see [`docs/ci.md`](./docs/ci.md).
+
+```bash
+pnpm code-health:report   # full local report
+pnpm code-health          # CI gate: fail only on new violations
+```
 
 The card-data crawler runs on `main` via
 [`.github/workflows/crawler.yml`](./.github/workflows/crawler.yml) (monthly
