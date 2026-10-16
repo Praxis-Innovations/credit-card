@@ -551,7 +551,7 @@ describe("finding review", () => {
     expect(await asRole(db, "authenticated", VALIDATOR, (tx) => count(tx, "admin_audit"))).toBe(0);
   });
 
-  it("recording the finding decision alone does not mutate cards (catalog write is AD2)", async () => {
+  it("recording the finding decision alone does not mutate cards (use the approve RPC)", async () => {
     const cards = () => db.query<{ n: number }>("select count(*)::int as n from public.cards");
     const before = (await cards()).rows[0]!.n;
     await asRole(db, "authenticated", VALIDATOR, (tx) =>

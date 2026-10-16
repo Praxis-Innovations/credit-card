@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { authorizeMutation, type ConsoleSession } from "@/lib/auth/guard";
 import { applyApprovedFindingToCatalog } from "@/lib/review/apply-to-catalog";
-import { buildFieldRows } from "@/lib/review/present";
-import type { DiffKind, ReviewFields } from "@/lib/review/types";
+import { buildFieldRows, type FieldRow } from "@/lib/review/present";
+import type { DiffKind, Extraction, ReviewFields } from "@/lib/review/types";
 import { validateRejectReason, validateReviewFields } from "@/lib/review/validation";
 import { isUuid } from "@/lib/sources/validation";
 
@@ -32,31 +32,41 @@ async function nextPendingId(auth: AuthorizedSession, exceptId: string): Promise
   return data?.[0]?.id ?? null;
 }
 
-/**
- * Records a decision on a pending finding. Validators and admins may review
- * (the least privilege that matches the database policy; viewers read only).
- * The update is conditional on review_status = 'pending', so two reviewers
- * cannot both decide the same finding.
- *
- * On approve, {@link applyApprovedFindingToCatalog} runs first so accepted
- * values go live with Approve and next (AD2 owns that write). Reject leaves
- * the live catalog unchanged.
- */
-async function decide(
+async function finishDecision(
   auth: AuthorizedSession,
   id: string,
-  status: "approved" | "rejected",
-  note: string | null,
-  reviewFields: ReviewFields | null,
+  verb: "Approved" | "Rejected",
+  name: string | null,
+): Promise<ReviewResult> {
+  revalidatePath("/review");
+  revalidatePath(`/review/${id}`);
+  return {
+    ok: true,
+    message: `${verb} ${name ?? "finding"}.`,
+    nextId: await nextPendingId(auth, id),
+  };
+}
+
+/**
+ * Records a reject decision on a pending finding. Validators and admins may
+ * review (the least privilege that matches the database policy; viewers read
+ * only). The update is conditional on review_status = 'pending', so two
+ * reviewers cannot both decide the same finding. Reject leaves the live
+ * catalog unchanged.
+ */
+async function decideReject(
+  auth: AuthorizedSession,
+  id: string,
+  note: string,
 ): Promise<ReviewResult> {
   const { supabase, email } = auth;
 
   const { data: updated, error } = await supabase
     .from("card_findings")
     .update({
-      review_status: status,
+      review_status: "rejected",
       review_note: note,
-      review_fields: reviewFields,
+      review_fields: null,
       reviewed_by: email,
       reviewed_at: new Date().toISOString(),
     })
@@ -65,18 +75,35 @@ async function decide(
     .select("id, card_name");
   if (error) return failure("Could not save the decision. Refresh and try again.");
   if (!updated || updated.length === 0) return failure(GONE);
+  const name = (updated[0] as { card_name: string | null }).card_name;
+  return finishDecision(auth, id, "Rejected", name);
+}
 
-  revalidatePath("/review");
-  revalidatePath(`/review/${id}`);
-  const name = (updated[0] as { card_name: string | null }).card_name ?? "finding";
-  const nextId = await nextPendingId(auth, id);
+function issuerNameFrom(source: unknown): string | null {
+  if (Array.isArray(source)) return (source[0] as { issuer_name?: string } | undefined)?.issuer_name ?? null;
+  if (source && typeof source === "object") return (source as { issuer_name?: string }).issuer_name ?? null;
+  return null;
+}
+
+/** page_value from the finding; unsaved edits reset to page_value. */
+function normalizeReviewFields(
+  rows: FieldRow[],
+  fields: ReviewFields,
+): ReviewFields {
+  const pageByKey = new Map(rows.map((r) => [r.key, r.proposed]));
   return {
-    ok: true,
-    message: `${status === "approved" ? "Approved" : "Rejected"} ${name}.`,
-    nextId,
+    fields: fields.fields.map((f) => {
+      const page_value = pageByKey.get(f.key)!;
+      return { ...f, page_value, value: f.save ? f.value : page_value };
+    }),
   };
 }
 
+/**
+ * Approves a pending finding and writes accepted values to `cards` in the same
+ * DB transaction as the audit entry (AD2). Call once per finding — bulk approve
+ * should invoke this per row with that row's field decisions.
+ */
 export async function approveFinding(id: string, fields: unknown): Promise<ReviewResult> {
   const auth = await authorizeMutation("validator");
   if (!auth.ok) return failure(auth.message);
@@ -94,36 +121,21 @@ export async function approveFinding(id: string, fields: unknown): Promise<Revie
   if (!finding) return failure(GONE);
 
   const rows = buildFieldRows(finding);
-  const allowed = new Set(rows.map((r) => r.key));
-  const parsed = validateReviewFields(fields, allowed);
+  const parsed = validateReviewFields(fields, new Set(rows.map((r) => r.key)));
   if (!parsed.ok) return failure(parsed.error);
-
-  // page_value is authoritative from the finding, not the client — otherwise a
-  // tampered payload can hide edits from admin_audit or mis-record what the page said.
-  // Unticked Save keeps any typed value in the UI; reset it here so nothing unsaved
-  // is stored or audited as an edit (the DB trigger also filters on save).
-  const pageByKey = new Map(rows.map((r) => [r.key, r.proposed]));
-  const reviewFields: ReviewFields = {
-    fields: parsed.fields.fields.map((f) => {
-      const page_value = pageByKey.get(f.key)!;
-      return { ...f, page_value, value: f.save ? f.value : page_value };
-    }),
-  };
-
-  const source = finding.source as { issuer_name: string } | { issuer_name: string }[] | null;
-  const issuerName = Array.isArray(source) ? (source[0]?.issuer_name ?? null) : (source?.issuer_name ?? null);
+  const reviewFields = normalizeReviewFields(rows, parsed.fields);
 
   const applied = await applyApprovedFindingToCatalog(auth.supabase, {
     findingId: id,
     linkedCardId: (finding.linked_card_id as string | null) ?? null,
     diffKind: (finding.diff_kind as DiffKind | null) ?? null,
     cardName: (finding.card_name as string | null) ?? null,
-    issuerName,
+    issuerName: issuerNameFrom(finding.source),
     fields: reviewFields,
+    extracted: (finding.extracted as Extraction | null) ?? null,
   });
   if (!applied.ok) return failure(applied.message);
-
-  return decide(auth, id, "approved", null, reviewFields);
+  return finishDecision(auth, id, "Approved", applied.cardName);
 }
 
 export async function rejectFinding(id: string, reason: string): Promise<ReviewResult> {
@@ -132,5 +144,5 @@ export async function rejectFinding(id: string, reason: string): Promise<ReviewR
   if (!isUuid(id)) return failure(GONE);
   const parsed = validateRejectReason(reason);
   if (!parsed.ok) return failure(parsed.error);
-  return decide(auth, id, "rejected", parsed.reason, null);
+  return decideReject(auth, id, parsed.reason);
 }

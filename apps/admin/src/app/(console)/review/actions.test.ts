@@ -10,7 +10,10 @@ const FIELDS = {
 
 const { applyApprovedFindingToCatalog } = vi.hoisted(() => ({
   applyApprovedFindingToCatalog: vi.fn(
-    async (): Promise<{ ok: true } | { ok: false; message: string }> => ({ ok: true }),
+    async (): Promise<
+      | { ok: true; cardName: string | null; linkedCardId: string | null }
+      | { ok: false; message: string }
+    > => ({ ok: true, cardName: "Scotiabank Gold American Express Card", linkedCardId: null }),
   ),
 }));
 vi.mock("@/lib/review/apply-to-catalog", () => ({ applyApprovedFindingToCatalog }));
@@ -126,7 +129,11 @@ beforeEach(() => {
   state.dbError = null;
   state.writes = [];
   applyApprovedFindingToCatalog.mockClear();
-  applyApprovedFindingToCatalog.mockResolvedValue({ ok: true });
+  applyApprovedFindingToCatalog.mockResolvedValue({
+    ok: true,
+    cardName: "Scotiabank Gold American Express Card",
+    linkedCardId: null,
+  });
 });
 
 describe.each(Object.entries(ACTIONS))("%s", (_name, run) => {
@@ -134,6 +141,7 @@ describe.each(Object.entries(ACTIONS))("%s", (_name, run) => {
     state.role = "viewer";
     expect(await run()).toMatchObject({ ok: false, message: "Your role can't make this change." });
     expect(state.writes).toEqual([]);
+    expect(applyApprovedFindingToCatalog).not.toHaveBeenCalled();
   });
 
   it("rejects a signed-in user who isn't on the allow-list", async () => {
@@ -161,21 +169,29 @@ describe.each(Object.entries(ACTIONS))("%s", (_name, run) => {
   it("reports a finding that was already reviewed, without claiming success", async () => {
     state.matched = [];
     state.pendingFinding = null;
-    expect(await run()).toMatchObject({
-      ok: false,
-      message: "That finding was already reviewed or no longer exists. Refresh the queue.",
-    });
+    if (_name === "approveFinding") {
+      // Approve loads the finding first; a missing pending row fails before apply.
+      expect(await run()).toMatchObject({
+        ok: false,
+        message: "That finding was already reviewed or no longer exists. Refresh the queue.",
+      });
+      expect(applyApprovedFindingToCatalog).not.toHaveBeenCalled();
+    } else {
+      expect(await run()).toMatchObject({
+        ok: false,
+        message: "That finding was already reviewed or no longer exists. Refresh the queue.",
+      });
+    }
   });
 
   it("is allowed for an admin", async () => {
     state.role = "admin";
     expect((await run()).ok).toBe(true);
-    expect(state.writes.length).toBeGreaterThanOrEqual(1);
   });
 });
 
 describe("approveFinding", () => {
-  it("applies accepted values to the catalog, then records field decisions on pending", async () => {
+  it("applies accepted values via the atomic catalog RPC and does not update findings client-side", async () => {
     const res = await approveFinding(FINDING_ID, FIELDS);
     expect(res).toEqual({
       ok: true,
@@ -192,23 +208,11 @@ describe("approveFinding", () => {
         fields: FIELDS,
       }),
     );
-    expect(state.writes).toHaveLength(1);
-    const [write] = state.writes;
-    expect(write!.table).toBe("card_findings");
-    expect(write!.payload).toMatchObject({
-      review_status: "approved",
-      review_note: null,
-      reviewed_by: EMAIL,
-      review_fields: FIELDS,
-    });
-    expect(typeof write!.payload.reviewed_at).toBe("string");
-    expect(write!.filters).toEqual([
-      ["id", FINDING_ID],
-      ["review_status", "pending"],
-    ]);
+    // Decision + catalog write happen inside the RPC — no direct card_findings update.
+    expect(state.writes).toEqual([]);
   });
 
-  it("does not record the decision when the catalog write fails", async () => {
+  it("does not claim success when the catalog write / approve RPC fails", async () => {
     applyApprovedFindingToCatalog.mockResolvedValueOnce({ ok: false, message: "Could not update the catalog." });
     expect(await approveFinding(FINDING_ID, FIELDS)).toEqual({
       ok: false,
@@ -252,7 +256,6 @@ describe("approveFinding field normalization", () => {
       expect.anything(),
       expect.objectContaining({ fields: expected }),
     );
-    expect(state.writes[0]!.payload.review_fields).toEqual(expected);
   });
 
   it("resets value to page_value when Save is unticked so unsaved edits are not stored", async () => {
@@ -270,12 +273,17 @@ describe("approveFinding field normalization", () => {
       ],
     });
     expect(res.ok).toBe(true);
-    expect(state.writes[0]!.payload.review_fields).toEqual({
-      fields: [
-        { key: "annual_fee", save: true, page_value: "59", value: "599" },
-        { key: "name", save: false, page_value: "Gold", value: "Gold" },
-      ],
-    });
+    expect(applyApprovedFindingToCatalog).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        fields: {
+          fields: [
+            { key: "annual_fee", save: true, page_value: "59", value: "599" },
+            { key: "name", save: false, page_value: "Gold", value: "Gold" },
+          ],
+        },
+      }),
+    );
   });
 });
 

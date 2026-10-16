@@ -53,6 +53,10 @@ export async function ensureReviewFixtures(): Promise<{
   if (delRunError) {
     throw new Error(`Failed to clear crawl_runs fixture: ${delRunError.message}`);
   }
+  const { error: delCardError } = await service.from("cards").delete().eq("id", "scotiabank-e2e-approve-card");
+  if (delCardError) {
+    throw new Error(`Failed to clear e2e catalog card: ${delCardError.message}`);
+  }
 
   const { error: runError } = await service.from("crawl_runs").insert({
     id: E2E_REVIEW.runId,
@@ -138,7 +142,7 @@ export async function ensureReviewFixtures(): Promise<{
   return { approveName: APPROVE_CARD, rejectName: REJECT_CARD };
 }
 
-/** Delete the fixed review-queue fixtures (findings + run). */
+/** Delete the fixed review-queue fixtures (findings + run + card created by approve). */
 export async function cleanupReviewFixtures(): Promise<void> {
   const service = createServiceClient();
   const { error: delFindingsError } = await service.from("card_findings").delete().in("id", [
@@ -151,6 +155,11 @@ export async function cleanupReviewFixtures(): Promise<void> {
   const { error: delRunError } = await service.from("crawl_runs").delete().eq("id", E2E_REVIEW.runId);
   if (delRunError) {
     throw new Error(`Failed to cleanup crawl_runs fixture: ${delRunError.message}`);
+  }
+  // Approve of the "new" E2E card inserts a verified catalog row (AD2).
+  const { error: delCardError } = await service.from("cards").delete().eq("id", "scotiabank-e2e-approve-card");
+  if (delCardError) {
+    throw new Error(`Failed to cleanup e2e catalog card: ${delCardError.message}`);
   }
 }
 
