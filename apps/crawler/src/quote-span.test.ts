@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { checkExtraction, numberInQuote } from "./checks";
 import type { CardExtraction } from "./extract/schema";
 import { isRateCell, selectQuoteSpans, widenQuoteToContainNumber } from "./quote-span";
+import { earnRate } from "./test/fixtures";
 
 const CR2_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "test/cr2-scotiabank");
 
@@ -106,16 +107,17 @@ Other purchases earn rewards.
       min_credit_limit: null,
       reward_currency: null,
       earn_rates: [
-        {
+        earnRate({
           category: "other",
           description: "other purchases",
           rate: 3,
           unit: "points_per_dollar",
           cap: null,
           quote,
-        },
+        }),
       ],
       welcome_bonus: null,
+      promotions: [],
       insurance_highlights: [],
       notes: null,
     };
@@ -148,16 +150,17 @@ describe("selectQuoteSpans", () => {
       min_credit_limit: null,
       reward_currency: null,
       earn_rates: [
-        {
+        earnRate({
           category: "groceries",
           description: "Sobeys",
           rate: 6,
           unit: "points_per_dollar",
           cap: null,
           quote: "At Sobeys, Safeway, FreshCo, Foodland and more.",
-        },
+        }),
       ],
       welcome_bonus: null,
+      promotions: [],
       insurance_highlights: [],
       notes: null,
     };
