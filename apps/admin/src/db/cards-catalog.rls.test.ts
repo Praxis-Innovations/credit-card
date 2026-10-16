@@ -55,7 +55,7 @@ describe("cards console RLS", () => {
   });
 });
 
-describe("retire_card", () => {
+describe("retire_card authorization", () => {
   it("denies a viewer and a validator", async () => {
     await expect(
       asRole(db, "authenticated", VIEWER, (tx) =>
@@ -69,7 +69,9 @@ describe("retire_card", () => {
       ),
     ).rejects.toThrow(/not authorized|42501/i);
   });
+});
 
+describe("retire_card behavior", () => {
   it("sets status to rejected, audits, and hides the card from the verified-only policy", async () => {
     await asRole(db, "authenticated", ADMIN, async (tx) => {
       const { rows } = await tx.query<{ retire_card: Record<string, unknown> }>(
@@ -88,7 +90,6 @@ describe("retire_card", () => {
         actor_email: "info.praxisinnovations@gmail.com",
       });
 
-      // Same transaction: verified-only path would not return this row.
       const live = await tx.query(
         `select id from public.cards where id = 'scotia-gold-amex' and status = 'verified'`,
       );
@@ -104,7 +105,9 @@ describe("retire_card", () => {
       });
     });
   });
+});
 
+describe("admin_audit cards scope", () => {
   it("lets a viewer read cards audit rows but not crawl_sources audit rows", async () => {
     await db.exec(`
       insert into public.admin_audit (actor_email, action, entity, entity_id, before, after)
