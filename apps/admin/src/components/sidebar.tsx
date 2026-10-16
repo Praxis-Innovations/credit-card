@@ -31,7 +31,9 @@ export function Sidebar({ email, role }: { email: string; role: AdminRole }) {
               <li key={item.label}>
                 <Link
                   href={item.href}
-                  aria-current={current === item.href ? "page" : undefined}
+                  aria-current={
+                    current === item.href || current.startsWith(`${item.href}/`) ? "page" : undefined
+                  }
                   className={`${itemBase} font-semibold no-underline aria-[current=page]:bg-teal-soft aria-[current=page]:text-teal`}
                 >
                   {item.label}

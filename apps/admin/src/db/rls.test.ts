@@ -404,14 +404,20 @@ describe("finding review", () => {
     expect(rows[0]!.n).toBe(0);
   });
 
-  it("lets a validator approve once, stamps the reviewer from the JWT, and audits it", async () => {
+  it("lets a validator approve once, stamps the reviewer from the JWT, and audits field edits", async () => {
+    const fields = JSON.stringify({
+      fields: [{ key: "annual_fee", save: true, page_value: "59", value: "599" }],
+    });
     const out = await db.transaction(async (tx) => {
       await tx.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify(VALIDATOR)]);
       await tx.exec("set local role authenticated");
       const first = await affected(
         tx,
         `update public.card_findings
-         set review_status = 'approved', reviewed_by = 'someone.else@example.com', reviewed_at = '2000-01-01'
+         set review_status = 'approved',
+             review_fields = '${fields}'::jsonb,
+             reviewed_by = 'someone.else@example.com',
+             reviewed_at = '2000-01-01'
          ${pending}`,
       );
       const second = await affected(
@@ -419,9 +425,12 @@ describe("finding review", () => {
         `update public.card_findings set review_status = 'rejected', review_note = 'changed my mind' ${pending}`,
       );
       await tx.exec("reset role");
-      const { rows } = await tx.query<{ review_status: string; reviewed_by: string; reviewed_at: Date }>(
-        `select review_status, reviewed_by, reviewed_at from public.card_findings where run_id = ${RUN}`,
-      );
+      const { rows } = await tx.query<{
+        review_status: string;
+        reviewed_by: string;
+        reviewed_at: Date;
+        review_fields: { fields: Array<{ key: string; value: string }> };
+      }>(`select review_status, reviewed_by, reviewed_at, review_fields from public.card_findings where run_id = ${RUN}`);
       const audit = await findingAudit(tx);
       await tx.rollback();
       return { first, second, finding: rows[0]!, audit };
@@ -431,6 +440,9 @@ describe("finding review", () => {
     expect(out.second).toBe(0);
     expect(out.finding.review_status).toBe("approved");
     expect(out.finding.reviewed_by).toBe("validator@example.com");
+    expect(out.finding.review_fields).toEqual({
+      fields: [{ key: "annual_fee", save: true, page_value: "59", value: "599" }],
+    });
     expect(new Date(out.finding.reviewed_at).getFullYear()).toBeGreaterThan(2020);
     expect(out.audit).toHaveLength(1);
     expect(out.audit[0]).toMatchObject({
@@ -443,10 +455,56 @@ describe("finding review", () => {
         reviewed_by: "validator@example.com",
         card_name: "Scotiabank Gold American Express Card",
         linked_card_id: "scotia-gold-amex",
+        review_fields: {
+          fields: [{ key: "annual_fee", save: true, page_value: "59", value: "599" }],
+        },
+        edits: [{ key: "annual_fee", from: "59", to: "599" }],
       },
     });
     // The extraction payload stays on card_findings, not in the log.
     expect(out.audit[0]!.after).not.toHaveProperty("extracted");
+  });
+
+  it("omits unsaved edited fields from audit edits", async () => {
+    const fields = JSON.stringify({
+      fields: [
+        { key: "annual_fee", save: true, page_value: "59", value: "599" },
+        { key: "name", save: false, page_value: "Gold", value: "Gold Amex" },
+      ],
+    });
+    const audit = await db.transaction(async (tx) => {
+      await tx.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify(VALIDATOR)]);
+      await tx.exec("set local role authenticated");
+      await tx.query(
+        `update public.card_findings
+         set review_status = 'approved', review_fields = '${fields}'::jsonb
+         ${pending}`,
+      );
+      await tx.exec("reset role");
+      const rows = await findingAudit(tx);
+      await tx.rollback();
+      return rows;
+    });
+    expect(audit).toHaveLength(1);
+    expect(audit[0]!.after.edits).toEqual([{ key: "annual_fee", from: "59", to: "599" }]);
+    expect(audit[0]!.after.review_fields).toEqual({
+      fields: [
+        { key: "annual_fee", save: true, page_value: "59", value: "599" },
+        { key: "name", save: false, page_value: "Gold", value: "Gold Amex" },
+      ],
+    });
+  });
+
+  it("does not let a validator write review_fields without deciding the finding", async () => {
+    await expect(
+      asRole(db, "authenticated", VALIDATOR, (tx) =>
+        tx.query(
+          `update public.card_findings
+           set review_fields = '{"fields":[]}'::jsonb
+           ${pending}`,
+        ),
+      ),
+    ).rejects.toThrow(/row-level security/);
   });
 
   it("requires a note to reject, and audits the rejection with it", async () => {
@@ -493,7 +551,7 @@ describe("finding review", () => {
     expect(await asRole(db, "authenticated", VALIDATOR, (tx) => count(tx, "admin_audit"))).toBe(0);
   });
 
-  it("never touches the cards table", async () => {
+  it("recording the finding decision alone does not mutate cards (catalog write is AD2)", async () => {
     const cards = () => db.query<{ n: number }>("select count(*)::int as n from public.cards");
     const before = (await cards()).rows[0]!.n;
     await asRole(db, "authenticated", VALIDATOR, (tx) =>

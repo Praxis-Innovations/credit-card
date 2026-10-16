@@ -57,7 +57,7 @@ function candidatesFor(x: Extraction): Map<string, Candidate> {
   return out;
 }
 
-/** Field rows for the expanded detail: changed fields first, vs the catalog value they replace. */
+/** Field rows for the review card: changed fields first, vs the catalog value they replace. */
 export function buildFieldRows(finding: Pick<PendingFinding, "extracted" | "check_results" | "diff">): FieldRow[] {
   const checks = new Map((finding.check_results?.fields ?? []).map((f) => [f.field, f]));
   const x = finding.extracted;
@@ -95,6 +95,17 @@ export function buildFieldRows(finding: Pick<PendingFinding, "extracted" | "chec
     });
   }
   return rows;
+}
+
+/** Needs a look: warnings (failed checks) and catalog changes; else Looks right. */
+export function splitFieldRows(rows: FieldRow[]): { needsLook: FieldRow[]; looksRight: FieldRow[] } {
+  const needsLook: FieldRow[] = [];
+  const looksRight: FieldRow[] = [];
+  for (const row of rows) {
+    if (row.changed || (row.check && !row.check.ok)) needsLook.push(row);
+    else looksRight.push(row);
+  }
+  return { needsLook, looksRight };
 }
 
 /** Fields that differ from the catalog; for a new card, every extracted field. */

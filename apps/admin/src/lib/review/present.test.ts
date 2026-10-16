@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildFieldRows, changedFieldCount, failedCheckCount } from "./present";
+import { buildFieldRows, changedFieldCount, failedCheckCount, splitFieldRows } from "./present";
 import type { CheckResult, DiffResult, Extraction } from "./types";
 
 const extracted: Extraction = {
@@ -50,6 +50,14 @@ describe("buildFieldRows", () => {
 
   it("returns nothing for a possibly discontinued card", () => {
     expect(buildFieldRows({ extracted: null, check_results: null, diff: null })).toEqual([]);
+  });
+});
+
+describe("splitFieldRows", () => {
+  it("puts changes and failed checks in Needs a look, the rest in Looks right", () => {
+    const { needsLook, looksRight } = splitFieldRows(buildFieldRows({ extracted, check_results: checks, diff }));
+    expect(needsLook.map((r) => r.key)).toEqual(["annual_fee", "earn_rate.groceries"]);
+    expect(looksRight.map((r) => r.key).sort()).toEqual(["earn_rate.other", "name"]);
   });
 });
 

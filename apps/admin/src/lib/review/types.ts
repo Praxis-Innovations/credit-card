@@ -62,7 +62,23 @@ export type PendingFinding = {
   run: { created_at: string } | null;
 };
 
+/** One field decision written with an approve (or left null on reject). */
+export type FieldDecision = {
+  key: string;
+  /** When false: new card saves empty; live card keeps the catalog value. */
+  save: boolean;
+  /** Value the crawler extracted from the page (before any edit). */
+  page_value: string;
+  /** Value the reviewer confirmed (equals page_value unless edited). */
+  value: string;
+};
+
+export type ReviewFields = {
+  fields: FieldDecision[];
+};
+
 export const FINDING_COLUMNS =
   "id, run_id, product_url, card_name, extracted, check_results, flagged_count, diff_kind, diff, linked_card_id, created_at, source:crawl_sources(issuer_name), run:crawl_runs(created_at)";
 
 export const MAX_REVIEW_NOTE = 1000;
+export const MAX_FIELD_VALUE = 500;

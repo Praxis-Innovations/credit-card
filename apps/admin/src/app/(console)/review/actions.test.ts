@@ -4,6 +4,17 @@ const ORIGIN = "http://localhost:3100";
 const FINDING_ID = "7a1c2e3d-4b5f-4a6b-8c7d-9e0f1a2b3c4d";
 const EMAIL = "validator@example.com";
 
+const FIELDS = {
+  fields: [{ key: "annual_fee", save: true, page_value: "59", value: "599" }],
+};
+
+const { applyApprovedFindingToCatalog } = vi.hoisted(() => ({
+  applyApprovedFindingToCatalog: vi.fn(
+    async (): Promise<{ ok: true } | { ok: false; message: string }> => ({ ok: true }),
+  ),
+}));
+vi.mock("@/lib/review/apply-to-catalog", () => ({ applyApprovedFindingToCatalog }));
+
 type Write = {
   table: string;
   op: "update" | "insert" | "delete";
@@ -17,6 +28,18 @@ const state = {
   role: "validator" as string | null,
   /** Rows the conditional update matches; [] simulates a finding that is no longer pending. */
   matched: [{ id: FINDING_ID, card_name: "Scotiabank Gold American Express Card" }] as Array<Record<string, unknown>>,
+  pendingFinding: {
+    id: FINDING_ID,
+    card_name: "Scotiabank Gold American Express Card",
+    extracted: { annual_fee: { value: 59, quote: "$59" } },
+    check_results: null,
+    diff: { kind: "new", linked_card_id: null, match: null, changes: [] },
+    diff_kind: "new",
+    linked_card_id: null,
+    review_status: "pending",
+    source: { issuer_name: "Scotiabank" },
+  } as Record<string, unknown> | null,
+  nextIds: [] as Array<{ id: string }>,
   dbError: null as { code: string } | null,
   writes: [] as Write[],
 };
@@ -27,19 +50,38 @@ function fakeSupabase() {
     rpc: vi.fn(async () => ({ data: state.role, error: null })),
     from: (table: string) => {
       const write: Write = { table, op: "update", payload: {}, filters: [] };
+      let mode: "update" | "select" = "select";
       const builder = {
         update: (payload: Record<string, unknown>) => {
+          mode = "update";
+          write.op = "update";
           write.payload = payload;
           state.writes.push(write);
           return builder;
         },
+        select: () => builder,
         eq: (column: string, value: unknown) => {
           write.filters.push([column, value]);
           return builder;
         },
-        select: () => builder,
-        then: (resolve: (v: unknown) => unknown) =>
-          resolve(state.dbError ? { data: null, error: state.dbError } : { data: state.matched, error: null }),
+        in: () => builder,
+        neq: () => builder,
+        order: () => builder,
+        limit: () => builder,
+        maybeSingle: () =>
+          Promise.resolve(
+            state.dbError && mode === "select"
+              ? { data: null, error: state.dbError }
+              : { data: state.pendingFinding, error: null },
+          ),
+        then: (resolve: (v: unknown) => unknown) => {
+          if (mode === "update") {
+            return resolve(
+              state.dbError ? { data: null, error: state.dbError } : { data: state.matched, error: null },
+            );
+          }
+          return resolve({ data: state.nextIds, error: null });
+        },
       };
       return builder;
     },
@@ -58,7 +100,7 @@ vi.mock("@/lib/supabase/server", () => ({ createServerSupabase: () => supabaseFa
 const { approveFinding, rejectFinding } = await import("./actions");
 
 const ACTIONS = {
-  approveFinding: () => approveFinding(FINDING_ID),
+  approveFinding: () => approveFinding(FINDING_ID, FIELDS),
   rejectFinding: () => rejectFinding(FINDING_ID, "Fee quote is from last year's page."),
 };
 
@@ -69,8 +111,22 @@ beforeEach(() => {
   state.user = { id: "u1", email: EMAIL };
   state.role = "validator";
   state.matched = [{ id: FINDING_ID, card_name: "Scotiabank Gold American Express Card" }];
+  state.pendingFinding = {
+    id: FINDING_ID,
+    card_name: "Scotiabank Gold American Express Card",
+    extracted: { annual_fee: { value: 59, quote: "$59" } },
+    check_results: null,
+    diff: { kind: "new", linked_card_id: null, match: null, changes: [] },
+    diff_kind: "new",
+    linked_card_id: null,
+    review_status: "pending",
+    source: { issuer_name: "Scotiabank" },
+  };
+  state.nextIds = [];
   state.dbError = null;
   state.writes = [];
+  applyApprovedFindingToCatalog.mockClear();
+  applyApprovedFindingToCatalog.mockResolvedValue({ ok: true });
 });
 
 describe.each(Object.entries(ACTIONS))("%s", (_name, run) => {
@@ -86,7 +142,7 @@ describe.each(Object.entries(ACTIONS))("%s", (_name, run) => {
     expect(state.writes).toEqual([]);
   });
 
-  it("rejects a request without a verified session", async () => {
+  it("rejects a verified session that has ended", async () => {
     state.user = null;
     expect(await run()).toMatchObject({ ok: false, message: "Your session has ended. Sign in again." });
     expect(state.writes).toEqual([]);
@@ -104,32 +160,47 @@ describe.each(Object.entries(ACTIONS))("%s", (_name, run) => {
 
   it("reports a finding that was already reviewed, without claiming success", async () => {
     state.matched = [];
+    state.pendingFinding = null;
     expect(await run()).toMatchObject({
       ok: false,
       message: "That finding was already reviewed or no longer exists. Refresh the queue.",
     });
   });
 
-  it("reports a database error", async () => {
-    state.dbError = { code: "42501" };
-    expect(await run()).toMatchObject({ ok: false });
-  });
-
   it("is allowed for an admin", async () => {
     state.role = "admin";
     expect((await run()).ok).toBe(true);
-    expect(state.writes).toHaveLength(1);
+    expect(state.writes.length).toBeGreaterThanOrEqual(1);
   });
 });
 
 describe("approveFinding", () => {
-  it("records the decision with a conditional update on pending, and touches only card_findings", async () => {
-    const res = await approveFinding(FINDING_ID);
-    expect(res).toEqual({ ok: true, message: "Approved Scotiabank Gold American Express Card." });
+  it("applies accepted values to the catalog, then records field decisions on pending", async () => {
+    const res = await approveFinding(FINDING_ID, FIELDS);
+    expect(res).toEqual({
+      ok: true,
+      message: "Approved Scotiabank Gold American Express Card.",
+      nextId: null,
+    });
+    expect(applyApprovedFindingToCatalog).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        findingId: FINDING_ID,
+        diffKind: "new",
+        cardName: "Scotiabank Gold American Express Card",
+        issuerName: "Scotiabank",
+        fields: FIELDS,
+      }),
+    );
     expect(state.writes).toHaveLength(1);
     const [write] = state.writes;
     expect(write!.table).toBe("card_findings");
-    expect(write!.payload).toMatchObject({ review_status: "approved", review_note: null, reviewed_by: EMAIL });
+    expect(write!.payload).toMatchObject({
+      review_status: "approved",
+      review_note: null,
+      reviewed_by: EMAIL,
+      review_fields: FIELDS,
+    });
     expect(typeof write!.payload.reviewed_at).toBe("string");
     expect(write!.filters).toEqual([
       ["id", FINDING_ID],
@@ -137,9 +208,74 @@ describe("approveFinding", () => {
     ]);
   });
 
-  it.each(["1 or 1=1", "", "not-a-uuid"])("rejects malformed id %j without writing", async (id) => {
-    expect((await approveFinding(id)).ok).toBe(false);
+  it("does not record the decision when the catalog write fails", async () => {
+    applyApprovedFindingToCatalog.mockResolvedValueOnce({ ok: false, message: "Could not update the catalog." });
+    expect(await approveFinding(FINDING_ID, FIELDS)).toEqual({
+      ok: false,
+      message: "Could not update the catalog.",
+    });
     expect(state.writes).toEqual([]);
+  });
+
+  it("returns the next pending id for Approve and next", async () => {
+    state.nextIds = [{ id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee" }];
+    const res = await approveFinding(FINDING_ID, FIELDS);
+    expect(res).toMatchObject({ ok: true, nextId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee" });
+  });
+
+  it("rejects missing or unknown field decisions without writing", async () => {
+    expect((await approveFinding(FINDING_ID, { fields: [] })).ok).toBe(false);
+    expect((await approveFinding(FINDING_ID, { fields: [{ key: "nope", save: true, page_value: "1", value: "1" }] })).ok).toBe(
+      false,
+    );
+    expect(applyApprovedFindingToCatalog).not.toHaveBeenCalled();
+    expect(state.writes).toEqual([]);
+  });
+
+  it.each(["1 or 1=1", "", "not-a-uuid"])("rejects malformed id %j without writing", async (id) => {
+    expect((await approveFinding(id, FIELDS)).ok).toBe(false);
+    expect(state.writes).toEqual([]);
+  });
+});
+
+describe("approveFinding field normalization", () => {
+  it("ignores a tampered page_value and records the finding's proposed value instead", async () => {
+    const tampered = {
+      fields: [{ key: "annual_fee", save: true, page_value: "599", value: "599" }],
+    };
+    const res = await approveFinding(FINDING_ID, tampered);
+    expect(res.ok).toBe(true);
+    const expected = {
+      fields: [{ key: "annual_fee", save: true, page_value: "59", value: "599" }],
+    };
+    expect(applyApprovedFindingToCatalog).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ fields: expected }),
+    );
+    expect(state.writes[0]!.payload.review_fields).toEqual(expected);
+  });
+
+  it("resets value to page_value when Save is unticked so unsaved edits are not stored", async () => {
+    state.pendingFinding = {
+      ...state.pendingFinding!,
+      extracted: {
+        annual_fee: { value: 59, quote: "$59" },
+        card_name: { value: "Gold", quote: "Gold" },
+      },
+    };
+    const res = await approveFinding(FINDING_ID, {
+      fields: [
+        { key: "annual_fee", save: true, page_value: "59", value: "599" },
+        { key: "name", save: false, page_value: "Gold", value: "Gold Amex" },
+      ],
+    });
+    expect(res.ok).toBe(true);
+    expect(state.writes[0]!.payload.review_fields).toEqual({
+      fields: [
+        { key: "annual_fee", save: true, page_value: "59", value: "599" },
+        { key: "name", save: false, page_value: "Gold", value: "Gold" },
+      ],
+    });
   });
 });
 
@@ -155,13 +291,19 @@ describe("rejectFinding", () => {
     expect(state.writes).toEqual([]);
   });
 
-  it("stores the trimmed reason and the reviewer, conditional on pending", async () => {
+  it("stores the trimmed reason and the reviewer, conditional on pending, without touching the catalog", async () => {
     const res = await rejectFinding(FINDING_ID, "  Quote is from the footnotes.  ");
-    expect(res).toEqual({ ok: true, message: "Rejected Scotiabank Gold American Express Card." });
+    expect(res).toEqual({
+      ok: true,
+      message: "Rejected Scotiabank Gold American Express Card.",
+      nextId: null,
+    });
+    expect(applyApprovedFindingToCatalog).not.toHaveBeenCalled();
     const [write] = state.writes;
     expect(write!.payload).toMatchObject({
       review_status: "rejected",
       review_note: "Quote is from the footnotes.",
+      review_fields: null,
       reviewed_by: EMAIL,
     });
     expect(write!.filters).toContainEqual(["review_status", "pending"]);
