@@ -1,0 +1,101 @@
+name: Crawler
+
+# Monthly crawl of active schedule=monthly sources, plus pickup of admin-
+# requested crawl_runs. Claude is authenticated with GitHub's OIDC identity
+# token (Workload Identity Federation) — no Anthropic API key is stored.
+# The Claude Console trust rule only matches refs/heads/main; see
+# apps/crawler/README.md "Claude authentication".
+
+on:
+  schedule:
+    # Drain requested runs every 6 hours.
+    - cron: "0 */6 * * *"
+    # Full monthly crawl (1st of month 16:00 UTC) of schedule=monthly sources.
+    - cron: "0 16 1 * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "What to crawl"
+        type: choice
+        options:
+          - both
+          - requested
+          - monthly
+        default: both
+      source:
+        description: "Optional issuer to crawl once (in addition to mode)"
+        required: false
+        type: string
+      limit:
+        description: "Optional max card pages per source (smoke tests)"
+        required: false
+        type: string
+
+permissions:
+  id-token: write # GitHub OIDC → Claude WIF (no stored Anthropic key)
+  contents: read
+
+concurrency:
+  group: crawler
+  cancel-in-progress: false
+
+jobs:
+  crawl:
+    # Federation rule matches only repo:…:ref:refs/heads/main.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          turbo-cache-key: crawler
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter crawler exec playwright install --with-deps chromium
+
+      - name: Resolve mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ inputs.mode }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "0 16 1 * *" ]; then
+            echo "value=both" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=requested" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run crawler
+        env:
+          ANTHROPIC_ORGANIZATION_ID: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
+          ANTHROPIC_FEDERATION_RULE_ID: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+          ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
+          ANTHROPIC_WORKSPACE_ID: ${{ vars.ANTHROPIC_WORKSPACE_ID }}
+          CRAWLER_WIF_IDENTITY: github-actions
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CRAWLER_MODE: ${{ steps.mode.outputs.value }}
+          CRAWLER_SOURCE: ${{ github.event_name == 'workflow_dispatch' && inputs.source || '' }}
+          CRAWLER_LIMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.limit || '' }}
+        run: |
+          set -euo pipefail
+          args=(--mode "$CRAWLER_MODE")
+          if [ -n "${CRAWLER_SOURCE}" ]; then
+            args+=(--source "$CRAWLER_SOURCE")
+          fi
+          if [ -n "${CRAWLER_LIMIT}" ]; then
+            args+=(--limit "$CRAWLER_LIMIT")
+          fi
+          pnpm --filter crawler ci -- "${args[@]}"
+
+      - name: Upload crawl output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crawler-output-${{ github.run_id }}
+          path: apps/crawler/output/
+          if-no-files-found: ignore
+          retention-days: 14

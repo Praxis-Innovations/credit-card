@@ -68,7 +68,7 @@ otherwise let them override WIF) and a warning is printed if they are set.
 | Where | `CRAWLER_WIF_IDENTITY` | Identity token from |
 | --- | --- | --- |
 | Your Mac | `gcloud` | `gcloud auth print-identity-token --impersonate-service-account=$CRAWLER_WIF_GCP_SERVICE_ACCOUNT --audiences=https://api.anthropic.com --include-email`, using your own gcloud login. No key file. |
-| GitHub Actions (later) | `github-actions` (auto-detected) | The job's GitHub OIDC token (`permissions: id-token: write`), audience `https://api.anthropic.com`. No secret in the repo. |
+| GitHub Actions | `github-actions` (auto-detected) | The job's GitHub OIDC token (`permissions: id-token: write`), audience `https://api.anthropic.com`. No Anthropic secret in the repo. See [GitHub Actions](#github-actions). |
 | Alternative local | `aws` | `aws sts get-web-identity-token` with your AWS CLI login (needs a current AWS CLI v2 and outbound web identity federation enabled on the account). |
 | Anything else | `file` | A JWT at `ANTHROPIC_IDENTITY_TOKEN_FILE`, which must be rotated before each refresh. |
 
@@ -116,11 +116,11 @@ the issuer, service account and rule. The values below are for this repo.
    This matches only workflow runs on `main` (scheduled runs and manual
    `workflow_dispatch` from `main` have
    `sub = repo:Praxis-Innovations/credit-card:ref:refs/heads/main`). Pull
-   requests (`…:pull_request`), other branches and forks are rejected. If the
-   later workflow uses a GitHub environment (e.g. `environment: crawler`),
-   the `sub` becomes `repo:Praxis-Innovations/credit-card:environment:crawler`;
-   change `subject_prefix` to that and keep the `claims`. Its `fdrl_…` ID
-   goes in the workflow's `ANTHROPIC_FEDERATION_RULE_ID`.
+   requests (`…:pull_request`), other branches and forks are rejected. Do not
+   add a GitHub Actions `environment:` on the crawl job — that would change
+   `sub` to `repo:Praxis-Innovations/credit-card:environment:…` and no longer
+   match this rule. Its `fdrl_…` ID is the repository variable
+   `ANTHROPIC_FEDERATION_RULE_ID`.
 5. **Issuer: Google**: name `google`, issuer URL
    `https://accounts.google.com`, JWKS: discovery.
 6. **Rule: local runs via Google**. Get the unique ID first (step 3 of
@@ -194,7 +194,16 @@ and run `pnpm --filter crawler auth:check`. Anyone else who should run the
 crawler locally gets the same Token Creator binding (step 2). Removing it
 revokes their access without touching the Console.
 
-### GitHub Actions (later phase; no workflow in this PR)
+### GitHub Actions
+
+[`.github/workflows/crawler.yml`](../../.github/workflows/crawler.yml) runs on
+`main` only (the Claude trust rule above rejects every other ref):
+
+| Trigger | Behaviour |
+| --- | --- |
+| Cron `0 */6 * * *` | Pick up `crawl_runs` with `status = 'requested'` (oldest first). |
+| Cron `0 16 1 * *` (1st of month) | Those requested runs, then every active `crawl_sources` row with `schedule = 'monthly'`. |
+| `workflow_dispatch` | Choose `requested` / `monthly` / `both`; optional issuer and `--limit`. |
 
 ```yaml
 permissions:
@@ -202,17 +211,28 @@ permissions:
   contents: read
 jobs:
   crawl:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     env:
       ANTHROPIC_ORGANIZATION_ID: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
       ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
-      ANTHROPIC_FEDERATION_RULE_ID: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID_GHA }}
+      ANTHROPIC_FEDERATION_RULE_ID: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+      ANTHROPIC_WORKSPACE_ID: ${{ vars.ANTHROPIC_WORKSPACE_ID }}
       CRAWLER_WIF_IDENTITY: github-actions
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 ```
 
-The IDs are identifiers, not secrets, so repository variables are enough.
-The crawler fetches a fresh GitHub OIDC token itself whenever the SDK needs
-to re-exchange, so long runs outlive GitHub's roughly 5-minute token lifetime.
+The Anthropic IDs are identifiers, not secrets, so repository variables are
+enough. Supabase credentials stay in Actions secrets. No Anthropic API key is
+stored. The crawler fetches a fresh GitHub OIDC token itself whenever the SDK
+needs to re-exchange, so long runs outlive GitHub's roughly 5-minute token
+lifetime.
+
+Entrypoint: `pnpm --filter crawler ci -- --mode both` (see `src/ci.ts`). An
+admin-inserted `crawl_runs` row (`status = 'requested'`) is claimed
+(`requested` → `running`) and finished in place; scheduled crawls insert a
+new row with `trigger = 'schedule'`.
 
 ## Flow
 
@@ -266,8 +286,9 @@ to re-exchange, so long runs outlive GitHub's roughly 5-minute token lifetime.
     `checked_at` records when each finding was diffed against `cards`, so the
     newest `checked_at` per `linked_card_id` is when that card was last checked.
 
-`runCrawl()` in `src/run.ts` takes all side effects as arguments, so a
-scheduled workflow can call it with the same stores and fetcher the CLI uses.
+`runCrawl()` in `src/run.ts` takes all side effects as arguments; the Actions
+entrypoint (`src/ci.ts`) and the local CLI both call it with the same stores
+and fetcher.
 
 ## Decisions
 

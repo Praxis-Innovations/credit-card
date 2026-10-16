@@ -104,6 +104,19 @@ describe("runCrawl", () => {
     await expect(runCrawl({ source: "scotiabank", dryRun: true }, deps({ store: paused }))).rejects.toThrow(/paused/);
   });
 
+  it("reuses an admin-requested run id when runId is passed", async () => {
+    const mem = memoryStore();
+    const summary = await runCrawl(
+      { source: "scotiabank", dryRun: false, runId: "admin-requested-id", trigger: "manual" },
+      deps({ store: mem.store }),
+    );
+    expect(summary.run_id).toBe("admin-requested-id");
+    // createRun receives the existing id; SupabaseStore claims requested → running.
+    expect(mem.store.createRun).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "admin-requested-id", trigger: "manual" }),
+    );
+  });
+
   it("discovers, extracts, checks, diffs and records a full run", async () => {
     const mem = memoryStore();
     const extractor = mockExtractor();
