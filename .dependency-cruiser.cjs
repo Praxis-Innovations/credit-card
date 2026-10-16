@@ -22,7 +22,7 @@ module.exports = {
         path: "\\.(ts|tsx|js|mjs)$",
       },
       to: {
-        path: "(apps/api/src/lib/(auth|catalog)\\.ts|apps/api/src/data-pipeline/|apps/crawler/src/store\\.ts)",
+        path: "(apps/api/src/lib/(auth|catalog|service-client)\\.ts|apps/crawler/src/store\\.ts)",
       },
     },
   ],

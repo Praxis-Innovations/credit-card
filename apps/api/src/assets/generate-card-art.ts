@@ -11,7 +11,7 @@
  */
 import { parseArgs } from "node:util";
 import type { CreditCard } from "@/domain";
-import { createServiceClient } from "../data-pipeline/supabase";
+import { createServiceClient } from "../lib/service-client";
 import { objectPathFor, storagePathFromPublicUrl } from "./assets";
 import { illustrationAlt, rasterizeSvg, renderIllustrationSvg } from "./card-art/illustration";
 import { publicUrlFor, replaceAsset } from "./storage";

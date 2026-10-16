@@ -10,7 +10,6 @@
         "src/app/**/{page,layout,route,loading,error,not-found,default,template}.{ts,tsx}",
         "src/app/**/opengraph-image.{ts,tsx}",
         "src/**/*.test.{ts,tsx}",
-        "src/data-pipeline/{run,run-source-health,promote}.ts",
         "src/assets/{cli,generate-card-art,contact-sheet}.ts",
         "vitest.config.ts",
         "next.config.ts"

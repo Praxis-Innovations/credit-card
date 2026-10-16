@@ -1,3 +1,0 @@
-# Dated run dumps (latest.* is the review artifact)
-20*.json
-!latest.json

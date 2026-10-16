@@ -5,7 +5,7 @@
 #   commit-and-push.sh snapshot <branch> <message> <path>...
 #     Copies <path>s from the working tree onto the latest origin/<branch>
 #     (created from HEAD if it doesn't exist yet) and commits them there.
-#     For generated-output branches such as data-pipeline/staging.
+#     For generated-output branches (snapshot onto latest remote tip).
 #
 #   commit-and-push.sh rebase <branch> <message> <path>...
 #     Commits <path>s on the current checkout, then rebases onto the latest

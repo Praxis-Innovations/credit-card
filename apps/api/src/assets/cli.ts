@@ -7,7 +7,7 @@
  * Requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY. Rights policy: docs/data/ASSETS.md.
  */
 import { readFile } from "node:fs/promises";
-import { createServiceClient } from "../data-pipeline/supabase";
+import { createServiceClient } from "../lib/service-client";
 import {
   ASSET_BUCKET,
   ASSET_KINDS,
