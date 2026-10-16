@@ -72,10 +72,30 @@ function runUrl() {
   return `${repoUrl()}/actions/runs/${id}`;
 }
 
-function artifactHint() {
-  const id = process.env.GITHUB_RUN_ID;
-  if (!id) return null;
-  return `e2e-report-full-${id} (download from the run page → Artifacts)`;
+/**
+ * Resolve the uploaded nightly report artifact to a clickable Actions UI URL.
+ * Uses actions:read via the REST API (archive_download_url needs auth; the UI
+ * artifact page is what humans can open).
+ */
+function resolveArtifactPageUrl() {
+  const runId = process.env.GITHUB_RUN_ID;
+  const repo = process.env.GITHUB_REPOSITORY;
+  if (!runId || !repo) return null;
+  const name = `e2e-report-full-${runId}`;
+  try {
+    const raw = gh([
+      "api",
+      `repos/${repo}/actions/runs/${runId}/artifacts`,
+      "--jq",
+      `.artifacts[] | select(.name == "${name}") | .id`,
+    ]);
+    const id = raw.split("\n").map((s) => s.trim()).find(Boolean);
+    if (!id) return null;
+    return `${repoUrl()}/actions/runs/${runId}/artifacts/${id}`;
+  } catch (err) {
+    console.warn(`Could not resolve artifact URL: ${err.message || err}`);
+    return null;
+  }
 }
 
 function writeTemp(text) {
@@ -88,8 +108,18 @@ function writeTemp(text) {
   return file;
 }
 
+function isFileLevelSuite(suite) {
+  if (!suite.file || !suite.title) return false;
+  const file = String(suite.file).replace(/\\/g, "/");
+  const title = String(suite.title).replace(/\\/g, "/");
+  return title === file || file.endsWith(`/${title}`) || file.endsWith(title);
+}
+
 /**
- * Walk Playwright JSON reporter output and collect final failed tests by project.
+ * Walk Playwright JSON reporter output and collect unexpected tests by project.
+ * Builds the human title from enclosing describe titles + spec.title (JSON specs
+ * have no titlePath). Skips the file-level suite title — `file` is shown separately.
+ *
  * @param {unknown} report
  * @returns {Map<string, Array<{ title: string; file: string; error: string; traces: string[] }>>}
  */
@@ -103,29 +133,36 @@ function collectFailuresBySuite(report) {
     bySuite.get(key).push(entry);
   }
 
-  function walkSuite(suite, inheritedProject) {
+  function walkSuite(suite, inheritedProject, titleParts) {
     const projectName = suite.projectName || inheritedProject;
-    for (const child of suite.suites || []) {
-      walkSuite(child, projectName);
+    const nextParts = [...titleParts];
+    if (suite.title && !isFileLevelSuite(suite)) {
+      nextParts.push(suite.title);
     }
+
+    for (const child of suite.suites || []) {
+      walkSuite(child, projectName, nextParts);
+    }
+
     for (const spec of suite.specs || []) {
-      const titlePath = [...(spec.titlePath || []).slice(1), spec.title]
-        .filter(Boolean)
-        .join(" › ");
-      const title = titlePath || spec.title || "(unnamed)";
+      const title =
+        [...nextParts, spec.title].filter(Boolean).join(" › ") ||
+        spec.title ||
+        "(unnamed)";
       for (const test of spec.tests || []) {
         const project = test.projectName || projectName || "unknown";
+        // Prefer Playwright's rolled-up status so test.fail() / flaky match the UI.
+        if (test.status !== "unexpected") continue;
         const results = test.results || [];
-        if (results.length === 0) continue;
-        const last = results[results.length - 1];
-        if (last.status !== "failed" && last.status !== "timedOut") continue;
-        const traces = (last.attachments || [])
+        const last = results.length ? results[results.length - 1] : null;
+        const traces = (last?.attachments || [])
           .filter((a) => a.name === "trace" && a.path)
           .map((a) => relativizeTrace(a.path));
         const error =
-          (last.error && (last.error.message || last.error.value)) ||
-          last.status ||
-          "failed";
+          (last?.error && (last.error.message || last.error.value)) ||
+          last?.status ||
+          test.status ||
+          "unexpected";
         add(project, {
           title,
           file: spec.file || test.location?.file || "",
@@ -137,7 +174,7 @@ function collectFailuresBySuite(report) {
   }
 
   for (const suite of report.suites || []) {
-    walkSuite(suite, undefined);
+    walkSuite(suite, undefined, []);
   }
   return bySuite;
 }
@@ -192,29 +229,25 @@ function lastGreenCommit() {
 
 function findOpenIssue(suite) {
   const needle = marker(suite);
-  const raw = gh(
-    [
-      "issue",
-      "list",
-      "--state",
-      "open",
-      "--label",
-      "app:e2e",
-      "--limit",
-      "50",
-      "--json",
-      "number,title,body,url",
-    ],
-    { allowFail: true },
-  );
-  if (!raw) return null;
-  const issues = JSON.parse(raw);
+  // Must not swallow errors: a failed list would otherwise create a duplicate.
+  const raw = gh([
+    "issue",
+    "list",
+    "--state",
+    "open",
+    "--label",
+    "app:e2e",
+    "--limit",
+    "50",
+    "--json",
+    "number,title,body,url",
+  ]);
+  const issues = JSON.parse(raw || "[]");
   return issues.find((i) => (i.body || "").includes(needle)) || null;
 }
 
-function buildBody({ suite, failures, failingSha, green, reason }) {
+function buildBody({ suite, failures, failingSha, green, reason, artifactUrl }) {
   const run = runUrl();
-  const art = artifactHint();
   const lines = [];
   lines.push(marker(suite));
   lines.push("");
@@ -231,7 +264,13 @@ function buildBody({ suite, failures, failingSha, green, reason }) {
     lines.push(`- **Last green commit:** _(none found on main)_`);
   }
   if (run) lines.push(`- **This run:** ${run}`);
-  if (art) lines.push(`- **Artifacts:** ${art}`);
+  if (artifactUrl) {
+    lines.push(`- **Report artifact:** [e2e-report-full-${process.env.GITHUB_RUN_ID}](${artifactUrl})`);
+  } else if (process.env.GITHUB_RUN_ID) {
+    lines.push(
+      `- **Report artifact:** e2e-report-full-${process.env.GITHUB_RUN_ID} (see run → Artifacts)`,
+    );
+  }
   lines.push("");
 
   if (reason) {
@@ -250,10 +289,20 @@ function buildBody({ suite, failures, failingSha, green, reason }) {
       if (f.error) lines.push(`  - ${f.error}`);
       if (f.traces.length) {
         for (const t of f.traces) {
-          lines.push(
-            `  - Trace (in artifact): \`${t}\` — open with \`npx playwright show-trace\` after downloading the artifact`,
-          );
+          if (artifactUrl) {
+            lines.push(
+              `  - Trace: [\`${t}\`](${artifactUrl}) (path inside the zip; \`npx playwright show-trace\` after download)`,
+            );
+          } else {
+            lines.push(
+              `  - Trace path: \`${t}\` — download the run artifact, then \`npx playwright show-trace\``,
+            );
+          }
         }
+      } else if (artifactUrl) {
+        lines.push(
+          `  - Trace: none attached — see HTML report / screenshots in the [artifact](${artifactUrl})`,
+        );
       } else {
         lines.push(
           `  - Trace: none attached (see HTML report / screenshots in the artifact)`,
@@ -334,16 +383,29 @@ function recurrenceComment(failingSha, extraLines) {
     .join("\n");
 }
 
+function reportSuite(suite, body, comment, errors) {
+  try {
+    upsertIssue(suite, body, comment);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`Failed to upsert issue for suite=${suite}: ${msg}`);
+    errors.push(suite);
+  }
+}
+
 function main() {
   const resultsPath =
     process.env.RESULTS_JSON ||
     path.join(process.cwd(), "e2e/test-results/results.json");
   const failingSha = process.env.GITHUB_SHA || "unknown";
   const green = lastGreenCommit();
+  const artifactUrl = resolveArtifactPageUrl();
+  /** @type {string[]} */
+  const errors = [];
 
   if (!existsSync(resultsPath)) {
     const suite = "infra";
-    upsertIssue(
+    reportSuite(
       suite,
       buildBody({
         suite,
@@ -352,11 +414,14 @@ function main() {
         green,
         reason:
           "The nightly job failed before a Playwright JSON report was produced (stack/setup/timeout). Check the workflow logs and artifacts.",
+        artifactUrl,
       }),
       recurrenceComment(failingSha, [
         `- No \`results.json\` — failure was outside the test runner.`,
       ]),
+      errors,
     );
+    if (errors.length) process.exit(1);
     return;
   }
 
@@ -368,7 +433,7 @@ function main() {
 
   if (failedSuites.length === 0) {
     const suite = "infra";
-    upsertIssue(
+    reportSuite(
       suite,
       buildBody({
         suite,
@@ -377,23 +442,41 @@ function main() {
         green,
         reason:
           "The nightly job failed, but the Playwright report has no failed tests. Likely a post-test step, upload, or runner error.",
+        artifactUrl,
       }),
       recurrenceComment(failingSha, [
         `- Playwright report present; zero failed tests.`,
       ]),
+      errors,
     );
+    if (errors.length) process.exit(1);
     return;
   }
 
   for (const [suite, failures] of failedSuites) {
-    upsertIssue(
+    reportSuite(
       suite,
-      buildBody({ suite, failures, failingSha, green, reason: null }),
+      buildBody({
+        suite,
+        failures,
+        failingSha,
+        green,
+        reason: null,
+        artifactUrl,
+      }),
       recurrenceComment(failingSha, [
         `- Failures: ${failures.length}`,
         ...failures.slice(0, 20).map((f) => `  - ${f.title}`),
       ]),
+      errors,
     );
+  }
+
+  if (errors.length) {
+    console.error(
+      `Issue reporting failed for suite(s): ${errors.join(", ")}`,
+    );
+    process.exit(1);
   }
 }
 
