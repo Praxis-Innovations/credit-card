@@ -217,22 +217,6 @@ describe("approveFinding", () => {
     expect(state.writes).toEqual([]);
   });
 
-  it("ignores a tampered page_value and records the finding's proposed value instead", async () => {
-    const tampered = {
-      fields: [{ key: "annual_fee", save: true, page_value: "599", value: "599" }],
-    };
-    const res = await approveFinding(FINDING_ID, tampered);
-    expect(res.ok).toBe(true);
-    const expected = {
-      fields: [{ key: "annual_fee", save: true, page_value: "59", value: "599" }],
-    };
-    expect(applyApprovedFindingToCatalog).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ fields: expected }),
-    );
-    expect(state.writes[0]!.payload.review_fields).toEqual(expected);
-  });
-
   it("returns the next pending id for Approve and next", async () => {
     state.nextIds = [{ id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee" }];
     const res = await approveFinding(FINDING_ID, FIELDS);
@@ -251,6 +235,47 @@ describe("approveFinding", () => {
   it.each(["1 or 1=1", "", "not-a-uuid"])("rejects malformed id %j without writing", async (id) => {
     expect((await approveFinding(id, FIELDS)).ok).toBe(false);
     expect(state.writes).toEqual([]);
+  });
+});
+
+describe("approveFinding field normalization", () => {
+  it("ignores a tampered page_value and records the finding's proposed value instead", async () => {
+    const tampered = {
+      fields: [{ key: "annual_fee", save: true, page_value: "599", value: "599" }],
+    };
+    const res = await approveFinding(FINDING_ID, tampered);
+    expect(res.ok).toBe(true);
+    const expected = {
+      fields: [{ key: "annual_fee", save: true, page_value: "59", value: "599" }],
+    };
+    expect(applyApprovedFindingToCatalog).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ fields: expected }),
+    );
+    expect(state.writes[0]!.payload.review_fields).toEqual(expected);
+  });
+
+  it("resets value to page_value when Save is unticked so unsaved edits are not stored", async () => {
+    state.pendingFinding = {
+      ...state.pendingFinding!,
+      extracted: {
+        annual_fee: { value: 59, quote: "$59" },
+        card_name: { value: "Gold", quote: "Gold" },
+      },
+    };
+    const res = await approveFinding(FINDING_ID, {
+      fields: [
+        { key: "annual_fee", save: true, page_value: "59", value: "599" },
+        { key: "name", save: false, page_value: "Gold", value: "Gold Amex" },
+      ],
+    });
+    expect(res.ok).toBe(true);
+    expect(state.writes[0]!.payload.review_fields).toEqual({
+      fields: [
+        { key: "annual_fee", save: true, page_value: "59", value: "599" },
+        { key: "name", save: false, page_value: "Gold", value: "Gold" },
+      ],
+    });
   });
 });
 

@@ -100,9 +100,14 @@ export async function approveFinding(id: string, fields: unknown): Promise<Revie
 
   // page_value is authoritative from the finding, not the client — otherwise a
   // tampered payload can hide edits from admin_audit or mis-record what the page said.
+  // Unticked Save keeps any typed value in the UI; reset it here so nothing unsaved
+  // is stored or audited as an edit (the DB trigger also filters on save).
   const pageByKey = new Map(rows.map((r) => [r.key, r.proposed]));
   const reviewFields: ReviewFields = {
-    fields: parsed.fields.fields.map((f) => ({ ...f, page_value: pageByKey.get(f.key)! })),
+    fields: parsed.fields.fields.map((f) => {
+      const page_value = pageByKey.get(f.key)!;
+      return { ...f, page_value, value: f.save ? f.value : page_value };
+    }),
   };
 
   const source = finding.source as { issuer_name: string } | { issuer_name: string }[] | null;

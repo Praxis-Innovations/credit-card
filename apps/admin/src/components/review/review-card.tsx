@@ -1,7 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition, type Dispatch, type SetStateAction } from "react";
+import {
+  useMemo,
+  useState,
+  useTransition,
+  type Dispatch,
+  type SetStateAction,
+  type TransitionStartFunction,
+} from "react";
 import { approveFinding, rejectFinding, type ReviewResult } from "@/app/(console)/review/actions";
 import { buildFieldRows, failedChecks, splitFieldRows, type FieldRow } from "@/lib/review/present";
 import type { FieldDecision, PendingFinding } from "@/lib/review/types";
@@ -44,20 +51,19 @@ function fieldEditors(
 function runDecision(
   action: () => Promise<ReviewResult>,
   setNotice: Dispatch<SetStateAction<{ ok: boolean; message: string } | null>>,
-  startTransition: (fn: () => void) => void,
+  startTransition: TransitionStartFunction,
   go: (nextId: string | null) => void,
 ) {
   setNotice(null);
-  startTransition(() => {
-    void (async () => {
-      try {
-        const res = await action();
-        setNotice({ ok: res.ok, message: res.message });
-        if (res.ok) go(res.nextId);
-      } catch {
-        setNotice({ ok: false, message: "Something went wrong. Refresh and try again." });
-      }
-    })();
+  // Pass the async work to startTransition so pending stays true until it settles.
+  startTransition(async () => {
+    try {
+      const res = await action();
+      setNotice({ ok: res.ok, message: res.message });
+      if (res.ok) go(res.nextId);
+    } catch {
+      setNotice({ ok: false, message: "Something went wrong. Refresh and try again." });
+    }
   });
 }
 
