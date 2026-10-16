@@ -30,6 +30,10 @@ on:
         description: "Optional max card pages per source (smoke tests)"
         required: false
         type: string
+      model:
+        description: "Claude model (default claude-sonnet-5-5; use claude-haiku-5-5 to compare)"
+        required: false
+        type: string
 
 permissions:
   id-token: write # GitHub OIDC → Claude WIF (no stored Anthropic key)
@@ -80,6 +84,7 @@ jobs:
           CRAWLER_MODE: ${{ steps.mode.outputs.value }}
           CRAWLER_SOURCE: ${{ github.event_name == 'workflow_dispatch' && inputs.source || '' }}
           CRAWLER_LIMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.limit || '' }}
+          CRAWLER_MODEL: ${{ github.event_name == 'workflow_dispatch' && inputs.model || '' }}
         run: |
           set -euo pipefail
           args=(--mode "$CRAWLER_MODE")
