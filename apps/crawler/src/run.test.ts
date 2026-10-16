@@ -228,8 +228,7 @@ describe("runCrawl", () => {
   it("re-extracts when the model differs even if the page hash matches", async () => {
     const cache = new LocalCache(null);
     await runCrawl({ source: "scotiabank", dryRun: true }, deps({ cache }));
-    const haiku = mockExtractor();
-    haiku.model = "claude-haiku-5-5";
+    const haiku = { ...mockExtractor(), model: "claude-haiku-5-5" };
     const mem = memoryStore();
     const summary = await runCrawl({ source: "scotiabank", dryRun: false }, deps({ cache, extractor: haiku, store: mem.store }));
     expect(haiku.extractCard).toHaveBeenCalled();
