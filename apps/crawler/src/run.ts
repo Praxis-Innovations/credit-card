@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { checkExtraction } from "./checks";
 import { cleanPage } from "./clean";
 import { estimateCostUsd } from "./config";
-import { diffCard, findPossiblyDiscontinued, type DiffResult } from "./diff";
+import { diffCard, findPossiblyDiscontinued, reviewStatusFor, type DiffResult } from "./diff";
 import type { Extractor } from "./extract/claude";
 import type { CardExtraction } from "./extract/schema";
 import type { FetchResult } from "./fetcher";
@@ -341,6 +341,8 @@ export async function runCrawl(opts: RunOptions, deps: RunDeps): Promise<RunSumm
             flagged_count: f.checks?.flagged ?? 0,
             diff_kind: f.diff.kind,
             diff: f.diff,
+            review_status: reviewStatusFor(f.diff.kind),
+            checked_at: f.diff.kind ? at : null,
             linked_card_id: f.diff.linked_card_id,
             reused_extraction: f.reused,
             model: f.model,

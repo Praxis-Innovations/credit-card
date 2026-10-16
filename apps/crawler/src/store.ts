@@ -3,7 +3,7 @@ import path from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { FALLBACK_SOURCES } from "./config";
 import type { CheckResult } from "./checks";
-import type { DiffKind } from "./diff";
+import type { DiffKind, FindingReviewStatus } from "./diff";
 import type { CardExtraction } from "./extract/schema";
 import type { CardLink, CatalogCard, CrawlSource, SkippedPage } from "./types";
 
@@ -67,6 +67,9 @@ export interface FindingRow {
   flagged_count: number;
   diff_kind: DiffKind | null;
   diff: unknown;
+  review_status: FindingReviewStatus;
+  /** When the finding was diffed against the catalog; null when no catalog was available. */
+  checked_at: string | null;
   linked_card_id: string | null;
   reused_extraction: boolean;
   model: string | null;

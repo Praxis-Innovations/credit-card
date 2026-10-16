@@ -57,10 +57,16 @@ const SUPABASE_SHIM = `
   alter table storage.objects enable row level security;
 `;
 
-export async function createMigratedDb(): Promise<PGlite> {
+/** `before`: stop at the first migration whose file name sorts at or after it. */
+export async function createMigratedDb({ before }: { before?: string } = {}): Promise<PGlite> {
   const db = new PGlite({ extensions: { citext } });
   await db.exec(SUPABASE_SHIM);
-  const files = (await readdir(MIGRATIONS_DIR)).filter((f) => f.endsWith(".sql")).sort();
+  await applyMigrations(db, (file) => !before || file < before);
+  return db;
+}
+
+export async function applyMigrations(db: PGlite, include: (file: string) => boolean): Promise<void> {
+  const files = (await readdir(MIGRATIONS_DIR)).filter((f) => f.endsWith(".sql") && include(f)).sort();
   for (const file of files) {
     const sql = await readFile(path.join(MIGRATIONS_DIR, file), "utf8");
     try {
@@ -69,7 +75,6 @@ export async function createMigratedDb(): Promise<PGlite> {
       throw new Error(`${file} failed to apply: ${(err as Error).message}`);
     }
   }
-  return db;
 }
 
 export type Claims = {

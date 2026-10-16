@@ -57,7 +57,7 @@ function printSummary(s: RunSummary) {
       : `Claude calls: ${c.claude_calls}, hash skips: ${c.hash_skips}, cards extracted: ${c.cards_extracted}, flagged values: ${c.flagged_values}`,
     s.no_llm
       ? null
-      : `Diff vs catalog: new ${c.findings_new}, changed ${c.findings_changed}, unchanged ${c.findings_unchanged}, possibly discontinued ${c.findings_possibly_discontinued}`,
+      : `Diff vs catalog: new ${c.findings_new}, changed ${c.findings_changed}, unchanged ${c.findings_unchanged} (checked, not queued), possibly discontinued ${c.findings_possibly_discontinued}`,
     s.no_llm
       ? null
       : `Tokens: ${s.usage.inputTokens} in / ${s.usage.outputTokens} out — est. $${s.cost_estimate_usd.toFixed(4)}` +

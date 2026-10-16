@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkExtraction } from "./checks";
-import { diffCard, findPossiblyDiscontinued, normaliseCardName } from "./diff";
+import { diffCard, findPossiblyDiscontinued, normaliseCardName, reviewStatusFor } from "./diff";
 import { CATALOG, GOLD_PAGE_TEXT, goldExtraction } from "./test/fixtures";
 
 describe("normaliseCardName", () => {
@@ -69,6 +69,16 @@ describe("diffCard", () => {
 
   it("returns a null kind when no catalog is available", () => {
     expect(diffCard(goldExtraction(), null, null, "Scotiabank", null)).toMatchObject({ kind: null, changes: [] });
+  });
+});
+
+describe("reviewStatusFor", () => {
+  it("stores a finding with no changes as checked", () => {
+    expect(reviewStatusFor("unchanged")).toBe("checked");
+  });
+
+  it.each(["new", "changed", "possibly_discontinued", null] as const)("queues %s for review", (kind) => {
+    expect(reviewStatusFor(kind)).toBe("pending");
   });
 });
 
