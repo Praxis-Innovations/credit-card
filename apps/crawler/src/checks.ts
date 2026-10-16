@@ -137,6 +137,117 @@ function checkQuoted(
   return finish({ field, quote_found, value_in_quote: valueCheck, in_range: range, issues });
 }
 
+function mismatch(
+  field: string,
+  quote: string,
+  page: string,
+  issue: string,
+  in_range: boolean | null = null,
+): FieldCheck {
+  return finish({
+    field,
+    quote_found: quoteInText(quote, page),
+    value_in_quote: false,
+    in_range,
+    issues: [issue],
+  });
+}
+
+function checkMccsAndMerchants(
+  e: CardExtraction["earn_rates"][number],
+  prefix: string,
+  page: string,
+): FieldCheck[] {
+  const fields: FieldCheck[] = [];
+  for (const mcc of e.mccs ?? []) {
+    if (/^\d{4}$/.test(mcc) && e.quote.includes(mcc)) continue;
+    const issue = /^\d{4}$/.test(mcc)
+      ? `MCC ${mcc} does not appear in its quote`
+      : `MCC ${mcc} is not a four-digit code`;
+    fields.push(mismatch(`${prefix}.mccs`, e.quote, page, issue));
+  }
+  for (const merchant of e.merchants ?? []) {
+    if (stringInQuote(merchant, e.quote)) continue;
+    fields.push(mismatch(`${prefix}.merchants`, e.quote, page, `merchant "${merchant}" does not appear in its quote`));
+  }
+  return fields;
+}
+
+function checkCapAndTier(
+  e: CardExtraction["earn_rates"][number],
+  prefix: string,
+  page: string,
+): FieldCheck[] {
+  const fields: FieldCheck[] = [];
+  if (e.cap_amount != null && !numberInQuote(e.cap_amount, e.quote)) {
+    fields.push(
+      mismatch(`${prefix}.cap_amount`, e.quote, page, "cap amount does not appear in its quote", inRange(e.cap_amount, [0, 1_000_000])),
+    );
+  }
+  if (e.tier_threshold != null && !numberInQuote(e.tier_threshold, e.quote)) {
+    fields.push(
+      mismatch(
+        `${prefix}.tier_threshold`,
+        e.quote,
+        page,
+        "tier threshold does not appear in its quote",
+        inRange(e.tier_threshold, [0, 1_000_000]),
+      ),
+    );
+  }
+  if (e.mcc_source === "terms" && (e.mccs?.length ?? 0) === 0 && (e.merchants?.length ?? 0) === 0) {
+    fields.push(
+      finish({
+        field: `${prefix}.mcc_source`,
+        quote_found: quoteInText(e.quote, page),
+        value_in_quote: null,
+        in_range: null,
+        issues: ["mcc_source is terms but no MCCs or merchants were extracted"],
+      }),
+    );
+  }
+  return fields;
+}
+
+function checkEarnRateRules(e: CardExtraction["earn_rates"][number], index: number, page: string): FieldCheck[] {
+  const prefix = `earn_rates[${index}] ${e.category}`;
+  return [
+    checkQuoted(
+      prefix,
+      e,
+      page,
+      numberInQuote(e.rate, e.quote),
+      e.rate > 0 && inRange(e.rate, EARN_RANGES[e.unit]),
+    ),
+    ...checkMccsAndMerchants(e, prefix, page),
+    ...checkCapAndTier(e, prefix, page),
+  ];
+}
+
+function checkWelcomeAndPromos(extraction: CardExtraction, page: string): FieldCheck[] {
+  const fields: FieldCheck[] = [];
+  const wb = extraction.welcome_bonus;
+  if (wb) {
+    const nums = [wb.value.points, wb.value.cashback_cad, wb.value.rate ?? null].filter(
+      (n): n is number => n !== null,
+    );
+    const valueOk = nums.length ? nums.every((n) => numberInQuote(n, wb.quote)) : null;
+    const rangeOk =
+      nums.length === 0
+        ? null
+        : (wb.value.points === null || inRange(wb.value.points, BONUS_POINTS_RANGE)) &&
+          (wb.value.cashback_cad === null || inRange(wb.value.cashback_cad, BONUS_CASH_RANGE)) &&
+          (wb.value.rate == null || inRange(wb.value.rate, [0, 20]));
+    fields.push(checkQuoted("welcome_bonus", wb, page, valueOk, rangeOk));
+  }
+  for (const [i, p] of (extraction.promotions ?? []).entries()) {
+    const nums = [p.rate, p.points].filter((n): n is number => n !== null);
+    const valueOk = nums.length ? nums.every((n) => numberInQuote(n, p.quote)) : null;
+    fields.push(checkQuoted(`promotions[${i}]`, p, page, valueOk, null));
+  }
+  return fields;
+}
+
 /** Runs every deterministic check. Failed values are flagged here, never removed from the extraction. */
 export function checkExtraction(
   extraction: CardExtraction,
@@ -164,110 +275,8 @@ export function checkExtraction(
     const q = extraction[f];
     if (q) fields.push(checkQuoted(f, q, page, numberInQuote(q.value, q.quote), inRange(q.value, RANGES[f])));
   }
-  extraction.earn_rates.forEach((e, i) => {
-    const prefix = `earn_rates[${i}] ${e.category}`;
-    fields.push(
-      checkQuoted(
-        prefix,
-        e,
-        page,
-        numberInQuote(e.rate, e.quote),
-        e.rate > 0 && inRange(e.rate, EARN_RANGES[e.unit]),
-      ),
-    );
-    for (const mcc of e.mccs ?? []) {
-      if (!/^\d{4}$/.test(mcc)) {
-        fields.push(
-          finish({
-            field: `${prefix}.mccs`,
-            quote_found: quoteInText(e.quote, page),
-            value_in_quote: false,
-            in_range: null,
-            issues: [`MCC ${mcc} is not a four-digit code`],
-          }),
-        );
-      } else if (!e.quote.includes(mcc)) {
-        fields.push(
-          finish({
-            field: `${prefix}.mccs`,
-            quote_found: quoteInText(e.quote, page),
-            value_in_quote: false,
-            in_range: null,
-            issues: [`MCC ${mcc} does not appear in its quote`],
-          }),
-        );
-      }
-    }
-    for (const merchant of e.merchants ?? []) {
-      if (!stringInQuote(merchant, e.quote)) {
-        fields.push(
-          finish({
-            field: `${prefix}.merchants`,
-            quote_found: quoteInText(e.quote, page),
-            value_in_quote: false,
-            in_range: null,
-            issues: [`merchant "${merchant}" does not appear in its quote`],
-          }),
-        );
-      }
-    }
-    if (e.cap_amount != null && !numberInQuote(e.cap_amount, e.quote)) {
-      fields.push(
-        finish({
-          field: `${prefix}.cap_amount`,
-          quote_found: quoteInText(e.quote, page),
-          value_in_quote: false,
-          in_range: inRange(e.cap_amount, [0, 1_000_000]),
-          issues: ["cap amount does not appear in its quote"],
-        }),
-      );
-    }
-    if (e.tier_threshold != null && !numberInQuote(e.tier_threshold, e.quote)) {
-      fields.push(
-        finish({
-          field: `${prefix}.tier_threshold`,
-          quote_found: quoteInText(e.quote, page),
-          value_in_quote: false,
-          in_range: inRange(e.tier_threshold, [0, 1_000_000]),
-          issues: ["tier threshold does not appear in its quote"],
-        }),
-      );
-    }
-    if (
-      e.mcc_source === "terms" &&
-      (e.mccs?.length ?? 0) === 0 &&
-      (e.merchants?.length ?? 0) === 0
-    ) {
-      fields.push(
-        finish({
-          field: `${prefix}.mcc_source`,
-          quote_found: quoteInText(e.quote, page),
-          value_in_quote: null,
-          in_range: null,
-          issues: ["mcc_source is terms but no MCCs or merchants were extracted"],
-        }),
-      );
-    }
-  });
-  const wb = extraction.welcome_bonus;
-  if (wb) {
-    const nums = [wb.value.points, wb.value.cashback_cad, wb.value.rate ?? null].filter(
-      (n): n is number => n !== null,
-    );
-    const valueOk = nums.length ? nums.every((n) => numberInQuote(n, wb.quote)) : null;
-    const rangeOk =
-      nums.length === 0
-        ? null
-        : (wb.value.points === null || inRange(wb.value.points, BONUS_POINTS_RANGE)) &&
-          (wb.value.cashback_cad === null || inRange(wb.value.cashback_cad, BONUS_CASH_RANGE)) &&
-          (wb.value.rate == null || inRange(wb.value.rate, [0, 20]));
-    fields.push(checkQuoted("welcome_bonus", wb, page, valueOk, rangeOk));
-  }
-  (extraction.promotions ?? []).forEach((p, i) => {
-    const nums = [p.rate, p.points].filter((n): n is number => n !== null);
-    const valueOk = nums.length ? nums.every((n) => numberInQuote(n, p.quote)) : null;
-    fields.push(checkQuoted(`promotions[${i}]`, p, page, valueOk, null));
-  });
+  extraction.earn_rates.forEach((e, i) => fields.push(...checkEarnRateRules(e, i, page)));
+  fields.push(...checkWelcomeAndPromos(extraction, page));
   extraction.insurance_highlights.forEach((h, i) => {
     fields.push(checkQuoted(`insurance_highlights[${i}]`, h, page, null, null));
   });

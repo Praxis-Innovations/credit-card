@@ -114,32 +114,12 @@ describe("checkExtraction", () => {
 
   it("flags out-of-range fees, APRs and earn rates", () => {
     const text = `${GOLD_PAGE_TEXT}\nAnnual fee $1,200\nInterest 45.5%\nEarn 50 points per $1`;
+    const base = goldExtraction().earn_rates.find((e) => e.category === "other")!;
     const result = checkExtraction(
       goldExtraction({
         annual_fee: { value: 1200, quote: "Annual fee $1,200" },
         purchase_apr: { value: 45.5, quote: "Interest 45.5%" },
-        earn_rates: [
-          {
-            category: "other",
-            description: "",
-            rate: 50,
-            unit: "points_per_dollar",
-            cap: null,
-            quote: "Earn 50 points per $1",
-            mccs: [],
-            merchants: [],
-            mcc_source: "network_default",
-            exclusions: [],
-            cap_amount: null,
-            cap_period: null,
-            cap_group: null,
-            rate_after_cap: null,
-            tier_threshold: null,
-            valid_from: null,
-            valid_to: null,
-            source_url: null,
-          },
-        ],
+        earn_rates: [{ ...base, rate: 50, quote: "Earn 50 points per $1" }],
       }),
       text,
     );
@@ -148,21 +128,11 @@ describe("checkExtraction", () => {
   });
 
   it("flags a missing card name and welcome-bonus numbers not in the quote", () => {
+    const wb = goldExtraction().welcome_bonus!;
     const result = checkExtraction(
       goldExtraction({
         card_name: null,
-        welcome_bonus: {
-          value: {
-            summary: "bonus",
-            points: 60000,
-            cashback_cad: null,
-            rate: null,
-            valid_from: null,
-            valid_to: null,
-            new_cardholders_only: null,
-          },
-          quote: "Earn up to 50,000 bonus Scene+ points in your first year.",
-        },
+        welcome_bonus: { value: { ...wb.value, points: 60000 }, quote: wb.quote },
       }),
       GOLD_PAGE_TEXT,
     );

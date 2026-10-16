@@ -58,27 +58,6 @@ export type ExtractedEarnRate = {
   source_url?: string | null;
 };
 
-export type ExtractedWelcomeBonus = {
-  summary: string;
-  points: number | null;
-  cashback_cad?: number | null;
-  rate?: number | null;
-  valid_from?: string | null;
-  valid_to?: string | null;
-  new_cardholders_only?: boolean | null;
-};
-
-export type ExtractedPromotion = {
-  summary: string;
-  rate: number | null;
-  points: number | null;
-  categories: string[];
-  valid_from: string | null;
-  valid_to: string | null;
-  quote: string;
-  source_url?: string | null;
-};
-
 /** Only the parts of the extraction the review page / approve path read. */
 export type Extraction = {
   card_name?: Quoted<string> | null;
@@ -86,8 +65,25 @@ export type Extraction = {
   annual_fee?: Quoted<number> | null;
   reward_currency?: Quoted<string> | null;
   earn_rates?: ExtractedEarnRate[];
-  welcome_bonus?: Quoted<ExtractedWelcomeBonus> | null;
-  promotions?: ExtractedPromotion[];
+  welcome_bonus?: Quoted<{
+    summary: string;
+    points: number | null;
+    cashback_cad?: number | null;
+    rate?: number | null;
+    valid_from?: string | null;
+    valid_to?: string | null;
+    new_cardholders_only?: boolean | null;
+  }> | null;
+  promotions?: Array<{
+    summary: string;
+    rate: number | null;
+    points: number | null;
+    categories: string[];
+    valid_from: string | null;
+    valid_to: string | null;
+    quote: string;
+    source_url?: string | null;
+  }>;
 };
 
 export type PendingFinding = {

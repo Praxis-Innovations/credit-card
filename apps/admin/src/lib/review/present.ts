@@ -76,17 +76,10 @@ function isOptionalRuleKey(key: string): boolean {
   return OPTIONAL_RULE_SUFFIXES.some((suffix) => key.endsWith(suffix));
 }
 
-function add(
-  out: Map<string, Candidate>,
-  key: string,
-  label: string,
-  value: string,
-  quote: string | null,
-  checkField: string | null,
-) {
+function add(out: Map<string, Candidate>, row: Candidate & { key: string }) {
   // Skip empty optional rule fields so the queue stays focused.
-  if (value === "none" && isOptionalRuleKey(key)) return;
-  out.set(key, { label, value, quote, checkField });
+  if (row.value === "none" && isOptionalRuleKey(row.key)) return;
+  out.set(row.key, { label: row.label, value: row.value, quote: row.quote, checkField: row.checkField });
 }
 
 function candidatesFor(x: Extraction): Map<string, Candidate> {
@@ -99,20 +92,25 @@ function candidatesFor(x: Extraction): Map<string, Candidate> {
   if (x.welcome_bonus) {
     const wb = x.welcome_bonus;
     const q = wb.quote;
-    add(out, "welcome_bonus.points", "Welcome bonus (points)", show(wb.value.points), q, "welcome_bonus");
-    add(out, "welcome_bonus.rate", "Welcome bonus (rate)", show(wb.value.rate), q, "welcome_bonus");
-    add(out, "welcome_bonus.valid_from", "Welcome bonus starts", show(wb.value.valid_from), q, "welcome_bonus");
-    add(out, "welcome_bonus.valid_to", "Welcome bonus ends", show(wb.value.valid_to), q, "welcome_bonus");
-    add(
-      out,
-      "welcome_bonus.new_cardholders_only",
-      "Welcome bonus: new cardholders only",
-      show(wb.value.new_cardholders_only),
-      q,
-      "welcome_bonus",
-    );
+    const checkField = "welcome_bonus";
+    add(out, { key: "welcome_bonus.points", label: "Welcome bonus (points)", value: show(wb.value.points), quote: q, checkField });
+    add(out, { key: "welcome_bonus.rate", label: "Welcome bonus (rate)", value: show(wb.value.rate), quote: q, checkField });
+    add(out, { key: "welcome_bonus.valid_from", label: "Welcome bonus starts", value: show(wb.value.valid_from), quote: q, checkField });
+    add(out, { key: "welcome_bonus.valid_to", label: "Welcome bonus ends", value: show(wb.value.valid_to), quote: q, checkField });
+    add(out, {
+      key: "welcome_bonus.new_cardholders_only",
+      label: "Welcome bonus: new cardholders only",
+      value: show(wb.value.new_cardholders_only),
+      quote: q,
+      checkField,
+    });
   }
-  const rates = x.earn_rates ?? [];
+  addEarnRateCandidates(out, x.earn_rates ?? []);
+  addPromotionCandidates(out, x.promotions ?? []);
+  return out;
+}
+
+function addEarnRateCandidates(out: Map<string, Candidate>, rates: ExtractedEarnRate[]) {
   rates.forEach((e, i) => {
     const key = `earn_rate.${e.category}`;
     const prev = out.get(key);
@@ -128,31 +126,35 @@ function candidatesFor(x: Extraction): Map<string, Candidate> {
     const label = rateLabel(e, i, rates);
     const check = `earn_rates[${i}] ${e.category}`;
     const prefix = `earn_rates[${i}]`;
-    add(out, `${prefix}.mccs`, `${label}: MCCs`, showList(e.mccs), e.quote, `${check}.mccs`);
-    add(out, `${prefix}.merchants`, `${label}: merchants`, showList(e.merchants), e.quote, `${check}.merchants`);
-    add(out, `${prefix}.mcc_source`, `${label}: MCC source`, show(e.mcc_source), e.quote, `${check}.mcc_source`);
-    add(out, `${prefix}.exclusions`, `${label}: exclusions`, showList(e.exclusions), e.quote, `${check}.exclusions`);
-    add(out, `${prefix}.cap_amount`, `${label}: cap amount`, show(e.cap_amount), e.quote, `${check}.cap_amount`);
-    add(out, `${prefix}.cap_period`, `${label}: cap period`, show(e.cap_period), e.quote, check);
-    add(out, `${prefix}.cap_group`, `${label}: cap group`, show(e.cap_group), e.quote, check);
-    add(out, `${prefix}.rate_after_cap`, `${label}: rate after cap`, show(e.rate_after_cap), e.quote, check);
-    add(out, `${prefix}.tier_threshold`, `${label}: spend tier`, show(e.tier_threshold), e.quote, `${check}.tier_threshold`);
-    add(out, `${prefix}.valid_from`, `${label}: starts`, show(e.valid_from), e.quote, check);
-    add(out, `${prefix}.valid_to`, `${label}: ends`, show(e.valid_to), e.quote, check);
-    add(out, `${prefix}.source_url`, `${label}: source URL`, show(e.source_url), e.quote, check);
+    const q = e.quote;
+    add(out, { key: `${prefix}.mccs`, label: `${label}: MCCs`, value: showList(e.mccs), quote: q, checkField: `${check}.mccs` });
+    add(out, { key: `${prefix}.merchants`, label: `${label}: merchants`, value: showList(e.merchants), quote: q, checkField: `${check}.merchants` });
+    add(out, { key: `${prefix}.mcc_source`, label: `${label}: MCC source`, value: show(e.mcc_source), quote: q, checkField: `${check}.mcc_source` });
+    add(out, { key: `${prefix}.exclusions`, label: `${label}: exclusions`, value: showList(e.exclusions), quote: q, checkField: `${check}.exclusions` });
+    add(out, { key: `${prefix}.cap_amount`, label: `${label}: cap amount`, value: show(e.cap_amount), quote: q, checkField: `${check}.cap_amount` });
+    add(out, { key: `${prefix}.cap_period`, label: `${label}: cap period`, value: show(e.cap_period), quote: q, checkField: check });
+    add(out, { key: `${prefix}.cap_group`, label: `${label}: cap group`, value: show(e.cap_group), quote: q, checkField: check });
+    add(out, { key: `${prefix}.rate_after_cap`, label: `${label}: rate after cap`, value: show(e.rate_after_cap), quote: q, checkField: check });
+    add(out, { key: `${prefix}.tier_threshold`, label: `${label}: spend tier`, value: show(e.tier_threshold), quote: q, checkField: `${check}.tier_threshold` });
+    add(out, { key: `${prefix}.valid_from`, label: `${label}: starts`, value: show(e.valid_from), quote: q, checkField: check });
+    add(out, { key: `${prefix}.valid_to`, label: `${label}: ends`, value: show(e.valid_to), quote: q, checkField: check });
+    add(out, { key: `${prefix}.source_url`, label: `${label}: source URL`, value: show(e.source_url), quote: q, checkField: check });
   });
-  (x.promotions ?? []).forEach((p, i) => {
-    const check = `promotions[${i}]`;
+}
+
+function addPromotionCandidates(out: Map<string, Candidate>, promotions: NonNullable<Extraction["promotions"]>) {
+  promotions.forEach((p, i) => {
+    const checkField = `promotions[${i}]`;
     const prefix = `promotion.${i}`;
-    add(out, `${prefix}.summary`, `Promotion: ${p.summary}`, p.summary, p.quote, check);
-    add(out, `${prefix}.rate`, `Promotion rate: ${p.summary}`, show(p.rate), p.quote, check);
-    add(out, `${prefix}.points`, `Promotion points: ${p.summary}`, show(p.points), p.quote, check);
-    add(out, `${prefix}.categories`, `Promotion categories: ${p.summary}`, showList(p.categories), p.quote, check);
-    add(out, `${prefix}.valid_from`, `Promotion starts: ${p.summary}`, show(p.valid_from), p.quote, check);
-    add(out, `${prefix}.valid_to`, `Promotion ends: ${p.summary}`, show(p.valid_to), p.quote, check);
-    add(out, `${prefix}.source_url`, `Promotion URL: ${p.summary}`, show(p.source_url), p.quote, check);
+    const q = p.quote;
+    add(out, { key: `${prefix}.summary`, label: `Promotion: ${p.summary}`, value: p.summary, quote: q, checkField });
+    add(out, { key: `${prefix}.rate`, label: `Promotion rate: ${p.summary}`, value: show(p.rate), quote: q, checkField });
+    add(out, { key: `${prefix}.points`, label: `Promotion points: ${p.summary}`, value: show(p.points), quote: q, checkField });
+    add(out, { key: `${prefix}.categories`, label: `Promotion categories: ${p.summary}`, value: showList(p.categories), quote: q, checkField });
+    add(out, { key: `${prefix}.valid_from`, label: `Promotion starts: ${p.summary}`, value: show(p.valid_from), quote: q, checkField });
+    add(out, { key: `${prefix}.valid_to`, label: `Promotion ends: ${p.summary}`, value: show(p.valid_to), quote: q, checkField });
+    add(out, { key: `${prefix}.source_url`, label: `Promotion URL: ${p.summary}`, value: show(p.source_url), quote: q, checkField });
   });
-  return out;
 }
 
 /** Field rows for the review card: changed fields first, vs the catalog value they replace. */

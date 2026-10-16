@@ -1,13 +1,8 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { MAX_CARD_TEXT_CHARS, MAX_COMPARE_LINKS, MAX_COMPARE_TEXT_CHARS } from "../config";
 import type { CardLink, PageLink, Usage } from "../types";
-import {
-  CARD_TOOL_SCHEMA,
-  coerceExtraction,
-  LINKS_TOOL_SCHEMA,
-  stampSourceUrl,
-  type CardExtraction,
-} from "./schema";
+import { coerceExtraction, stampSourceUrl, type CardExtraction } from "./schema";
+import { CARD_TOOL_SCHEMA, LINKS_TOOL_SCHEMA } from "./schema-tool";
 
 export interface Extractor {
   readonly model: string;
