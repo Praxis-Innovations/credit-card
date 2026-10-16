@@ -136,7 +136,7 @@ export function CardsPager({
       </p>
       <div className="flex items-center gap-2">
         <button type="button" className={navBtn} disabled={page <= 1} onClick={() => onPage(page - 1)}>
-          Newer
+          Previous
         </button>
         <span className="min-w-[5.5rem] text-center text-[13px] tabular-nums text-body">
           {page}/{pageCount}
@@ -147,7 +147,7 @@ export function CardsPager({
           disabled={page >= pageCount}
           onClick={() => onPage(page + 1)}
         >
-          Older
+          Next
         </button>
       </div>
     </nav>
