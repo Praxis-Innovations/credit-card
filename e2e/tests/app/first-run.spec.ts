@@ -5,8 +5,8 @@ import {
   pickCards,
   SCOTIA_GOLD,
   TRIANGLE,
+  watchRecommendationBodies,
 } from "../../src/helpers/app/flow";
-import { watchRecommendationBodies } from "../../src/helpers/app/google-oauth";
 import { installOverpassMock } from "../../src/helpers/app/overpass";
 
 test.describe("first-run flow (guest)", () => {

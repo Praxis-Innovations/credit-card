@@ -1,5 +1,24 @@
-import type { Page } from "@playwright/test";
+import type { Page, Request } from "@playwright/test";
 import { expect } from "../../fixtures";
+
+/** Capture recommendation POSTs to the local API (real stack, not a mock). */
+export function watchRecommendationBodies(page: Page) {
+  const bodies: Array<Record<string, unknown>> = [];
+  const handler = (req: Request) => {
+    if (req.method() !== "POST") return;
+    if (!req.url().includes("/v1/recommendations")) return;
+    try {
+      bodies.push(req.postDataJSON() as Record<string, unknown>);
+    } catch {
+      /* ignore non-JSON */
+    }
+  };
+  page.on("request", handler);
+  return {
+    bodies,
+    dispose: () => page.off("request", handler),
+  };
+}
 
 /** Intro → pick cards → location step. */
 export async function pickCards(page: Page, cardLabels: RegExp[]) {

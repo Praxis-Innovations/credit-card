@@ -42,7 +42,7 @@ test.describe("no saved cards", () => {
         page.evaluate(`(() => {
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && /auth-token|supabase/i.test(key) && localStorage.getItem(key)) {
+            if (key && /^sb-.*-auth-token$/.test(key) && localStorage.getItem(key)) {
               return true;
             }
           }

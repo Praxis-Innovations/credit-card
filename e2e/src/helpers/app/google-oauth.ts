@@ -1,5 +1,5 @@
 import type { Session } from "@supabase/supabase-js";
-import type { Page, Request } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 export interface GoogleOAuthBypass {
   authorizeUrls: string[];
@@ -66,24 +66,4 @@ export async function installGoogleOAuthBypass(
   });
 
   return mock;
-}
-
-/** Capture recommendation POSTs to the local API (real stack, not a mock). */
-export function watchRecommendationBodies(page: Page) {
-  const bodies: Array<Record<string, unknown>> = [];
-  const handler = (req: Request) => {
-    if (req.method() !== "POST") return;
-    const url = req.url();
-    if (!url.includes("/v1/recommendations")) return;
-    try {
-      bodies.push(req.postDataJSON() as Record<string, unknown>);
-    } catch {
-      /* ignore non-JSON */
-    }
-  };
-  page.on("request", handler);
-  return {
-    bodies,
-    dispose: () => page.off("request", handler),
-  };
 }
