@@ -54,6 +54,8 @@ jobs:
               - 'pnpm-workspace.yaml'
               - 'turbo.json'
               - 'tsconfig*.json'
+              - 'knip.json'
+              - '.jscpd.json'
               - '*.ts'
               - '*.js'
               - '*.mjs'
