@@ -98,6 +98,13 @@ export async function approveFinding(id: string, fields: unknown): Promise<Revie
   const parsed = validateReviewFields(fields, allowed);
   if (!parsed.ok) return failure(parsed.error);
 
+  // page_value is authoritative from the finding, not the client — otherwise a
+  // tampered payload can hide edits from admin_audit or mis-record what the page said.
+  const pageByKey = new Map(rows.map((r) => [r.key, r.proposed]));
+  const reviewFields: ReviewFields = {
+    fields: parsed.fields.fields.map((f) => ({ ...f, page_value: pageByKey.get(f.key)! })),
+  };
+
   const source = finding.source as { issuer_name: string } | { issuer_name: string }[] | null;
   const issuerName = Array.isArray(source) ? (source[0]?.issuer_name ?? null) : (source?.issuer_name ?? null);
 
@@ -107,11 +114,11 @@ export async function approveFinding(id: string, fields: unknown): Promise<Revie
     diffKind: (finding.diff_kind as DiffKind | null) ?? null,
     cardName: (finding.card_name as string | null) ?? null,
     issuerName,
-    fields: parsed.fields,
+    fields: reviewFields,
   });
   if (!applied.ok) return failure(applied.message);
 
-  return decide(auth, id, "approved", null, parsed.fields);
+  return decide(auth, id, "approved", null, reviewFields);
 }
 
 export async function rejectFinding(id: string, reason: string): Promise<ReviewResult> {
