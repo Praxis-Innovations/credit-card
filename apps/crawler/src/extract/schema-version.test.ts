@@ -15,11 +15,10 @@ describe("extraction schema version", () => {
   });
 
   it("treats pre-MC2 rows (no promotions) as version 1", () => {
-    const preMc2 = { ...goldExtraction() } as ReturnType<typeof goldExtraction> & {
-      promotions?: unknown;
-    };
+    // Pre-MC2 findings omit `promotions` entirely (not an empty array).
+    const preMc2 = { ...goldExtraction() } as unknown as Record<string, unknown>;
     delete preMc2.promotions;
-    expect(extractionSchemaVersionOf(preMc2)).toBe(1);
+    expect(extractionSchemaVersionOf(preMc2 as unknown as ReturnType<typeof goldExtraction>)).toBe(1);
   });
 
   it("reports unstamped MC2 rows as literal version 2, not the live constant", () => {
