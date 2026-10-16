@@ -4,7 +4,7 @@
  */
 
 /** Well-known local Supabase demo JWTs (safe to commit; only valid locally). */
-export const LOCAL_SUPABASE = {
+const LOCAL_SUPABASE = {
   url: "http://127.0.0.1:54321",
   anonKey:
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0",
@@ -16,10 +16,10 @@ export const LOCAL_SUPABASE = {
  * Plaintext API key accepted by the local stack and hashed in `supabase/seed.sql`.
  * Not a production secret — local E2E only.
  */
-export const E2E_API_KEY = "nt_e2e_local_only_not_for_prod";
+const E2E_API_KEY = "nt_e2e_local_only_not_for_prod";
 
 /** Password shared by every seeded local auth user (seed.sql). */
-export const E2E_PASSWORD = "local-e2e-password";
+const E2E_PASSWORD = "local-e2e-password";
 
 export const E2E_USERS = {
   /** Regular app user (email/password identity). */

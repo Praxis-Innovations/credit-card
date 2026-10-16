@@ -59,6 +59,14 @@
         "vitest.config.ts"
       ],
       "project": ["src/**/*.{ts,tsx}", "*.{ts,tsx}"]
+    },
+    "e2e": {
+      "entry": [
+        "playwright.config.ts",
+        "src/fixtures.ts",
+        "tests/**/*.ts"
+      ],
+      "project": ["**/*.ts"]
     }
   },
   "ignore": [
