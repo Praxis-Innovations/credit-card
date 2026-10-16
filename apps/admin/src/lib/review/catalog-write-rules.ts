@@ -239,6 +239,28 @@ function applySavedIndexedFields(
   return null;
 }
 
+/** Highest extracted rate per category — `earn_rate.<cat>` maps to that row only. */
+function maxRateByCategory(extracted: ExtractedEarnRate[]): Map<string, number> {
+  const max = new Map<string, number>();
+  for (const e of extracted) {
+    const prev = max.get(e.category);
+    if (prev === undefined || e.rate > prev) max.set(e.category, e.rate);
+  }
+  return max;
+}
+
+function rateForTouchedRow(
+  ext: ExtractedEarnRate,
+  overrides: Map<string, number>,
+  categoryMax: Map<string, number>,
+): number | undefined {
+  const override = overrides.get(ext.category);
+  if (override === undefined) return undefined;
+  // Plain earn_rate.<cat> is the category max (see present.ts); lower tiers keep ext.rate.
+  if (ext.rate === categoryMax.get(ext.category)) return override;
+  return ext.rate;
+}
+
 function mergeTouchedIndex(args: {
   rows: RewardCategory[];
   claimed: Set<number>;
@@ -246,18 +268,24 @@ function mergeTouchedIndex(args: {
   ext: ExtractedEarnRate;
   decisions: Map<string, FieldDecision>;
   overrides: Map<string, number>;
+  categoryMax: Map<string, number>;
+  overrideApplied: Set<string>;
 }): Err | null {
-  const { rows, claimed, index, ext, decisions, overrides } = args;
+  const { rows, claimed, index, ext, decisions, overrides, categoryMax, overrideApplied } = args;
+  const rate = rateForTouchedRow(ext, overrides, categoryMax);
   let idx = findBaseIndex(rows, ext, claimed);
   if (idx < 0) {
-    rows.push({ category: ext.category, earnRate: overrides.get(ext.category) ?? ext.rate });
+    rows.push({ category: ext.category, earnRate: rate ?? ext.rate });
     idx = rows.length - 1;
   }
   claimed.add(idx);
   const row = rows[idx]!;
   const err = applySavedIndexedFields(row, index, decisions);
   if (err) return err;
-  if (overrides.has(ext.category)) row.earnRate = overrides.get(ext.category)!;
+  if (rate !== undefined) {
+    row.earnRate = rate;
+    if (rate === overrides.get(ext.category)) overrideApplied.add(ext.category);
+  }
   return null;
 }
 
@@ -265,12 +293,15 @@ function applyRemainingRateOverrides(
   rows: RewardCategory[],
   claimed: Set<number>,
   overrides: Map<string, number>,
+  overrideApplied: Set<string>,
 ): void {
   for (const [category, rate] of overrides) {
-    if ([...claimed].some((i) => rows[i]?.category === category)) continue;
-    const hit = rows.find((r) => r.category === category);
+    if (overrideApplied.has(category)) continue;
+    const unclaimed = rows.find((r, i) => r.category === category && !claimed.has(i));
+    const hit = unclaimed ?? rows.find((r) => r.category === category);
     if (hit) hit.earnRate = rate;
     else rows.push({ category, earnRate: rate });
+    overrideApplied.add(category);
   }
 }
 
@@ -300,6 +331,8 @@ export function applyEarnRates(
 
   const rows = base.map((r) => ({ ...r }));
   const claimed = new Set<number>();
+  const categoryMax = maxRateByCategory(extracted);
+  const overrideApplied = new Set<string>();
   for (const i of touched) {
     const ext = extracted[i];
     if (!ext) return { ok: false, message: `Missing extraction for earn rate #${i + 1}.` };
@@ -310,10 +343,12 @@ export function applyEarnRates(
       ext,
       decisions,
       overrides: overrides.value,
+      categoryMax,
+      overrideApplied,
     });
     if (err) return err;
   }
-  applyRemainingRateOverrides(rows, claimed, overrides.value);
+  applyRemainingRateOverrides(rows, claimed, overrides.value, overrideApplied);
   if (rows.length === 0) rows.push({ category: "other", earnRate: 1 });
   return { ok: true, value: rows };
 }

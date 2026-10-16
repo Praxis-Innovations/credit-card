@@ -79,6 +79,66 @@ describe("indexed earn-rate field map", () => {
   });
 });
 
+describe("earn_rate category override with tiers", () => {
+  it("applies earn_rate.<category> only to the max-rate tier, not lower same-category rows", () => {
+    const momentum = {
+      ...existing,
+      reward_categories: [
+        { category: "groceries", earnRate: 4, tierThreshold: 1000 },
+        { category: "groceries", earnRate: 2 },
+        { category: "other", earnRate: 1 },
+      ],
+    };
+    const extracted = {
+      earn_rates: [
+        {
+          category: "groceries",
+          rate: 4,
+          unit: "percent",
+          quote: "4% groceries above $1,000",
+          tier_threshold: 1000,
+        },
+        {
+          category: "groceries",
+          rate: 2,
+          unit: "percent",
+          quote: "2% groceries below threshold",
+        },
+        {
+          category: "other",
+          rate: 1,
+          unit: "percent",
+          quote: "1% other",
+        },
+      ],
+    };
+    const res = buildCatalogWrite({
+      diffKind: "changed",
+      linkedCardId: "scotia-gold-amex",
+      cardName: "Momentum",
+      issuerName: "Scotiabank",
+      fields: {
+        fields: [
+          { key: "earn_rate.groceries", save: true, page_value: "4", value: "4" },
+          { key: "earn_rates[0].tier_threshold", save: true, page_value: "1000", value: "1000" },
+          { key: "earn_rates[1].mccs", save: true, page_value: "", value: "5411" },
+        ],
+      },
+      existing: momentum,
+      extractedPointCurrency: null,
+      extracted,
+      now: NOW,
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok || !res.write || res.write.op !== "update") throw new Error("expected update");
+    const groceries = (res.write.set.reward_categories ?? []).filter((r) => r.category === "groceries");
+    expect(groceries).toEqual([
+      { category: "groceries", earnRate: 4, tierThreshold: 1000 },
+      { category: "groceries", earnRate: 2, mccs: ["5411"] },
+    ]);
+  });
+});
+
 describe("indexed earn-rate decline and preserve", () => {
   it("keeps the catalog rate when an earn_rate decision is declined beside a saved MCC", () => {
     const res = buildCatalogWrite({
