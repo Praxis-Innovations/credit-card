@@ -86,18 +86,16 @@ production deploys from `main` run.
 
 Each project’s Root Directory is its app folder. On production, each
 `apps/*/vercel.json` sets an **Ignored Build Step** so a push to `main` only
-builds a project when that app or shared root workspace files changed:
+builds a project when that app or shared root workspace files changed
+(`pnpm-lock.yaml`, `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`
+— there is no `packages/` directory in this repo):
 
 | Vercel project | Root Directory | Builds when these paths change |
 |----------------|----------------|--------------------------------|
-| `northtap` | `apps/web` | `apps/web`, plus shared root files below |
-| `northtap-app` | `apps/mobile` | `apps/mobile`, plus shared root files below |
-| `northtap-admin` | `apps/admin` | `apps/admin`, plus shared root files below |
-| `northtap-api` | `apps/api` | `apps/api`, plus shared root files below |
-
-Shared root files watched by every project: `pnpm-lock.yaml`, `package.json`,
-`pnpm-workspace.yaml`, `tsconfig.base.json` (so lockfile-only bumps and base
-tsconfig changes still rebuild).
+| `northtap` | `apps/web` | `apps/web`, `pnpm-lock.yaml`, `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json` |
+| `northtap-app` | `apps/mobile` | `apps/mobile`, `pnpm-lock.yaml`, `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json` |
+| `northtap-admin` | `apps/admin` | `apps/admin`, `pnpm-lock.yaml`, `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json` |
+| `northtap-api` | `apps/api` | `apps/api`, `pnpm-lock.yaml`, `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json` |
 
 Command (exit `0` = skip build, `1` = proceed), from each `vercel.json`.
 Uses `VERCEL_GIT_PREVIOUS_SHA` (last successful deploy for this project/branch)
