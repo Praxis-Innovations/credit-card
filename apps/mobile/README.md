@@ -86,8 +86,7 @@ loads after the redirect.
 ```bash
 pnpm --filter mobile test   # Vitest unit tests (src/**/*.test.ts)
 pnpm --filter mobile lint   # tsc
-pnpm --filter mobile e2e    # Playwright on the static web export, with API/Supabase/Overpass mocks
 ```
 
-The E2E build sets `EXPO_NO_DOTENV=1`, so your `.env.local` (real key) never ends up in
-the test bundle.
+App Playwright regression lives in the workspace `e2e/` package (`tests/app/`) and runs
+against the Expo web export + local Supabase — see [`e2e/README.md`](../../e2e/README.md).

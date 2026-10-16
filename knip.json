@@ -44,11 +44,9 @@
         "src/**/*.test.{ts,tsx}",
         "vitest.config.ts",
         "metro.config.js",
-        "babel.config.js",
-        "playwright.config.ts",
-        "e2e/**/*.{ts,tsx}"
+        "babel.config.js"
       ],
-      "project": ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}", "e2e/**/*.{ts,tsx}", "*.{ts,tsx,js}"]
+      "project": ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}", "*.{ts,tsx,js}"]
     },
     "apps/crawler": {
       "entry": [

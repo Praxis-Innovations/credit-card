@@ -1,11 +1,12 @@
-import { expect, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect } from "../../fixtures";
 
 /** Intro → pick cards → location step. */
 export async function pickCards(page: Page, cardLabels: RegExp[]) {
   await page.goto("/");
   await expect(
     page.getByRole("heading", { name: /right card for every purchase/i }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 45_000 });
   await page.getByRole("button", { name: "Get started" }).click();
 
   await expect(page.getByText("Common cards")).toBeVisible();
@@ -14,7 +15,9 @@ export async function pickCards(page: Page, cardLabels: RegExp[]) {
     await page.getByRole("checkbox", { name: label }).click();
   }
   await page
-    .getByRole("button", { name: `Continue with ${cardLabels.length} card${cardLabels.length === 1 ? "" : "s"}` })
+    .getByRole("button", {
+      name: `Continue with ${cardLabels.length} card${cardLabels.length === 1 ? "" : "s"}`,
+    })
     .click();
   await expect(page.getByRole("heading", { name: /Find the store/ })).toBeVisible();
 }
@@ -41,3 +44,6 @@ export async function expectNoForbiddenText(page: Page) {
 export const SCOTIA_GOLD = /^Scotiabank Gold American Express, Scene\+$/;
 export const TRIANGLE = /^Canadian Tire Triangle World Elite Mastercard, Triangle Rewards$/;
 export const COSTCO_MC = /^CIBC Costco Mastercard, Cash back$/;
+
+/** Seeded local app user id from supabase/seed.sql. */
+export const E2E_APP_USER_ID = "11111111-1111-4111-8111-111111111111";
