@@ -77,6 +77,29 @@ Regenerate catalog SQL seed (requires `NORTHTAP_SEED_API_KEY` in the environment
 pnpm seed:catalog
 ```
 
+## Vercel deploys
+
+Four Vercel projects share this monorepo. Each project’s Root Directory is its
+app folder, and each `apps/*/vercel.json` sets an **Ignored Build Step** so
+Vercel only builds when that app (or a shared `packages/` path) changed:
+
+| Vercel project | Root Directory | Builds when these paths change |
+|----------------|----------------|--------------------------------|
+| `northtap` | `apps/web` | `apps/web`, `packages/` |
+| `northtap-app` | `apps/mobile` | `apps/mobile`, `packages/` |
+| `northtap-admin` | `apps/admin` | `apps/admin`, `packages/` |
+| `northtap-api` | `apps/api` | `apps/api`, `packages/` |
+
+Command (exit `0` = skip build, `1` = proceed), from each `vercel.json`:
+
+```bash
+cd ../.. && git diff --quiet HEAD^ HEAD -- apps/<app> packages/
+```
+
+A PR that only touches `apps/crawler`, `docs/`, `e2e/`, or other non-listed
+paths triggers no Vercel builds — which avoids hitting Vercel’s deployment
+rate limit when every project would otherwise rebuild on every push.
+
 ## CI
 
 Every PR and push to `main` runs typecheck, lint, unit tests, code-health
