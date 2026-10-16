@@ -140,7 +140,12 @@ export async function runCi(opts: CiOptions, deps: CiDeps): Promise<CiResult> {
 }
 
 async function main(): Promise<number> {
+  // pnpm 9 `run` passes a literal `--` through when callers use the separator;
+  // strip it so parseArgs still sees --mode / --help as options.
+  const argv = process.argv.slice(2);
+  if (argv[0] === "--") argv.shift();
   const { values } = parseArgs({
+    args: argv,
     options: {
       mode: { type: "string" },
       source: { type: "string" },
