@@ -1,7 +1,7 @@
 import type { DiffKind, FieldDecision, ReviewFields } from "./types";
 
 /** Columns the approve path may set on public.cards. */
-export type CatalogCardRow = {
+type CatalogCardRow = {
   id: string;
   name: string;
   issuer: string;
@@ -9,7 +9,7 @@ export type CatalogCardRow = {
   point_currency: string;
   reward_categories: RewardCategory[];
   welcome_offer: WelcomeOffer | null;
-  network: "Visa" | "Mastercard" | "Amex" | null;
+  network: CatalogNetwork;
   last_verified: string;
   verified_at: string;
   status: "verified";
@@ -27,7 +27,9 @@ export type WelcomeOffer = {
   estimatedValueCad?: number;
 };
 
-export type CatalogCardUpdate = Partial<
+type CatalogNetwork = "Visa" | "Mastercard" | "Amex" | null;
+
+type CatalogCardUpdate = Partial<
   Pick<CatalogCardRow, "name" | "annual_fee" | "network" | "reward_categories" | "welcome_offer">
 > & {
   last_verified: string;
@@ -64,12 +66,33 @@ export type BuildCatalogWriteInput = {
   takenIds?: ReadonlySet<string>;
 };
 
-const NETWORK_TO_CATALOG: Record<string, CatalogCardRow["network"]> = {
+const NETWORK_TO_CATALOG: Record<string, Exclude<CatalogNetwork, null>> = {
   Visa: "Visa",
   Mastercard: "Mastercard",
   "American Express": "Amex",
   Amex: "Amex",
 };
+
+/** First matching substring → catalog point_currency. */
+const POINT_CURRENCY_HINTS: Array<[string, string]> = [
+  ["scene", "Scene+"],
+  ["aeroplan", "Aeroplan"],
+  ["avion", "RBC Avion"],
+  ["aventura", "CIBC Aventura"],
+  ["membership rewards", "Amex MR"],
+  ["amex mr", "Amex MR"],
+  ["air miles", "AIR MILES"],
+  ["td rewards", "TD Rewards"],
+  ["pc optimum", "PC Optimum"],
+  ["pc points", "PC Optimum"],
+  ["marriott", "Marriott Bonvoy"],
+  ["westjet", "WestJet"],
+  ["triangle", "Triangle"],
+  ["cash", "cashback"],
+  ["bmo", "BMO Rewards"],
+  ["rogers", "Rogers"],
+  ["moi", "Moi"],
+];
 
 const EMPTY = "none";
 
@@ -81,22 +104,12 @@ function isEmpty(value: string): boolean {
   return value.trim() === "" || value.trim().toLowerCase() === EMPTY;
 }
 
-function parseFee(value: string): number | null {
+function parseNonNegNumber(value: string, integer: boolean): number | null {
   if (isEmpty(value)) return null;
   const n = Number(value.replace(/,/g, "").trim());
-  return Number.isFinite(n) && n >= 0 ? n : null;
-}
-
-function parseRate(value: string): number | null {
-  if (isEmpty(value)) return null;
-  const n = Number(value.replace(/,/g, "").trim());
-  return Number.isFinite(n) && n >= 0 ? n : null;
-}
-
-function parsePoints(value: string): number | null {
-  if (isEmpty(value)) return null;
-  const n = Number(value.replace(/,/g, "").trim());
-  return Number.isFinite(n) && n >= 0 && Number.isInteger(n) ? n : null;
+  if (!Number.isFinite(n) || n < 0) return null;
+  if (integer && !Number.isInteger(n)) return null;
+  return n;
 }
 
 /** Stable catalog id from issuer + card name (e.g. scotiabank-gold-amex). */
@@ -120,31 +133,19 @@ export function uniqueCardId(base: string, taken: ReadonlySet<string>): string {
   throw new Error("Could not allocate a unique card id.");
 }
 
-function mapNetwork(value: string): CatalogCardRow["network"] | undefined {
+function mapNetwork(value: string): CatalogNetwork | undefined {
   if (isEmpty(value)) return null;
   return NETWORK_TO_CATALOG[value.trim()] ?? undefined;
 }
 
 function normalizePointCurrency(raw: string | null): string {
   if (!raw || !raw.trim()) return "cashback";
-  const v = raw.trim();
-  const lower = v.toLowerCase();
-  if (lower.includes("scene")) return "Scene+";
-  if (lower.includes("aeroplan")) return "Aeroplan";
-  if (lower.includes("avion")) return "RBC Avion";
-  if (lower.includes("aventura")) return "CIBC Aventura";
-  if (lower.includes("membership rewards") || lower === "mr" || lower.includes("amex mr")) return "Amex MR";
-  if (lower.includes("cash")) return "cashback";
-  if (lower.includes("air miles")) return "AIR MILES";
-  if (lower.includes("td rewards")) return "TD Rewards";
-  if (lower.includes("bmo")) return "BMO Rewards";
-  if (lower.includes("westjet")) return "WestJet";
-  if (lower.includes("pc optimum") || lower.includes("pc points")) return "PC Optimum";
-  if (lower.includes("triangle")) return "Triangle";
-  if (lower.includes("moi")) return "Moi";
-  if (lower.includes("rogers")) return "Rogers";
-  if (lower.includes("marriott")) return "Marriott Bonvoy";
-  return v.slice(0, 64);
+  const lower = raw.trim().toLowerCase();
+  if (lower === "mr") return "Amex MR";
+  for (const [hint, currency] of POINT_CURRENCY_HINTS) {
+    if (lower.includes(hint)) return currency;
+  }
+  return raw.trim().slice(0, 64);
 }
 
 function applyEarnRates(
@@ -156,7 +157,7 @@ function applyEarnRates(
     if (!key.startsWith("earn_rate.")) continue;
     const category = key.slice("earn_rate.".length);
     if (!category) return { ok: false, message: `Invalid earn-rate field ${key}.` };
-    const rate = parseRate(d.value);
+    const rate = parseNonNegNumber(d.value, false);
     if (rate === null) return { ok: false, message: `Enter a valid earn rate for ${category}.` };
     const prev = byCat.get(category);
     byCat.set(category, prev ? { ...prev, earnRate: rate } : { category, earnRate: rate });
@@ -172,7 +173,7 @@ function applyWelcomePoints(
 ): { ok: true; offer: WelcomeOffer | null } | { ok: false; message: string } {
   const d = decisions.get("welcome_bonus.points");
   if (!d) return { ok: true, offer: current };
-  const points = parsePoints(d.value);
+  const points = parseNonNegNumber(d.value, true);
   if (points === null && !isEmpty(d.value)) {
     return { ok: false, message: "Enter a valid welcome-bonus points value." };
   }
@@ -194,88 +195,82 @@ export type BuildCatalogWriteResult =
   | { ok: true; write: CatalogWrite | null }
   | { ok: false; message: string };
 
-/**
- * Turns per-field approve decisions into a cards insert/update, or null when
- * the finding should not touch the catalog (possibly discontinued, or nothing
- * to save on a changed card).
- */
-export function buildCatalogWrite(input: BuildCatalogWriteInput): BuildCatalogWriteResult {
-  const { diffKind } = input;
-  if (diffKind === "possibly_discontinued" || diffKind === "unchanged") {
-    return { ok: true, write: null };
-  }
+function clock(input: BuildCatalogWriteInput): { date: string; iso: string } {
+  return (
+    input.now ?? {
+      date: new Date().toISOString().slice(0, 10),
+      iso: new Date().toISOString(),
+    }
+  );
+}
 
-  const decisions = saved(input.fields);
-  const now = input.now ?? {
-    date: new Date().toISOString().slice(0, 10),
-    iso: new Date().toISOString(),
+function buildChangedWrite(
+  input: BuildCatalogWriteInput,
+  decisions: Map<string, FieldDecision>,
+  now: { date: string; iso: string },
+): BuildCatalogWriteResult {
+  if (!input.linkedCardId || !input.existing) {
+    return { ok: false, message: "This finding is not linked to a catalog card." };
+  }
+  if (input.existing.id !== input.linkedCardId) {
+    return { ok: false, message: "Catalog card mismatch. Refresh and try again." };
+  }
+  if (decisions.size === 0) return { ok: true, write: null };
+
+  const set: CatalogCardUpdate = {
+    last_verified: now.date,
+    verified_at: now.iso,
+    status: "verified",
   };
 
-  if (diffKind === "changed") {
-    if (!input.linkedCardId || !input.existing) {
-      return { ok: false, message: "This finding is not linked to a catalog card." };
-    }
-    if (input.existing.id !== input.linkedCardId) {
-      return { ok: false, message: "Catalog card mismatch. Refresh and try again." };
-    }
-    if (decisions.size === 0) {
-      return { ok: true, write: null };
-    }
-
-    const set: CatalogCardUpdate = {
-      last_verified: now.date,
-      verified_at: now.iso,
-      status: "verified",
-    };
-
-    if (decisions.has("name")) {
-      const name = decisions.get("name")!.value.trim();
-      if (isEmpty(name)) return { ok: false, message: "Card name cannot be empty." };
-      set.name = name;
-    }
-    if (decisions.has("annual_fee")) {
-      const fee = parseFee(decisions.get("annual_fee")!.value);
-      if (fee === null) return { ok: false, message: "Enter a valid annual fee." };
-      set.annual_fee = fee;
-    }
-    if (decisions.has("network")) {
-      const network = mapNetwork(decisions.get("network")!.value);
-      if (network === undefined) return { ok: false, message: "Enter Visa, Mastercard, or American Express." };
-      set.network = network;
-    }
-    if ([...decisions.keys()].some((k) => k.startsWith("earn_rate."))) {
-      const rates = applyEarnRates(input.existing.reward_categories, decisions);
-      if (!rates.ok) return rates;
-      set.reward_categories = rates.categories;
-    }
-    if (decisions.has("welcome_bonus.points")) {
-      const welcome = applyWelcomePoints(input.existing.welcome_offer, decisions);
-      if (!welcome.ok) return welcome;
-      set.welcome_offer = welcome.offer;
-    }
-
-    return { ok: true, write: { op: "update", id: input.linkedCardId, set } };
+  if (decisions.has("name")) {
+    const name = decisions.get("name")!.value.trim();
+    if (isEmpty(name)) return { ok: false, message: "Card name cannot be empty." };
+    set.name = name;
+  }
+  if (decisions.has("annual_fee")) {
+    const fee = parseNonNegNumber(decisions.get("annual_fee")!.value, false);
+    if (fee === null) return { ok: false, message: "Enter a valid annual fee." };
+    set.annual_fee = fee;
+  }
+  if (decisions.has("network")) {
+    const network = mapNetwork(decisions.get("network")!.value);
+    if (network === undefined) return { ok: false, message: "Enter Visa, Mastercard, or American Express." };
+    set.network = network;
+  }
+  if ([...decisions.keys()].some((k) => k.startsWith("earn_rate."))) {
+    const rates = applyEarnRates(input.existing.reward_categories, decisions);
+    if (!rates.ok) return rates;
+    set.reward_categories = rates.categories;
+  }
+  if (decisions.has("welcome_bonus.points")) {
+    const welcome = applyWelcomePoints(input.existing.welcome_offer, decisions);
+    if (!welcome.ok) return welcome;
+    set.welcome_offer = welcome.offer;
   }
 
-  if (diffKind !== "new") {
-    return { ok: true, write: null };
-  }
+  return { ok: true, write: { op: "update", id: input.linkedCardId, set } };
+}
 
+function buildNewWrite(
+  input: BuildCatalogWriteInput,
+  decisions: Map<string, FieldDecision>,
+  now: { date: string; iso: string },
+): BuildCatalogWriteResult {
   const issuer = (input.issuerName ?? "").trim();
   if (!issuer) return { ok: false, message: "Issuer is required to create a catalog card." };
 
-  const nameDecision = decisions.get("name");
-  const name = (nameDecision?.value ?? input.cardName ?? "").trim();
+  const name = (decisions.get("name")?.value ?? input.cardName ?? "").trim();
   if (!name || isEmpty(name)) return { ok: false, message: "Card name is required to create a catalog card." };
 
   let annual_fee = 0;
   if (decisions.has("annual_fee")) {
-    const fee = parseFee(decisions.get("annual_fee")!.value);
+    const fee = parseNonNegNumber(decisions.get("annual_fee")!.value, false);
     if (fee === null) return { ok: false, message: "Enter a valid annual fee." };
     annual_fee = fee;
   }
 
-  let network: CatalogCardRow["network"] = null;
+  let network: CatalogNetwork = null;
   if (decisions.has("network")) {
     const mapped = mapNetwork(decisions.get("network")!.value);
     if (mapped === undefined) return { ok: false, message: "Enter Visa, Mastercard, or American Express." };
@@ -284,26 +279,43 @@ export function buildCatalogWrite(input: BuildCatalogWriteInput): BuildCatalogWr
 
   const rates = applyEarnRates([], decisions);
   if (!rates.ok) return rates;
-
   const welcome = applyWelcomePoints(null, decisions);
   if (!welcome.ok) return welcome;
 
-  const baseId = cardIdFor(issuer, name);
-  const id = uniqueCardId(baseId, input.takenIds ?? new Set());
-
-  const row: CatalogCardRow = {
-    id,
-    name,
-    issuer,
-    annual_fee,
-    point_currency: normalizePointCurrency(input.extractedPointCurrency),
-    reward_categories: rates.categories,
-    welcome_offer: welcome.offer,
-    network,
-    last_verified: now.date,
-    verified_at: now.iso,
-    status: "verified",
+  return {
+    ok: true,
+    write: {
+      op: "insert",
+      row: {
+        id: uniqueCardId(cardIdFor(issuer, name), input.takenIds ?? new Set()),
+        name,
+        issuer,
+        annual_fee,
+        point_currency: normalizePointCurrency(input.extractedPointCurrency),
+        reward_categories: rates.categories,
+        welcome_offer: welcome.offer,
+        network,
+        last_verified: now.date,
+        verified_at: now.iso,
+        status: "verified",
+      },
+    },
   };
+}
 
-  return { ok: true, write: { op: "insert", row } };
+/**
+ * Turns per-field approve decisions into a cards insert/update, or null when
+ * the finding should not touch the catalog (possibly discontinued, or nothing
+ * to save on a changed card).
+ */
+export function buildCatalogWrite(input: BuildCatalogWriteInput): BuildCatalogWriteResult {
+  const { diffKind } = input;
+  if (diffKind === "possibly_discontinued" || diffKind === "unchanged" || diffKind == null) {
+    return { ok: true, write: null };
+  }
+  const decisions = saved(input.fields);
+  const now = clock(input);
+  if (diffKind === "changed") return buildChangedWrite(input, decisions, now);
+  if (diffKind === "new") return buildNewWrite(input, decisions, now);
+  return { ok: true, write: null };
 }

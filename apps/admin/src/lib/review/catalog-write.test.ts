@@ -30,7 +30,7 @@ describe("uniqueCardId", () => {
   });
 });
 
-describe("buildCatalogWrite", () => {
+describe("buildCatalogWrite skipped kinds", () => {
   it("does not touch the catalog for possibly discontinued findings", () => {
     expect(
       buildCatalogWrite({
@@ -45,7 +45,9 @@ describe("buildCatalogWrite", () => {
       }),
     ).toEqual({ ok: true, write: null });
   });
+});
 
+describe("buildCatalogWrite changed", () => {
   it("updates only saved fields on a changed card, merging earn rates", () => {
     const res = buildCatalogWrite({
       diffKind: "changed",
@@ -97,6 +99,30 @@ describe("buildCatalogWrite", () => {
     ).toMatchObject({ ok: false });
   });
 
+  it("rewrites welcome-bonus points inside the existing summary", () => {
+    const res = buildCatalogWrite({
+      diffKind: "changed",
+      linkedCardId: "scotia-gold-amex",
+      cardName: "Gold",
+      issuerName: "Scotiabank",
+      fields: {
+        fields: [{ key: "welcome_bonus.points", save: true, page_value: "40000", value: "50000" }],
+      },
+      existing,
+      extractedPointCurrency: null,
+      now: NOW,
+    });
+    expect(res).toMatchObject({
+      ok: true,
+      write: {
+        op: "update",
+        set: { welcome_offer: { summary: "50000 Scene+ points after spend", estimatedValueCad: 400 } },
+      },
+    });
+  });
+});
+
+describe("buildCatalogWrite new", () => {
   it("inserts a new verified card from saved fields", () => {
     const res = buildCatalogWrite({
       diffKind: "new",
@@ -148,27 +174,5 @@ describe("buildCatalogWrite", () => {
     expect(res.write.row.point_currency).toBe("cashback");
     expect(res.write.row.reward_categories).toEqual([{ category: "other", earnRate: 1 }]);
     expect(res.write.row.annual_fee).toBe(0);
-  });
-
-  it("rewrites welcome-bonus points inside the existing summary", () => {
-    const res = buildCatalogWrite({
-      diffKind: "changed",
-      linkedCardId: "scotia-gold-amex",
-      cardName: "Gold",
-      issuerName: "Scotiabank",
-      fields: {
-        fields: [{ key: "welcome_bonus.points", save: true, page_value: "40000", value: "50000" }],
-      },
-      existing,
-      extractedPointCurrency: null,
-      now: NOW,
-    });
-    expect(res).toMatchObject({
-      ok: true,
-      write: {
-        op: "update",
-        set: { welcome_offer: { summary: "50000 Scene+ points after spend", estimatedValueCad: 400 } },
-      },
-    });
   });
 });

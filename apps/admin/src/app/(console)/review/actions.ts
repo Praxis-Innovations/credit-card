@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { authorizeMutation, type ConsoleSession } from "@/lib/auth/guard";
 import { applyApprovedFindingToCatalog } from "@/lib/review/apply-to-catalog";
-import { buildFieldRows } from "@/lib/review/present";
+import { buildFieldRows, type FieldRow } from "@/lib/review/present";
 import type { DiffKind, Extraction, ReviewFields } from "@/lib/review/types";
 import { validateRejectReason, validateReviewFields } from "@/lib/review/validation";
 import { isUuid } from "@/lib/sources/validation";
@@ -30,6 +30,21 @@ async function nextPendingId(auth: AuthorizedSession, exceptId: string): Promise
     .order("created_at", { ascending: false })
     .limit(1);
   return data?.[0]?.id ?? null;
+}
+
+async function finishDecision(
+  auth: AuthorizedSession,
+  id: string,
+  verb: "Approved" | "Rejected",
+  name: string | null,
+): Promise<ReviewResult> {
+  revalidatePath("/review");
+  revalidatePath(`/review/${id}`);
+  return {
+    ok: true,
+    message: `${verb} ${name ?? "finding"}.`,
+    nextId: await nextPendingId(auth, id),
+  };
 }
 
 /**
@@ -60,15 +75,27 @@ async function decideReject(
     .select("id, card_name");
   if (error) return failure("Could not save the decision. Refresh and try again.");
   if (!updated || updated.length === 0) return failure(GONE);
+  const name = (updated[0] as { card_name: string | null }).card_name;
+  return finishDecision(auth, id, "Rejected", name);
+}
 
-  revalidatePath("/review");
-  revalidatePath(`/review/${id}`);
-  const name = (updated[0] as { card_name: string | null }).card_name ?? "finding";
-  const nextId = await nextPendingId(auth, id);
+function issuerNameFrom(source: unknown): string | null {
+  if (Array.isArray(source)) return (source[0] as { issuer_name?: string } | undefined)?.issuer_name ?? null;
+  if (source && typeof source === "object") return (source as { issuer_name?: string }).issuer_name ?? null;
+  return null;
+}
+
+/** page_value from the finding; unsaved edits reset to page_value. */
+function normalizeReviewFields(
+  rows: FieldRow[],
+  fields: ReviewFields,
+): ReviewFields {
+  const pageByKey = new Map(rows.map((r) => [r.key, r.proposed]));
   return {
-    ok: true,
-    message: `Rejected ${name}.`,
-    nextId,
+    fields: fields.fields.map((f) => {
+      const page_value = pageByKey.get(f.key)!;
+      return { ...f, page_value, value: f.save ? f.value : page_value };
+    }),
   };
 }
 
@@ -94,45 +121,21 @@ export async function approveFinding(id: string, fields: unknown): Promise<Revie
   if (!finding) return failure(GONE);
 
   const rows = buildFieldRows(finding);
-  const allowed = new Set(rows.map((r) => r.key));
-  const parsed = validateReviewFields(fields, allowed);
+  const parsed = validateReviewFields(fields, new Set(rows.map((r) => r.key)));
   if (!parsed.ok) return failure(parsed.error);
-
-  // page_value is authoritative from the finding, not the client — otherwise a
-  // tampered payload can hide edits from admin_audit or mis-record what the page said.
-  // Unticked Save keeps any typed value in the UI; reset it here so nothing unsaved
-  // is stored or audited as an edit (the DB trigger also filters on save).
-  const pageByKey = new Map(rows.map((r) => [r.key, r.proposed]));
-  const reviewFields: ReviewFields = {
-    fields: parsed.fields.fields.map((f) => {
-      const page_value = pageByKey.get(f.key)!;
-      return { ...f, page_value, value: f.save ? f.value : page_value };
-    }),
-  };
-
-  const source = finding.source as { issuer_name: string } | { issuer_name: string }[] | null;
-  const issuerName = Array.isArray(source) ? (source[0]?.issuer_name ?? null) : (source?.issuer_name ?? null);
+  const reviewFields = normalizeReviewFields(rows, parsed.fields);
 
   const applied = await applyApprovedFindingToCatalog(auth.supabase, {
     findingId: id,
     linkedCardId: (finding.linked_card_id as string | null) ?? null,
     diffKind: (finding.diff_kind as DiffKind | null) ?? null,
     cardName: (finding.card_name as string | null) ?? null,
-    issuerName,
+    issuerName: issuerNameFrom(finding.source),
     fields: reviewFields,
     extracted: (finding.extracted as Extraction | null) ?? null,
   });
   if (!applied.ok) return failure(applied.message);
-
-  revalidatePath("/review");
-  revalidatePath(`/review/${id}`);
-  const name = applied.cardName ?? "finding";
-  const nextId = await nextPendingId(auth, id);
-  return {
-    ok: true,
-    message: `Approved ${name}.`,
-    nextId,
-  };
+  return finishDecision(auth, id, "Approved", applied.cardName);
 }
 
 export async function rejectFinding(id: string, reason: string): Promise<ReviewResult> {

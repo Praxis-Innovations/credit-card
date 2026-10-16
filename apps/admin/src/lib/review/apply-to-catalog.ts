@@ -96,15 +96,24 @@ function cardOpPayload(write: CatalogWrite): Record<string, unknown> {
   return { op: "update", id: write.id, set: write.set };
 }
 
-/**
- * Approves a pending finding and writes accepted field values to `public.cards`
- * in one database transaction (RPC). There is no separate "Promote approved" UI.
- * Call once per finding — bulk approve should invoke this per row.
- */
-export async function applyApprovedFindingToCatalog(
+const GONE = "That finding was already reviewed or no longer exists. Refresh the queue.";
+
+function mapRpcError(message: string): string {
+  if (/not authorized/i.test(message)) return "Your role can't make this change.";
+  if (/duplicate key|unique constraint/i.test(message)) {
+    return "A catalog card with this id already exists. Refresh and try again.";
+  }
+  if (/reviewed concurrently|not found|P0002/i.test(message)) return GONE;
+  return "Could not update the catalog. Refresh and try again.";
+}
+
+async function resolveWriteContext(
   supabase: SupabaseClient,
   input: ApplyToCatalogInput,
-): Promise<ApplyToCatalogResult> {
+): Promise<
+  | { ok: true; existing: ExistingCard | null; takenIds: Set<string> | undefined }
+  | { ok: false; message: string }
+> {
   let existing: ExistingCard | null = null;
   let takenIds: Set<string> | undefined;
 
@@ -117,9 +126,7 @@ export async function applyApprovedFindingToCatalog(
   if (input.diffKind === "new") {
     const issuer = input.issuerName ?? "";
     const name =
-      input.fields.fields.find((f) => f.key === "name" && f.save)?.value.trim() ||
-      input.cardName ||
-      "";
+      input.fields.fields.find((f) => f.key === "name" && f.save)?.value.trim() || input.cardName || "";
     if (issuer && name) {
       const taken = await loadTakenIds(supabase, cardIdFor(issuer, name));
       if (!taken.ok) return taken;
@@ -127,15 +134,30 @@ export async function applyApprovedFindingToCatalog(
     }
   }
 
+  return { ok: true, existing, takenIds };
+}
+
+/**
+ * Approves a pending finding and writes accepted field values to `public.cards`
+ * in one database transaction (RPC). There is no separate "Promote approved" UI.
+ * Call once per finding — bulk approve should invoke this per row.
+ */
+export async function applyApprovedFindingToCatalog(
+  supabase: SupabaseClient,
+  input: ApplyToCatalogInput,
+): Promise<ApplyToCatalogResult> {
+  const ctx = await resolveWriteContext(supabase, input);
+  if (!ctx.ok) return ctx;
+
   const built = buildCatalogWrite({
     diffKind: input.diffKind,
     linkedCardId: input.linkedCardId,
     cardName: input.cardName,
     issuerName: input.issuerName,
     fields: input.fields,
-    existing,
+    existing: ctx.existing,
     extractedPointCurrency: input.extracted?.reward_currency?.value ?? null,
-    takenIds,
+    takenIds: ctx.takenIds,
   });
   if (!built.ok) return built;
 
@@ -144,32 +166,8 @@ export async function applyApprovedFindingToCatalog(
     p_review_fields: input.fields,
     p_card_op: built.write ? cardOpPayload(built.write) : null,
   });
-
-  if (error) {
-    const msg = error.message ?? "";
-    if (/not authorized/i.test(msg)) {
-      return { ok: false, message: "Your role can't make this change." };
-    }
-    if (/duplicate key|unique constraint/i.test(msg)) {
-      return {
-        ok: false,
-        message: "A catalog card with this id already exists. Refresh and try again.",
-      };
-    }
-    if (/reviewed concurrently|not found|P0002/i.test(msg)) {
-      return {
-        ok: false,
-        message: "That finding was already reviewed or no longer exists. Refresh the queue.",
-      };
-    }
-    return { ok: false, message: "Could not update the catalog. Refresh and try again." };
-  }
-  if (!data) {
-    return {
-      ok: false,
-      message: "That finding was already reviewed or no longer exists. Refresh the queue.",
-    };
-  }
+  if (error) return { ok: false, message: mapRpcError(error.message ?? "") };
+  if (!data) return { ok: false, message: GONE };
 
   const row = data as { card_name?: string | null; linked_card_id?: string | null };
   return {
