@@ -129,11 +129,13 @@ builds a project when that app or shared root workspace files changed
 Command (exit `0` = skip build, `1` = proceed), from each `vercel.json`.
 Uses `VERCEL_GIT_PREVIOUS_SHA` (last successful deploy for this project/branch)
 so multi-commit pushes still build when an earlier commit touched the app;
-falls back to `HEAD^` when unset. If that SHA is missing from the shallow
-clone, `git` exits non-zero and the build proceeds:
+falls back to `HEAD^` when unset. If that SHA is missing from Vercel’s
+shallow clone, `git diff` exits `128` and Vercel marks the deploy as
+**Error** (not “proceed”) — so the command checks the object first and
+exits `1` (build) when it is absent:
 
 ```bash
-cd ../.. && git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD -- apps/<app> pnpm-lock.yaml package.json pnpm-workspace.yaml tsconfig.base.json
+cd ../.. && git cat-file -e "${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}^{commit}" 2>/dev/null || exit 1; git diff --quiet "${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}" HEAD -- apps/<app> pnpm-lock.yaml package.json pnpm-workspace.yaml tsconfig.base.json
 ```
 
 A merge to `main` that only touches `apps/crawler`, `docs/`, `e2e/`, or other

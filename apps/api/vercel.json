@@ -1,4 +1,4 @@
 {
   "framework": "nextjs",
-  "ignoreCommand": "cd ../.. && git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD -- apps/api pnpm-lock.yaml package.json pnpm-workspace.yaml tsconfig.base.json"
+  "ignoreCommand": "cd ../.. && git cat-file -e \"${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}^{commit}\" 2>/dev/null || exit 1; git diff --quiet \"${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}\" HEAD -- apps/api pnpm-lock.yaml package.json pnpm-workspace.yaml tsconfig.base.json"
 }
