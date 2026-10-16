@@ -1,6 +1,5 @@
 {
   "eslint|apps/admin/src/app/(console)/sources/actions.ts|complexity": 1,
-  "eslint|apps/admin/src/components/brand-logo.tsx|@next/next/no-img-element": 1,
   "eslint|apps/admin/src/components/review/review-console.tsx|max-lines-per-function": 2,
   "eslint|apps/admin/src/components/sources/source-form.tsx|complexity": 1,
   "eslint|apps/admin/src/components/sources/source-form.tsx|max-lines-per-function": 1,
@@ -72,7 +71,6 @@
   "eslint|apps/mobile/src/components/flow/SaveWalletSheet.tsx|max-lines-per-function": 1,
   "eslint|apps/mobile/src/lib/recommend.test.ts|max-lines-per-function": 1,
   "eslint|apps/mobile/src/state/flow.tsx|max-lines-per-function": 1,
-  "eslint|apps/web/src/components/brand-logo.tsx|@next/next/no-img-element": 2,
   "eslint|apps/web/src/components/try-it-widget.tsx|max-lines-per-function": 1,
   "eslint|scripts/code-health.mjs|no-undef": 24
 }

@@ -36,6 +36,11 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     files: ["apps/**/*.{ts,tsx}", "scripts/**/*.{ts,tsx}"],
+    linterOptions: {
+      // App eslint-disable comments may reference next/react-hooks rules this
+      // size/complexity pass does not load; do not treat those as unused.
+      reportUnusedDisableDirectives: "off",
+    },
     rules: {
       ...sizeComplexityRules,
       // Keep this pass focused on size/complexity; quiet unrelated recommended noise.

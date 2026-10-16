@@ -179,6 +179,12 @@ function collectEslint() {
   for (const file of raw) {
     for (const msg of file.messages ?? []) {
       if (msg.severity < 2) continue;
+      // This config does not load next/react-hooks plugins; app eslint-disable
+      // comments for those rules produce "Definition for rule X was not found".
+      // Ignore them — app lint already enforces those plugins.
+      if ((msg.message ?? "").startsWith("Definition for rule")) {
+        continue;
+      }
       const filePath = rel(file.filePath);
       const ruleId = msg.ruleId ?? "unknown";
       // Location-independent: count per (file, rule). Line shifts and
