@@ -1,5 +1,12 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalPassThroughEnv": [
+    "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "NORTHTAP_CATALOG_SOURCE",
+    "NORTHTAP_CORS_ORIGIN",
+    "NORTHTAP_STATIC_API_KEY"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

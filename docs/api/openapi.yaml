@@ -58,8 +58,8 @@ info:
     name: Proprietary
 
 servers:
-  - url: https://api.northtap.app/v1
-    description: Production (Vercel apps/api project)
+  - url: https://northtap-api.vercel.app/v1
+    description: Production (Vercel project northtap-api → apps/api; custom domain is PLH4)
   - url: http://localhost:8787/v1
     description: Local Next.js apps/api (`pnpm --filter api dev`)
 

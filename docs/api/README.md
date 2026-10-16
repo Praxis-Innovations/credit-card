@@ -26,9 +26,9 @@ JWT for identity. Callers always pass opaque `ownedCardIds` plus optional
 
 | Layer | Location | Notes |
 |-------|----------|--------|
-| HTTP API | `apps/api` | Route handlers under `/v1/*` |
+| HTTP API | `apps/api` on Vercel | Production: [northtap-api.vercel.app](https://northtap-api.vercel.app) (`/v1/*`); custom domain is PLH4 |
 | Domain engine | `apps/api/src/domain` | Cards, partnerships, `recommendCards`, `matchMerchantBrand` |
-| Catalog tables | Supabase migrations | Seeded from domain static data |
+| Catalog tables | Supabase migrations | Seeded from domain static data; production uses NorthTap project `bshxaqjufibgsxeauyux` |
 | API keys | Supabase `api_keys` | SHA-256 hashes; plaintext never in git |
 | Wallet ownership | Supabase `user_cards` | Client ↔ PostgREST + RLS only |
 
