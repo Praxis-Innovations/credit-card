@@ -9,11 +9,15 @@ create policy cards_select_console on public.cards
   for select to authenticated
   using ((select public.is_admin('viewer')));
 
--- History on Card detail: any console role may read the audit log.
+-- Card detail history: viewers/validators may read cards rows only.
+-- Admins keep full audit access (crawl_sources, findings, etc.).
 drop policy if exists admin_audit_select on public.admin_audit;
 create policy admin_audit_select on public.admin_audit
   for select to authenticated
-  using ((select public.is_admin('viewer')));
+  using (
+    (select public.is_admin('admin'))
+    or (entity = 'cards' and (select public.is_admin('viewer')))
+  );
 
 create or replace function public.retire_card(p_card_id text)
 returns jsonb

@@ -105,25 +105,47 @@ describe("retire_card", () => {
     });
   });
 
-  it("lets a viewer read card history in admin_audit", async () => {
+  it("lets a viewer read cards audit rows but not crawl_sources audit rows", async () => {
     await db.exec(`
       insert into public.admin_audit (actor_email, action, entity, entity_id, before, after)
-      values (
-        'info.praxisinnovations@gmail.com',
-        'card.retire',
-        'cards',
-        'scotia-gold-amex',
-        '{"status":"verified"}'::jsonb,
-        '{"status":"rejected"}'::jsonb
-      );
+      values
+        (
+          'info.praxisinnovations@gmail.com',
+          'card.retire',
+          'cards',
+          'scotia-gold-amex',
+          '{"status":"verified"}'::jsonb,
+          '{"status":"rejected"}'::jsonb
+        ),
+        (
+          'info.praxisinnovations@gmail.com',
+          'source.update',
+          'crawl_sources',
+          '00000000-0000-4000-8000-0000000000aa',
+          '{"notes":null}'::jsonb,
+          '{"notes":"secret"}'::jsonb
+        );
     `);
 
     await asRole(db, "authenticated", VIEWER, async (tx) => {
-      const { rows } = await tx.query<{ action: string }>(
-        `select action from public.admin_audit
-         where entity = 'cards' and entity_id = 'scotia-gold-amex' and action = 'card.retire'`,
+      const cards = await tx.query<{ action: string }>(
+        `select action from public.admin_audit where entity = 'cards' and action = 'card.retire'`,
       );
-      expect(rows.length).toBeGreaterThanOrEqual(1);
+      expect(cards.rows.length).toBeGreaterThanOrEqual(1);
+
+      const sources = await tx.query<{ action: string }>(
+        `select action from public.admin_audit
+         where entity = 'crawl_sources' and action = 'source.update'`,
+      );
+      expect(sources.rows).toEqual([]);
+    });
+
+    await asRole(db, "authenticated", ADMIN, async (tx) => {
+      const sources = await tx.query<{ action: string }>(
+        `select action from public.admin_audit
+         where entity = 'crawl_sources' and action = 'source.update'`,
+      );
+      expect(sources.rows.length).toBeGreaterThanOrEqual(1);
     });
   });
 });
