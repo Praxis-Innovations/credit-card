@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "crawl": "tsx src/cli.ts",
+    "ci": "tsx src/ci.ts",
     "auth:check": "tsx src/auth-check.ts",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",

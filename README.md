@@ -49,3 +49,8 @@ Every PR and push to `main` runs typecheck, lint and unit tests for api, admin,
 crawler, mobile and web ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)).
 Make the **`CI gate`** check required on `main` to block merges on failures —
 see [`docs/ci.md`](./docs/ci.md).
+
+The card-data crawler runs on `main` via
+[`.github/workflows/crawler.yml`](./.github/workflows/crawler.yml) (monthly
+sources + pickup of requested `crawl_runs`, Claude via GitHub OIDC — see
+[`apps/crawler/README.md`](./apps/crawler/README.md)).

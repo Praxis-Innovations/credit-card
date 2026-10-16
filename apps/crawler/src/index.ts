@@ -1,4 +1,5 @@
 export { runCrawl, MissingClaudeCredentialsError, type RunOptions, type RunDeps, type RunSummary } from "./run";
+export { planJobs, runCi, type CiMode, type CiOptions, type CrawlJob } from "./ci";
 export { resolveAuth, createClaudeClient, type WifConfig } from "./auth";
 export { createPlaywrightLoader } from "./browser";
 export { PoliteFetcher } from "./fetcher";

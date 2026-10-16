@@ -98,7 +98,7 @@ export class MissingClaudeCredentialsError extends Error {
 
 /**
  * One crawl of one source. Everything with side effects comes in through
- * `deps`, so the CLI and a future scheduled workflow share this function.
+ * `deps`, so the CLI and the GitHub Actions entrypoint (`ci.ts`) share this.
  */
 export async function runCrawl(opts: RunOptions, deps: RunDeps): Promise<RunSummary> {
   const log = deps.log ?? (() => {});

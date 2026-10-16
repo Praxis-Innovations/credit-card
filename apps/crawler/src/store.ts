@@ -85,6 +85,14 @@ export interface DiscoveredUpsert {
   fetched: boolean;
 }
 
+/** Admin-queued crawl_runs row waiting for the Actions worker. */
+export interface RequestedRun {
+  id: string;
+  source_id: string | null;
+  source_scope: string;
+  trigger: string;
+}
+
 export interface Store {
   readonly mode: "database" | "read-only" | "offline";
   getSource(issuer: string): Promise<CrawlSource | null>;
@@ -93,11 +101,21 @@ export interface Store {
   getDiscovered(sourceId: string | null): Promise<DiscoveredRow[]>;
   previousDiscovery(sourceId: string | null): Promise<PreviousDiscovery | null>;
   previousCard(sourceId: string | null, productUrl: string): Promise<PreviousCard | null>;
+  /**
+   * Start a run. If `id` is an existing `requested` row, claims it
+   * (`requested` → `running`); otherwise inserts a new `running` row.
+   */
   createRun(run: { id: string; source_id: string | null; source_scope: string; trigger: string; model: string | null; started_at: string }): Promise<void>;
   updateRun(id: string, patch: RunPatch): Promise<void>;
   upsertDiscovered(sourceId: string | null, links: DiscoveredUpsert[], at: string): Promise<DiscoveredRow[]>;
   insertFindings(rows: FindingRow[]): Promise<void>;
   markSourceCrawled(sourceId: string | null, at: string): Promise<void>;
+}
+
+/** Extra reads the GitHub Actions worker needs; not used by the local CLI. */
+export interface ScheduleStore extends Store {
+  listRequestedRuns(): Promise<RequestedRun[]>;
+  listActiveSourcesBySchedule(schedule: "monthly"): Promise<CrawlSource[]>;
 }
 
 const CATALOG_COLUMNS = "id, name, issuer, annual_fee, network, point_currency, reward_categories, welcome_offer";
@@ -107,7 +125,7 @@ function fail(what: string, error: { message: string } | null): never {
 }
 
 /** Talks to Supabase with the server-side key. Lives only in the crawler's own environment. */
-export class SupabaseStore implements Store {
+export class SupabaseStore implements ScheduleStore {
   readonly mode = "database" as const;
   constructor(private readonly db: SupabaseClient) {}
 
@@ -125,6 +143,27 @@ export class SupabaseStore implements Store {
       .maybeSingle();
     if (error) fail("read crawl_sources", error);
     return data;
+  }
+
+  async listRequestedRuns(): Promise<RequestedRun[]> {
+    const { data, error } = await this.db
+      .from("crawl_runs")
+      .select("id, source_id, source_scope, trigger")
+      .eq("status", "requested")
+      .order("created_at", { ascending: true });
+    if (error) fail("list requested crawl_runs", error);
+    return data ?? [];
+  }
+
+  async listActiveSourcesBySchedule(schedule: "monthly"): Promise<CrawlSource[]> {
+    const { data, error } = await this.db
+      .from("crawl_sources")
+      .select("id, issuer_name, compare_url, url_pattern, status")
+      .eq("status", "active")
+      .eq("schedule", schedule)
+      .order("issuer_name", { ascending: true });
+    if (error) fail("list crawl_sources", error);
+    return data ?? [];
   }
 
   async getCatalog(issuer: string): Promise<CatalogCard[]> {
@@ -176,6 +215,17 @@ export class SupabaseStore implements Store {
   }
 
   async createRun(run: Parameters<Store["createRun"]>[0]): Promise<void> {
+    // Prefer claiming an admin-requested row so the same id is reused.
+    const { data: claimed, error: claimError } = await this.db
+      .from("crawl_runs")
+      .update({ status: "running", started_at: run.started_at, model: run.model })
+      .eq("id", run.id)
+      .eq("status", "requested")
+      .select("id")
+      .maybeSingle();
+    if (claimError) fail("claim crawl_runs", claimError);
+    if (claimed) return;
+
     const { error } = await this.db.from("crawl_runs").insert({ ...run, status: "running" });
     if (error) fail("insert crawl_runs", error);
   }
