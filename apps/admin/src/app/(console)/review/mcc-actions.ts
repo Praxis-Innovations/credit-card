@@ -30,12 +30,15 @@ function revalidateMccPaths() {
   revalidatePath("/review/import");
 }
 
-async function approveOne(
+type RpcName = "approve_merchant_code_finding" | "reject_merchant_code_finding";
+
+async function callFindingRpc(
   supabase: SupabaseClient,
+  rpc: RpcName,
   id: string,
   note: string | null,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
-  const { data, error } = await supabase.rpc("approve_merchant_code_finding", {
+  const { data, error } = await supabase.rpc(rpc, {
     p_finding_id: id,
     p_review_note: note,
   });
@@ -44,18 +47,41 @@ async function approveOne(
   return { ok: true };
 }
 
-async function rejectOne(
-  supabase: SupabaseClient,
-  id: string,
-  note: string,
-): Promise<{ ok: true } | { ok: false; message: string }> {
-  const { data, error } = await supabase.rpc("reject_merchant_code_finding", {
-    p_finding_id: id,
-    p_review_note: note,
-  });
-  if (error) return { ok: false, message: mapRpcError(error.message ?? "") };
-  if (!data) return { ok: false, message: GONE };
-  return { ok: true };
+async function decideBulk(
+  rpc: RpcName,
+  ids: unknown,
+  reason: string,
+  verb: "Approved" | "Rejected",
+): Promise<MccReviewResult> {
+  const auth = await authorizeMutation("validator");
+  if (!auth.ok) return failure(auth.message);
+  const parsedIds = validateFindingIds(ids);
+  if (!parsedIds.ok) return failure(parsedIds.error);
+  const note = validateReviewNote(reason, { required: true });
+  if (!note.ok) return failure(note.error);
+
+  let decided = 0;
+  let lastError: string | null = null;
+  for (const id of parsedIds.ids) {
+    const res = await callFindingRpc(auth.supabase, rpc, id, note.note);
+    if (res.ok) decided += 1;
+    else lastError = res.message;
+  }
+
+  revalidateMccPaths();
+  if (decided === 0) return failure(lastError ?? GONE);
+  if (rpc === "approve_merchant_code_finding" && decided < parsedIds.ids.length) {
+    return {
+      ok: true,
+      message: `${verb} ${decided} of ${parsedIds.ids.length} findings. ${lastError ?? ""}`.trim(),
+      decided,
+    };
+  }
+  return {
+    ok: true,
+    message: decided === 1 ? `${verb} 1 finding.` : `${verb} ${decided} findings.`,
+    decided,
+  };
 }
 
 export async function approveMerchantCodeFinding(
@@ -68,7 +94,7 @@ export async function approveMerchantCodeFinding(
   const note = validateReviewNote(reason, { required: false });
   if (!note.ok) return failure(note.error);
 
-  const res = await approveOne(auth.supabase, id, note.note);
+  const res = await callFindingRpc(auth.supabase, "approve_merchant_code_finding", id, note.note);
   if (!res.ok) return failure(res.message);
   revalidateMccPaths();
   return { ok: true, message: "Approved store-code finding.", decided: 1 };
@@ -81,74 +107,23 @@ export async function rejectMerchantCodeFinding(id: string, reason: string): Pro
   const note = validateReviewNote(reason, { required: true });
   if (!note.ok) return failure(note.error);
 
-  const res = await rejectOne(auth.supabase, id, note.note!);
+  const res = await callFindingRpc(auth.supabase, "reject_merchant_code_finding", id, note.note);
   if (!res.ok) return failure(res.message);
   revalidateMccPaths();
   return { ok: true, message: "Rejected store-code finding.", decided: 1 };
 }
 
-/**
- * Bulk approve: one shared reason, each row decided (and audited) separately.
- */
+/** Bulk approve: one shared reason, each row decided (and audited) separately. */
 export async function bulkApproveMerchantCodeFindings(
   ids: unknown,
   reason: string,
 ): Promise<MccReviewResult> {
-  const auth = await authorizeMutation("validator");
-  if (!auth.ok) return failure(auth.message);
-  const parsedIds = validateFindingIds(ids);
-  if (!parsedIds.ok) return failure(parsedIds.error);
-  const note = validateReviewNote(reason, { required: true });
-  if (!note.ok) return failure(note.error);
-
-  let decided = 0;
-  let lastError: string | null = null;
-  for (const id of parsedIds.ids) {
-    const res = await approveOne(auth.supabase, id, note.note);
-    if (res.ok) decided += 1;
-    else lastError = res.message;
-  }
-
-  revalidateMccPaths();
-  if (decided === 0) return failure(lastError ?? GONE);
-  if (decided < parsedIds.ids.length) {
-    return {
-      ok: true,
-      message: `Approved ${decided} of ${parsedIds.ids.length} findings. ${lastError ?? ""}`.trim(),
-      decided,
-    };
-  }
-  return {
-    ok: true,
-    message: decided === 1 ? "Approved 1 finding." : `Approved ${decided} findings.`,
-    decided,
-  };
+  return decideBulk("approve_merchant_code_finding", ids, reason, "Approved");
 }
 
 export async function bulkRejectMerchantCodeFindings(
   ids: unknown,
   reason: string,
 ): Promise<MccReviewResult> {
-  const auth = await authorizeMutation("validator");
-  if (!auth.ok) return failure(auth.message);
-  const parsedIds = validateFindingIds(ids);
-  if (!parsedIds.ok) return failure(parsedIds.error);
-  const note = validateReviewNote(reason, { required: true });
-  if (!note.ok) return failure(note.error);
-
-  let decided = 0;
-  let lastError: string | null = null;
-  for (const id of parsedIds.ids) {
-    const res = await rejectOne(auth.supabase, id, note.note!);
-    if (res.ok) decided += 1;
-    else lastError = res.message;
-  }
-
-  revalidateMccPaths();
-  if (decided === 0) return failure(lastError ?? GONE);
-  return {
-    ok: true,
-    message: decided === 1 ? "Rejected 1 finding." : `Rejected ${decided} findings.`,
-    decided,
-  };
+  return decideBulk("reject_merchant_code_finding", ids, reason, "Rejected");
 }

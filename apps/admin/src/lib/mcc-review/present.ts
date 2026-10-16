@@ -1,11 +1,4 @@
-import type {
-  BrandSnapshot,
-  CatalogStatus,
-  MerchantCodeFinding,
-  MccCertainty,
-  StoreCodeProposed,
-  TestPurchaseProposed,
-} from "./types";
+import type { BrandSnapshot, CatalogStatus, MerchantCodeFinding, MccCertainty } from "./types";
 
 export function chainFromFinding(finding: MerchantCodeFinding): string {
   const p = finding.proposed;
@@ -40,18 +33,6 @@ export function proposedSourceUrl(finding: MerchantCodeFinding): string | null {
   if (typeof p.url === "string" && p.url) return p.url;
   if (typeof p.source_url === "string" && p.source_url) return p.source_url;
   return null;
-}
-
-export function asStoreCodeProposed(finding: MerchantCodeFinding): StoreCodeProposed | null {
-  if (finding.kind !== "store_code") return null;
-  const p = finding.proposed;
-  if (typeof p.chain !== "string" || typeof p.mcc !== "string") return null;
-  return p as unknown as StoreCodeProposed;
-}
-
-export function asTestPurchaseProposed(finding: MerchantCodeFinding): TestPurchaseProposed | null {
-  if (finding.kind !== "test_purchase") return null;
-  return finding.proposed as unknown as TestPurchaseProposed;
 }
 
 export type ChainGroup = {

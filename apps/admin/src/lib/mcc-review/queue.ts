@@ -9,8 +9,7 @@ import {
   type MerchantCodeFinding,
 } from "./types";
 
-/** Pending store-code / test-purchase findings for the Store codes review tab. */
-export function loadStoreCodeQueue(supabase: SupabaseClient) {
+function loadStoreCodeQueue(supabase: SupabaseClient) {
   return supabase
     .from("merchant_code_findings")
     .select(FINDING_COLUMNS)
@@ -21,12 +20,11 @@ export function loadStoreCodeQueue(supabase: SupabaseClient) {
     .returns<MerchantCodeFinding[]>();
 }
 
-export function loadBrandSnapshots(supabase: SupabaseClient, names: string[]) {
+function loadBrandSnapshots(supabase: SupabaseClient, names: string[]) {
   const unique = [...new Set(names.map((n) => n.trim()).filter(Boolean))];
   if (unique.length === 0) {
     return Promise.resolve({ data: [] as BrandSnapshot[], error: null });
   }
-  // Case-sensitive `in`; present.ts also matches lower(name) for display.
   return supabase
     .from("merchant_brands")
     .select(BRAND_COLUMNS)
@@ -68,13 +66,4 @@ export async function loadStoreCodeQueueWithBrands(supabase: SupabaseClient): Pr
     truncated: findings.length >= MCC_REVIEW_PAGE_SIZE,
     error: null,
   };
-}
-
-export function loadMerchantCodeFinding(supabase: SupabaseClient, id: string) {
-  return supabase
-    .from("merchant_code_findings")
-    .select(FINDING_COLUMNS)
-    .eq("id", id)
-    .returns<MerchantCodeFinding>()
-    .maybeSingle();
 }
