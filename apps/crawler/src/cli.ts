@@ -15,7 +15,7 @@ const HELP = `Usage: pnpm --filter crawler crawl --source <issuer> [options]
 
   --source <name>   crawl_sources.issuer_name, e.g. scotiabank (required)
   --dry-run         read from the database if configured, write nothing to it;
-                    without Claude credentials this implies --no-llm
+                    without Claude credentials (or incomplete WIF) this implies --no-llm
   --limit <n>       only fetch the first n card pages
   --model <id>      Claude model (default $CRAWLER_MODEL or ${DEFAULT_MODEL})
   --no-llm          no Claude: fetch the compare page, pick card links
@@ -112,15 +112,19 @@ async function main(): Promise<number> {
   let noLlm = values["no-llm"];
   const auth = resolveAuth(process.env);
   for (const w of auth.warnings) log(`warning: ${w}`);
-  if (!noLlm && auth.status === "invalid") {
-    console.error(`Error: ${auth.error}`);
-    return 2;
-  }
-  if (!noLlm && auth.status === "none") {
+  // --dry-run is meant to work without Claude. Empty or incomplete WIF (e.g.
+  // CRAWLER_WIF_IDENTITY=gcloud with blank org/rule/sa ids, as in .env.example)
+  // falls back to fetch + link collection only; a live run still fails hard.
+  if (!noLlm && (auth.status === "none" || auth.status === "invalid")) {
     if (!dryRun) {
-      console.error(`Error: ${new MissingClaudeCredentialsError().message}`);
+      console.error(
+        auth.status === "invalid"
+          ? `Error: ${auth.error}`
+          : `Error: ${new MissingClaudeCredentialsError().message}`,
+      );
       return 2;
     }
+    if (auth.status === "invalid") log(`warning: ${auth.error}`);
     log("no Claude credentials: dry run limited to fetching and link collection (same as --no-llm)");
     noLlm = true;
   }
