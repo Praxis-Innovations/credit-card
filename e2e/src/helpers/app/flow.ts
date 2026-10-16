@@ -35,7 +35,7 @@ export async function browseShellAndSkip(page: Page) {
 }
 
 /** Copy removed with the v1 scope cut: none of it may appear anywhere. */
-export const FORBIDDEN_TEXT = /partnership|Shell Go\+|V-Power/i;
+const FORBIDDEN_TEXT = /partnership|Shell Go\+|V-Power/i;
 
 export async function expectNoForbiddenText(page: Page) {
   expect(await page.locator("body").innerText()).not.toMatch(FORBIDDEN_TEXT);
