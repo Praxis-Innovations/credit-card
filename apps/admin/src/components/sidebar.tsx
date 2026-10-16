@@ -9,6 +9,7 @@ import { BrandLogo } from "./brand-logo";
 const NAV_ITEMS: readonly { label: string; href: string | null }[] = [
   { label: "Review queue", href: "/review" },
   { label: "Cards", href: "/cards" },
+  { label: "Store codes", href: "/store-codes" },
   { label: "Sources", href: "/sources" },
   { label: "Crawl", href: "/crawl" },
 ];

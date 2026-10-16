@@ -8,8 +8,9 @@ import {
   type CardStatusFilter,
   type CatalogCardListItem,
 } from "@/lib/cards/types";
+import { TablePager } from "@/components/table-pager";
 import { CardsFilters } from "./cards-filters";
-import { CardsPager, CardsTable } from "./cards-table";
+import { CardsTable } from "./cards-table";
 
 export function CardsConsole({
   cards,
@@ -70,7 +71,9 @@ export function CardsConsole({
           emptyBecauseFilter={filtered.length === 0 && cards.length > 0}
           loadError={loadError}
         />
-        <CardsPager
+        <TablePager
+          label="Cards pages"
+          noun="cards"
           page={safePage}
           pageCount={pageCount}
           total={filtered.length}

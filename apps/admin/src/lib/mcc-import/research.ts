@@ -72,7 +72,8 @@ function urlOk(v: string) {
   if (!/^https?:\/\//i.test(v)) throw new Error("url must be http(s)");
 }
 
-function networkFromCard(network: string | null): string {
+/** Map a catalog card network label onto mcc_network enum values. */
+export function networkFromCard(network: string | null): string {
   const n = (network ?? "").toLowerCase();
   if (n === "visa") return "visa";
   if (n === "mastercard") return "mastercard";
