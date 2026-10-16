@@ -47,10 +47,21 @@ jobs:
             exit 1
           fi
 
+      # Fresh checkouts have no supabase/.temp (gitignored), so link before push.
+      - name: Link production project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: npx -y supabase@2.121.0 link --project-ref bshxaqjufibgsxeauyux --yes
+
+      - name: Dry-run migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: npx -y supabase@2.121.0 db push --dry-run --yes
+
       - name: Push migrations to production
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: |
-          npx -y supabase@2.121.0 db push --yes \
-            --project-ref bshxaqjufibgsxeauyux
+        run: npx -y supabase@2.121.0 db push --yes
