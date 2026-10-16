@@ -5,6 +5,7 @@ import {
   STORE_CODE_KINDS,
   type MerchantCodeFinding,
 } from "@/lib/mcc-review/types";
+import { fetchAllRows } from "./fetch-all";
 import { toListItem } from "./present";
 import {
   BRAND_COLUMNS,
@@ -17,40 +18,57 @@ import {
 
 type PendingFinding = Pick<MerchantCodeFinding, "proposed" | "kind">;
 
+function loadPendingStoreFindings(supabase: SupabaseClient) {
+  return fetchAllRows<PendingFinding>((from, to) =>
+    supabase
+      .from("merchant_code_findings")
+      .select(FINDING_COLUMNS)
+      .eq("review_status", "pending")
+      .in("kind", [...STORE_CODE_KINDS])
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(from, to)
+      .returns<PendingFinding[]>(),
+  );
+}
+
 /**
  * Load every merchant brand with evidence counts for the Store codes list.
- * At ~2,000 chains this is a few round-trips; filters/pagination stay client-side.
+ * Pages past the PostgREST 1,000-row cap; filters/pagination stay client-side.
  */
 export async function loadStoreCodeList(supabase: SupabaseClient): Promise<{
   items: StoreCodeListItem[];
   error: string | null;
 }> {
   const [brandsRes, evidenceRes, pendingRes] = await Promise.all([
-    supabase
-      .from("merchant_brands")
-      .select(BRAND_COLUMNS)
-      .order("name")
-      .returns<MerchantBrandRow[]>(),
-    supabase
-      .from("merchant_code_evidence")
-      .select(EVIDENCE_COLUMNS)
-      .returns<EvidenceRow[]>(),
-    supabase
-      .from("merchant_code_findings")
-      .select(FINDING_COLUMNS)
-      .eq("review_status", "pending")
-      .in("kind", [...STORE_CODE_KINDS])
-      .returns<PendingFinding[]>(),
+    fetchAllRows<MerchantBrandRow>((from, to) =>
+      supabase
+        .from("merchant_brands")
+        .select(BRAND_COLUMNS)
+        .order("name")
+        .order("id")
+        .range(from, to)
+        .returns<MerchantBrandRow[]>(),
+    ),
+    fetchAllRows<EvidenceRow>((from, to) =>
+      supabase
+        .from("merchant_code_evidence")
+        .select(EVIDENCE_COLUMNS)
+        .order("id")
+        .range(from, to)
+        .returns<EvidenceRow[]>(),
+    ),
+    loadPendingStoreFindings(supabase),
   ]);
 
-  if (brandsRes.error) {
+  if (brandsRes.error || evidenceRes.error || pendingRes.error) {
     return { items: [], error: "Could not load store codes. Refresh to try again." };
   }
 
-  const evidenceIndex = indexEvidence(evidenceRes.data ?? []);
-  const pendingChains = pendingChainKeys(pendingRes.data ?? []);
+  const evidenceIndex = indexEvidence(evidenceRes.data);
+  const pendingChains = pendingChainKeys(pendingRes.data);
 
-  const items = (brandsRes.data ?? []).map((brand) => {
+  const items = brandsRes.data.map((brand) => {
     const evidence = evidenceForBrand(brand, evidenceIndex);
     const pending = pendingChains.has(brand.name.toLowerCase()) || pendingChains.has(brand.id);
     return toListItem(brand, evidence, pending);
@@ -71,22 +89,29 @@ export async function loadStoreCodeDetail(
 }> {
   const [brandRes, evidenceRes, pendingRes, cardsRes] = await Promise.all([
     supabase.from("merchant_brands").select(BRAND_COLUMNS).eq("id", id).maybeSingle<MerchantBrandRow>(),
-    supabase
-      .from("merchant_code_evidence")
-      .select(EVIDENCE_COLUMNS)
-      .eq("merchant_brand_id", id)
-      .order("observed_date", { ascending: false, nullsFirst: false })
-      .returns<EvidenceRow[]>(),
-    supabase
-      .from("merchant_code_findings")
-      .select(FINDING_COLUMNS)
-      .eq("review_status", "pending")
-      .in("kind", [...STORE_CODE_KINDS])
-      .returns<PendingFinding[]>(),
-    supabase.from("cards").select("id, name, network").order("name").returns<CardOption[]>(),
+    fetchAllRows<EvidenceRow>((from, to) =>
+      supabase
+        .from("merchant_code_evidence")
+        .select(EVIDENCE_COLUMNS)
+        .eq("merchant_brand_id", id)
+        .order("observed_date", { ascending: false, nullsFirst: false })
+        .order("id")
+        .range(from, to)
+        .returns<EvidenceRow[]>(),
+    ),
+    loadPendingStoreFindings(supabase),
+    fetchAllRows<CardOption>((from, to) =>
+      supabase
+        .from("cards")
+        .select("id, name, network")
+        .order("name")
+        .order("id")
+        .range(from, to)
+        .returns<CardOption[]>(),
+    ),
   ]);
 
-  if (brandRes.error) {
+  if (brandRes.error || evidenceRes.error || pendingRes.error || cardsRes.error) {
     return {
       brand: null,
       evidence: [],
@@ -100,15 +125,15 @@ export async function loadStoreCodeDetail(
   }
 
   const brand = brandRes.data;
-  const pendingChains = pendingChainKeys(pendingRes.data ?? []);
+  const pendingChains = pendingChainKeys(pendingRes.data);
   const pendingReview =
     pendingChains.has(brand.name.toLowerCase()) || pendingChains.has(brand.id);
 
   return {
     brand,
-    evidence: evidenceRes.data ?? [],
+    evidence: evidenceRes.data,
     pendingReview,
-    cards: cardsRes.data ?? [],
+    cards: cardsRes.data,
     error: null,
   };
 }
