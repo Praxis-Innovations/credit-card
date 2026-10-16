@@ -84,25 +84,20 @@ describe("storeCategory", () => {
   it("uses the catalog brand's category first (approved store code)", () => {
     expect(storeCategory({ brand: { category: "gas" } })).toBe("gas");
     expect(
-      storeCategory({ brand: { category: "groceries" }, placeType: "fuel", browseCategory: "dining" }),
+      storeCategory({ brand: { category: "groceries" }, mcc: "5541", browseCategory: "dining" }),
     ).toBe("groceries");
   });
 
   it("falls back to the store-type MCC display group, then the Browse category", () => {
-    expect(storeCategory({ brand: null, placeType: "pharmacy" })).toBe("drugstore");
-    expect(storeCategory({ placeType: "fuel", browseCategory: "dining" })).toBe("gas");
-    expect(storeCategory({ placeType: "mall", browseCategory: "travel" })).toBe("travel");
+    expect(storeCategory({ brand: null, mcc: "5912" })).toBe("drugstore");
+    expect(storeCategory({ mcc: "5541", browseCategory: "dining" })).toBe("gas");
+    expect(storeCategory({ mcc: "5310", browseCategory: "travel" })).toBe("travel");
     expect(storeCategory({ browseCategory: "groceries" })).toBe("groceries");
-  });
-
-  it("prefers the provider's place category over the tag lookup", () => {
-    expect(storeCategory({ placeCategory: "dining", placeType: "fuel" })).toBe("dining");
-    expect(storeCategory({ placeCategory: "other", browseCategory: "dining" })).toBe("dining");
   });
 
   it("is 'other' when nothing says otherwise", () => {
     expect(storeCategory({})).toBe("other");
-    expect(storeCategory({ placeType: "mall" })).toBe("other");
+    expect(storeCategory({ mcc: "5499" })).toBe("other");
   });
 });
 
@@ -113,11 +108,13 @@ describe("store choices", () => {
         place("1", "Shell", 200, {
           placeType: "fuel",
           osmTag: "amenity=fuel",
+          mcc: "5541",
           brandHints: ["Shell"],
         }),
         place("2", "Harbord Convenience", 300, {
           placeType: "convenience",
           osmTag: "shop=convenience",
+          mcc: "5499",
         }),
       ],
       [{ ...BRANDS[0]!, logoUrl: "/assets/brands/shell.png", logoAlt: "Shell logo" }],
@@ -140,7 +137,7 @@ describe("store choices", () => {
 
   it("a nearby place's brand category wins over its OSM tag", () => {
     const [store] = toNearbyStores(
-      [place("1", "Shoppers Drug Mart", 50, { placeType: "convenience" })],
+      [place("1", "Shoppers Drug Mart", 50, { placeType: "convenience", mcc: "5499" })],
       BRANDS,
     );
     expect(choiceFromNearby(store!).category).toBe("drugstore");
@@ -166,7 +163,13 @@ describe("store choices", () => {
 
   it("carries osmTag for nearby places so the API can resolve store-type MCC", () => {
     const [store] = toNearbyStores(
-      [place("1", "The Keg", 40, { placeType: "restaurant", osmTag: "amenity=restaurant" })],
+      [
+        place("1", "The Keg", 40, {
+          placeType: "restaurant",
+          osmTag: "amenity=restaurant",
+          mcc: "5812",
+        }),
+      ],
       BRANDS,
     );
     expect(choiceFromNearby(store!).osmTag).toBe("amenity=restaurant");
@@ -197,9 +200,12 @@ describe("toNearbyStores", () => {
   it("keeps only returned places, nearest first, one per name, with brand matches", () => {
     const stores = toNearbyStores(
       [
-        place("3", "Harbord Convenience", 300, { placeType: "convenience" }),
-        place("1", "Shell", 120, { placeType: "fuel", brandHints: ["Shell"] }),
-        place("2", "Shell", 80, { placeType: "fuel", brandHints: ["Shell"] }),
+        place("3", "Harbord Convenience", 300, {
+          placeType: "convenience",
+          mcc: "5499",
+        }),
+        place("1", "Shell", 120, { placeType: "fuel", mcc: "5541", brandHints: ["Shell"] }),
+        place("2", "Shell", 80, { placeType: "fuel", mcc: "5541", brandHints: ["Shell"] }),
         place("4", "  ", 10),
       ],
       BRANDS,
@@ -219,28 +225,28 @@ describe("toNearbyStores", () => {
     expect(store?.category).toBe("drugstore");
   });
 
-  it("uses the provider's MCC display category for expanded store types", () => {
+  it("uses the MCC display group for expanded store types", () => {
     const stores = toNearbyStores(
       [
         place("1", "The Keg", 40, {
           placeType: "restaurant",
           osmTag: "amenity=restaurant",
-          category: "dining",
+          mcc: "5812",
         }),
         place("2", "Home Depot", 90, {
           placeType: "doityourself",
           osmTag: "shop=doityourself",
-          category: "other",
+          mcc: "5200",
         }),
         place("3", "Hudson's Bay", 150, {
           placeType: "department_store",
           osmTag: "shop=department_store",
-          category: "other",
+          mcc: "5311",
         }),
         place("4", "Best Buy", 200, {
           placeType: "electronics",
           osmTag: "shop=electronics",
-          category: "other",
+          mcc: "5732",
         }),
       ],
       BRANDS,

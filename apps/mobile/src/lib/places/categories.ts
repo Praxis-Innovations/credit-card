@@ -6,87 +6,142 @@ export const OSM_PLACE_KEYS = ["amenity", "shop", "tourism", "railway"] as const
 export type OsmPlaceKey = (typeof OSM_PLACE_KEYS)[number];
 
 /**
- * Store-type MCC estimate for an OSM tag (`key=value`), plus whether the tag is
- * priority for the Overpass result cap. Display category is the MCC's DS4 group
- * (via {@link displayCategoryForMcc}) — not a new API category name.
- *
- * Brand / approved store codes override this estimate on the API; the app only
- * sends `merchantQuery` + `osmTag` + amount.
+ * Tags the nearby Overpass query asks for. `priority: true` means the tag is
+ * never truncated by the secondary result cap (gas / grocery / drugstore).
+ * MCC estimates live in {@link STORE_TYPE_MCC_BY_TAG}, not here.
  */
-export interface OsmTagMcc {
-  mcc: string;
-  /** Gas / grocery / drugstore — never truncated by the Overpass secondary cap. */
-  priority?: boolean;
-}
-
-/**
- * Every OSM tag the nearby lookup requests, mapped to a store-type MCC estimate.
- * One table builds the Overpass query and classifies results.
- */
-export const OSM_TAG_MCCS: Record<OsmPlaceKey, Record<string, OsmTagMcc>> = {
+export const OSM_PLACE_TAGS: Record<
+  OsmPlaceKey,
+  Record<string, { priority?: boolean }>
+> = {
   amenity: {
-    fuel: { mcc: "5541", priority: true },
-    pharmacy: { mcc: "5912", priority: true },
-    restaurant: { mcc: "5812" },
-    fast_food: { mcc: "5814" },
-    cafe: { mcc: "5814" },
-    bar: { mcc: "5813" },
-    pub: { mcc: "5813" },
-    biergarten: { mcc: "5813" },
-    food_court: { mcc: "5814" },
-    ice_cream: { mcc: "5814" },
-    cinema: { mcc: "7832" },
-    theatre: { mcc: "7922" },
-    nightclub: { mcc: "5813" },
-    bus_station: { mcc: "4131" },
-    ferry_terminal: { mcc: "4111" },
-    car_rental: { mcc: "7512" },
+    fuel: { priority: true },
+    pharmacy: { priority: true },
+    restaurant: {},
+    fast_food: {},
+    cafe: {},
+    bar: {},
+    pub: {},
+    biergarten: {},
+    food_court: {},
+    ice_cream: {},
+    cinema: {},
+    theatre: {},
+    nightclub: {},
+    bus_station: {},
+    ferry_terminal: {},
+    car_rental: {},
   },
   shop: {
-    supermarket: { mcc: "5411", priority: true },
-    convenience: { mcc: "5499", priority: true },
-    wholesale: { mcc: "5300" },
-    greengrocer: { mcc: "5422" },
-    butcher: { mcc: "5422" },
-    bakery: { mcc: "5462" },
-    deli: { mcc: "5499" },
-    chemist: { mcc: "5912", priority: true },
-    pharmacy: { mcc: "5912", priority: true },
-    department_store: { mcc: "5311" },
-    variety_store: { mcc: "5331" },
-    hardware: { mcc: "5251" },
-    doityourself: { mcc: "5200" },
-    paint: { mcc: "5231" },
-    garden_centre: { mcc: "5261" },
-    furniture: { mcc: "5712" },
-    mall: { mcc: "5310" },
-    electronics: { mcc: "5732" },
-    computer: { mcc: "5734" },
-    mobile_phone: { mcc: "4812" },
-    clothes: { mcc: "5651" },
-    shoes: { mcc: "5661" },
-    sports: { mcc: "5941" },
-    outdoor: { mcc: "5941" },
-    books: { mcc: "5942" },
-    toys: { mcc: "5945" },
-    gift: { mcc: "5947" },
-    jewelry: { mcc: "5944" },
-    pet: { mcc: "5995" },
-    alcohol: { mcc: "5921" },
+    supermarket: { priority: true },
+    convenience: { priority: true },
+    wholesale: {},
+    greengrocer: {},
+    butcher: {},
+    bakery: {},
+    deli: {},
+    chemist: { priority: true },
+    pharmacy: { priority: true },
+    department_store: {},
+    variety_store: {},
+    hardware: {},
+    doityourself: {},
+    paint: {},
+    garden_centre: {},
+    furniture: {},
+    mall: {},
+    electronics: {},
+    computer: {},
+    mobile_phone: {},
+    clothes: {},
+    shoes: {},
+    sports: {},
+    outdoor: {},
+    books: {},
+    toys: {},
+    gift: {},
+    jewelry: {},
+    pet: {},
+    alcohol: {},
   },
   tourism: {
-    hotel: { mcc: "7011" },
-    motel: { mcc: "7011" },
-    hostel: { mcc: "7011" },
-    guest_house: { mcc: "7011" },
-    museum: { mcc: "7991" },
-    zoo: { mcc: "7998" },
-    aquarium: { mcc: "7998" },
-    theme_park: { mcc: "7996" },
+    hotel: {},
+    motel: {},
+    hostel: {},
+    guest_house: {},
+    museum: {},
+    zoo: {},
+    aquarium: {},
+    theme_park: {},
   },
   railway: {
-    station: { mcc: "4111" },
+    station: {},
   },
+};
+
+/**
+ * Store-type MCC estimates keyed by full OSM tag (`shop=convenience`).
+ * Mirrors approved `store_type_mccs` / API `STORE_TYPE_MCCS`. Brand / approved
+ * store codes override this on the API; the app sends `merchantQuery` +
+ * `osmTag` + amount (not `mcc`).
+ */
+export const STORE_TYPE_MCC_BY_TAG: Readonly<Record<string, string>> = {
+  "amenity=fuel": "5541",
+  "amenity=pharmacy": "5912",
+  "amenity=restaurant": "5812",
+  "amenity=fast_food": "5814",
+  "amenity=cafe": "5814",
+  "amenity=bar": "5813",
+  "amenity=pub": "5813",
+  "amenity=biergarten": "5813",
+  "amenity=food_court": "5814",
+  "amenity=ice_cream": "5814",
+  "amenity=cinema": "7832",
+  "amenity=theatre": "7922",
+  "amenity=nightclub": "5813",
+  "amenity=bus_station": "4131",
+  "amenity=ferry_terminal": "4111",
+  "amenity=car_rental": "7512",
+  "shop=supermarket": "5411",
+  // Convenience terminals almost always post 5499 (misc. food), not grocery 5411.
+  "shop=convenience": "5499",
+  "shop=wholesale": "5300",
+  "shop=greengrocer": "5422",
+  "shop=butcher": "5422",
+  "shop=bakery": "5462",
+  "shop=deli": "5499",
+  "shop=chemist": "5912",
+  "shop=pharmacy": "5912",
+  "shop=department_store": "5311",
+  "shop=variety_store": "5331",
+  "shop=hardware": "5251",
+  "shop=doityourself": "5200",
+  "shop=paint": "5231",
+  "shop=garden_centre": "5261",
+  "shop=furniture": "5712",
+  "shop=mall": "5310",
+  "shop=electronics": "5732",
+  "shop=computer": "5734",
+  "shop=mobile_phone": "4812",
+  "shop=clothes": "5651",
+  "shop=shoes": "5661",
+  "shop=sports": "5941",
+  "shop=outdoor": "5941",
+  "shop=books": "5942",
+  "shop=toys": "5945",
+  "shop=gift": "5947",
+  "shop=jewelry": "5944",
+  "shop=pet": "5995",
+  "shop=alcohol": "5921",
+  "tourism=hotel": "7011",
+  "tourism=motel": "7011",
+  "tourism=hostel": "7011",
+  "tourism=guest_house": "7011",
+  "tourism=museum": "7991",
+  "tourism=zoo": "7998",
+  "tourism=aquarium": "7998",
+  "tourism=theme_park": "7996",
+  "railway=station": "4111",
 };
 
 /**
@@ -152,39 +207,49 @@ export function formatOsmTag(key: OsmPlaceKey, value: string): string {
   return `${key}=${value}`;
 }
 
+export function mccForOsmTag(osmTag: string | undefined): string | null {
+  if (!osmTag) return null;
+  return STORE_TYPE_MCC_BY_TAG[osmTag] ?? null;
+}
+
 export interface PlaceClassification {
   /** The matched OSM tag value, e.g. "fuel" or "hotel". */
   placeType: string;
   /** Full OSM tag for API store-type fallback, e.g. "amenity=fuel". */
   osmTag: string;
-  /** Store-type MCC estimate (brand codes override this on the API). */
-  mcc: string;
-  /** Always `estimate` for map-tag fallback; brand codes are confirmed on the API. */
-  certainty: Extract<MccCertainty, "estimate">;
-  /** DS4 display group for the store list. */
-  category: Category;
+  /** Store-type MCC estimate, or null when the tag has no store_type row. */
+  mcc: string | null;
+  /** `estimate` when a store-type MCC exists; otherwise `unknown`. */
+  certainty: Extract<MccCertainty, "estimate" | "unknown">;
 }
 
-function lookup(key: OsmPlaceKey, value: string): OsmTagMcc | undefined {
-  const table = OSM_TAG_MCCS[key];
+function lookupTag(
+  key: OsmPlaceKey,
+  value: string,
+): { priority?: boolean } | undefined {
+  const table = OSM_PLACE_TAGS[key];
   return Object.prototype.hasOwnProperty.call(table, value) ? table[value] : undefined;
 }
 
-/** First requested OSM tag on a place (amenity, then shop, …) and its MCC. */
+/**
+ * First requested OSM tag on a place (amenity, then shop, …) plus store-type
+ * MCC estimate and confidence. Display category is derived later via
+ * {@link displayCategoryForMcc} — not stored here.
+ */
 export function classifyOsmTags(
   tags: Record<string, string>,
 ): PlaceClassification | null {
   for (const key of OSM_PLACE_KEYS) {
     const value = tags[key];
     if (!value) continue;
-    const entry = lookup(key, value);
-    if (!entry) continue;
+    if (!lookupTag(key, value)) continue;
+    const osmTag = formatOsmTag(key, value);
+    const mcc = mccForOsmTag(osmTag);
     return {
       placeType: value,
-      osmTag: formatOsmTag(key, value),
-      mcc: entry.mcc,
-      certainty: "estimate",
-      category: displayCategoryForMcc(entry.mcc),
+      osmTag,
+      mcc,
+      certainty: mcc ? "estimate" : "unknown",
     };
   }
   return null;
@@ -194,8 +259,8 @@ export function classifyOsmTags(
 export function categoryForPlaceType(placeType: string | undefined): Category {
   if (!placeType) return "other";
   for (const key of OSM_PLACE_KEYS) {
-    const entry = lookup(key, placeType);
-    if (entry) return displayCategoryForMcc(entry.mcc);
+    if (!lookupTag(key, placeType)) continue;
+    return displayCategoryForMcc(mccForOsmTag(formatOsmTag(key, placeType)));
   }
   return "other";
 }
@@ -204,7 +269,7 @@ export function categoryForPlaceType(placeType: string | undefined): Category {
 export function osmTagForPlaceType(placeType: string | undefined): string | undefined {
   if (!placeType) return undefined;
   for (const key of OSM_PLACE_KEYS) {
-    if (lookup(key, placeType)) return formatOsmTag(key, placeType);
+    if (lookupTag(key, placeType)) return formatOsmTag(key, placeType);
   }
   return undefined;
 }

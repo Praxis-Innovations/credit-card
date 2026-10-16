@@ -3,42 +3,21 @@ import { CATEGORIES } from "../api-types";
 import {
   MCC_DISPLAY_CATEGORIES,
   OSM_PLACE_KEYS,
-  OSM_TAG_MCCS,
+  OSM_PLACE_TAGS,
+  STORE_TYPE_MCC_BY_TAG,
   categoryForPlaceType,
   classifyOsmTags,
   displayCategoryForMcc,
   formatOsmTag,
+  mccForOsmTag,
 } from "./categories";
 
-describe("OSM_TAG_MCCS", () => {
-  it("maps every tag to a 4-digit MCC whose display group is a known category", () => {
-    const known = new Set<string>(CATEGORIES);
+describe("OSM_PLACE_TAGS", () => {
+  it("only lists tags to query (and optional priority), not categories", () => {
     for (const key of OSM_PLACE_KEYS) {
-      for (const [value, entry] of Object.entries(OSM_TAG_MCCS[key])) {
-        expect(entry.mcc, `${key}=${value}`).toMatch(/^\d{4}$/);
-        const category = displayCategoryForMcc(entry.mcc);
-        expect(known.has(category), `${key}=${value} → ${entry.mcc} → ${category}`).toBe(
-          true,
-        );
-      }
-    }
-  });
-
-  it("gives a tag value the same MCC under every key it appears in", () => {
-    const seen = new Map<string, string>();
-    for (const key of OSM_PLACE_KEYS) {
-      for (const [value, entry] of Object.entries(OSM_TAG_MCCS[key])) {
-        const prior = seen.get(value);
-        if (prior) expect(entry.mcc, value).toBe(prior);
-        seen.set(value, entry.mcc);
-      }
-    }
-  });
-
-  it("only uses tag values safe to embed in an Overpass regex", () => {
-    for (const key of OSM_PLACE_KEYS) {
-      for (const value of Object.keys(OSM_TAG_MCCS[key])) {
+      for (const [value, entry] of Object.entries(OSM_PLACE_TAGS[key])) {
         expect(value).toMatch(/^[a-z_]+$/);
+        expect(Object.keys(entry).every((k) => k === "priority")).toBe(true);
       }
     }
   });
@@ -46,7 +25,7 @@ describe("OSM_TAG_MCCS", () => {
   it("marks only gas / grocery / drugstore tags as priority", () => {
     const priority = new Set<string>();
     for (const key of OSM_PLACE_KEYS) {
-      for (const [value, entry] of Object.entries(OSM_TAG_MCCS[key])) {
+      for (const [value, entry] of Object.entries(OSM_PLACE_TAGS[key])) {
         if (entry.priority) priority.add(formatOsmTag(key, value));
       }
     }
@@ -58,6 +37,22 @@ describe("OSM_TAG_MCCS", () => {
       "shop=pharmacy",
       "shop=supermarket",
     ]);
+  });
+
+  it("has a store-type MCC estimate for every queried tag", () => {
+    for (const key of OSM_PLACE_KEYS) {
+      for (const value of Object.keys(OSM_PLACE_TAGS[key])) {
+        const osmTag = formatOsmTag(key, value);
+        expect(STORE_TYPE_MCC_BY_TAG[osmTag], osmTag).toMatch(/^\d{4}$/);
+      }
+    }
+  });
+});
+
+describe("STORE_TYPE_MCC_BY_TAG", () => {
+  it("matches the API catalog for convenience (5499, not groceries)", () => {
+    expect(mccForOsmTag("shop=convenience")).toBe("5499");
+    expect(displayCategoryForMcc("5499")).toBe("other");
   });
 });
 
@@ -72,31 +67,27 @@ describe("MCC_DISPLAY_CATEGORIES", () => {
 });
 
 describe("classifyOsmTags", () => {
-  it("prefers amenity, then shop, tourism and railway, and exposes osmTag + MCC", () => {
+  it("prefers amenity, then shop, tourism and railway; carries osmTag + MCC + confidence", () => {
     expect(classifyOsmTags({ amenity: "fuel", shop: "convenience" })).toEqual({
       placeType: "fuel",
       osmTag: "amenity=fuel",
       mcc: "5541",
       certainty: "estimate",
-      category: "gas",
     });
     expect(classifyOsmTags({ amenity: "parking", shop: "hardware" })).toEqual({
       placeType: "hardware",
       osmTag: "shop=hardware",
       mcc: "5251",
       certainty: "estimate",
-      category: "other",
     });
     expect(classifyOsmTags({ tourism: "motel" })).toMatchObject({
       osmTag: "tourism=motel",
       mcc: "7011",
       certainty: "estimate",
-      category: "travel",
     });
     expect(classifyOsmTags({ railway: "station" })).toMatchObject({
       osmTag: "railway=station",
       certainty: "estimate",
-      category: "transit",
     });
   });
 
@@ -112,6 +103,7 @@ describe("categoryForPlaceType", () => {
     expect(categoryForPlaceType("department_store")).toBe("other");
     expect(categoryForPlaceType("doityourself")).toBe("other");
     expect(categoryForPlaceType("hotel")).toBe("travel");
+    expect(categoryForPlaceType("convenience")).toBe("other");
     expect(categoryForPlaceType("toString")).toBe("other");
     expect(categoryForPlaceType(undefined)).toBe("other");
   });

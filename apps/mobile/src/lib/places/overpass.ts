@@ -1,6 +1,6 @@
 import {
   OSM_PLACE_KEYS,
-  OSM_TAG_MCCS,
+  OSM_PLACE_TAGS,
   classifyOsmTags,
 } from "./categories";
 import type {
@@ -54,7 +54,7 @@ function haversineMeters(
 function tagClauses(around: string, priority: boolean): string[] {
   const clauses: string[] = [];
   for (const key of OSM_PLACE_KEYS) {
-    const values = Object.entries(OSM_TAG_MCCS[key])
+    const values = Object.entries(OSM_PLACE_TAGS[key])
       .filter(([, entry]) => Boolean(entry.priority) === priority)
       .map(([value]) => value);
     if (values.length === 0) continue;
@@ -136,9 +136,8 @@ function toNearbyPlace(
     ),
     placeType: classification?.placeType,
     osmTag: classification?.osmTag,
-    mcc: classification?.mcc,
+    mcc: classification?.mcc ?? undefined,
     certainty: classification?.certainty ?? "unknown",
-    category: classification?.category,
     brandHints,
     rawTags: tags,
   };

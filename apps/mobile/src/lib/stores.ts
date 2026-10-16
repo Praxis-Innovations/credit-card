@@ -1,6 +1,7 @@
 import { CATEGORY_LABELS, type Category, type MerchantBrand } from "./api-types";
 import {
   categoryForPlaceType,
+  displayCategoryForMcc,
   osmTagForPlaceType,
   type NearbyPlace,
 } from "./places";
@@ -50,13 +51,16 @@ export function normalizeName(value: string): string {
  */
 export function storeCategory(input: {
   brand?: Pick<MerchantBrand, "category"> | null;
-  placeCategory?: Category;
+  /** Store-type MCC estimate; display group comes from the MCC catalog. */
+  mcc?: string | null;
   placeType?: string;
   browseCategory?: Category;
 }): Category {
   if (input.brand) return input.brand.category;
-  const fromPlace = input.placeCategory ?? categoryForPlaceType(input.placeType);
-  if (fromPlace !== "other") return fromPlace;
+  const fromMcc = input.mcc
+    ? displayCategoryForMcc(input.mcc)
+    : categoryForPlaceType(input.placeType);
+  if (fromMcc !== "other") return fromMcc;
   return input.browseCategory ?? "other";
 }
 
@@ -110,13 +114,16 @@ export function toNearbyStores(
     const key = normalizeName(name);
     if (seen.has(key)) continue;
     seen.add(key);
-    const placeCategory = place.category ?? categoryForPlaceType(place.placeType);
-    const brand = matchBrand([...place.brandHints, name], brands, placeCategory);
     const osmTag = place.osmTag ?? osmTagForPlaceType(place.placeType);
+    const placeCategory = storeCategory({
+      mcc: place.mcc,
+      placeType: place.placeType,
+    });
+    const brand = matchBrand([...place.brandHints, name], brands, placeCategory);
     stores.push({
       id: place.id,
       name,
-      category: storeCategory({ brand, placeCategory }),
+      category: storeCategory({ brand, mcc: place.mcc, placeType: place.placeType }),
       osmTag,
       distanceMeters: place.distanceMeters,
       brand,

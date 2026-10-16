@@ -53,12 +53,12 @@ describe("createOverpassPlacesProvider", () => {
     expect(places[0]?.osmTag).toBe("amenity=fuel");
     expect(places[0]?.mcc).toBe("5541");
     expect(places[0]?.certainty).toBe("estimate");
-    expect(places[0]?.category).toBe("gas");
+    expect(places[0]).not.toHaveProperty("category");
     expect(places[0]?.brandHints).toContain("Shell");
     expect(places.find((p) => p.name === "Loblaws")).toMatchObject({
       osmTag: "shop=supermarket",
       mcc: "5411",
-      category: "groceries",
+      certainty: "estimate",
     });
     expect(places.map((p) => p.distanceMeters)).toEqual(
       [...places.map((p) => p.distanceMeters)].sort((a, b) => a - b),
@@ -95,24 +95,24 @@ describe("createOverpassPlacesProvider", () => {
     const provider = createOverpassPlacesProvider({ fetchImpl: stubFetch(payload) });
     const places = await provider.findNearby({ latitude: 43.65, longitude: -79.38 });
     const byName = Object.fromEntries(
-      places.map((p) => [p.name, [p.placeType, p.osmTag, p.mcc, p.category]]),
+      places.map((p) => [p.name, [p.placeType, p.osmTag, p.mcc, p.certainty]]),
     );
 
     expect(byName).toEqual({
-      "The Keg": ["restaurant", "amenity=restaurant", "5812", "dining"],
-      "Tim Hortons": ["fast_food", "amenity=fast_food", "5814", "dining"],
-      "Balzac's": ["cafe", "amenity=cafe", "5814", "dining"],
-      "The Rhino": ["pub", "amenity=pub", "5813", "dining"],
-      "Fairmont Royal York": ["hotel", "tourism=hotel", "7011", "travel"],
-      "Hudson's Bay": ["department_store", "shop=department_store", "5311", "other"],
-      Dollarama: ["variety_store", "shop=variety_store", "5331", "other"],
-      "Home Depot": ["doityourself", "shop=doityourself", "5200", "other"],
-      "Home Hardware": ["hardware", "shop=hardware", "5251", "other"],
-      IKEA: ["furniture", "shop=furniture", "5712", "other"],
-      "Best Buy": ["electronics", "shop=electronics", "5732", "other"],
-      Uniqlo: ["clothes", "shop=clothes", "5651", "other"],
-      "Scotiabank Theatre": ["cinema", "amenity=cinema", "7832", "entertainment"],
-      Union: ["station", "railway=station", "4111", "transit"],
+      "The Keg": ["restaurant", "amenity=restaurant", "5812", "estimate"],
+      "Tim Hortons": ["fast_food", "amenity=fast_food", "5814", "estimate"],
+      "Balzac's": ["cafe", "amenity=cafe", "5814", "estimate"],
+      "The Rhino": ["pub", "amenity=pub", "5813", "estimate"],
+      "Fairmont Royal York": ["hotel", "tourism=hotel", "7011", "estimate"],
+      "Hudson's Bay": ["department_store", "shop=department_store", "5311", "estimate"],
+      Dollarama: ["variety_store", "shop=variety_store", "5331", "estimate"],
+      "Home Depot": ["doityourself", "shop=doityourself", "5200", "estimate"],
+      "Home Hardware": ["hardware", "shop=hardware", "5251", "estimate"],
+      IKEA: ["furniture", "shop=furniture", "5712", "estimate"],
+      "Best Buy": ["electronics", "shop=electronics", "5732", "estimate"],
+      Uniqlo: ["clothes", "shop=clothes", "5651", "estimate"],
+      "Scotiabank Theatre": ["cinema", "amenity=cinema", "7832", "estimate"],
+      Union: ["station", "railway=station", "4111", "estimate"],
     });
   });
 
@@ -134,7 +134,7 @@ describe("createOverpassPlacesProvider", () => {
     expect(place?.name).toBe("No Frills — Bloor");
     expect(place?.placeType).toBe("supermarket");
     expect(place?.osmTag).toBe("shop=supermarket");
-    expect(place?.category).toBe("groceries");
+    expect(place?.mcc).toBe("5411");
   });
 
   it("sends one query covering every store type and caps the results", async () => {

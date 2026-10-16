@@ -13,6 +13,7 @@ export {
   classifyOsmTags,
   displayCategoryForMcc,
   formatOsmTag,
+  mccForOsmTag,
   osmTagForPlaceType,
 } from "./categories";
 
