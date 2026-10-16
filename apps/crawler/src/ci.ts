@@ -163,7 +163,7 @@ async function main(): Promise<number> {
     return 2;
   }
 
-  const model = process.env.CRAWLER_MODEL?.trim() ?? DEFAULT_MODEL;
+  const model = process.env.CRAWLER_MODEL?.trim() || DEFAULT_MODEL;
   const store = SupabaseStore.fromEnv(url, key);
   const loader = await createPlaywrightLoader(log);
   try {
