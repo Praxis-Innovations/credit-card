@@ -142,14 +142,14 @@ deployment rate limit when every project would otherwise rebuild on every push.
 
 ## CI
 
-Every PR and push to `main` runs typecheck, lint, unit tests, code-health
-checks (ESLint size/complexity, knip, jscpd, dependency-cruiser with a committed
-baseline), and the Playwright E2E smoke suite (local Supabase in Docker) for
-api, admin, crawler, mobile and web
-([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)). The full E2E suite
-runs nightly ([`.github/workflows/e2e.yml`](./.github/workflows/e2e.yml)).
-Make the **`CI gate`** check required on `main` to block merges on failures —
-see [`docs/ci.md`](./docs/ci.md).
+[`ci.yml`](./.github/workflows/ci.yml) always runs **lint**. On PRs it path-filters
+the rest: typecheck / test / code-health when app or shared code changes; **api
+coverage** only for `apps/api` or `packages`; **e2e smoke** only for
+`apps/api|web|admin|mobile`, `e2e`, `packages`, or `supabase`. Docs-only and
+`.github`-only PRs get lint alone. Pushes to `main` (and merge queue) still run
+everything. A single required **`CI gate`** status stays green when jobs are
+skipped — see [`docs/ci.md`](./docs/ci.md). The full E2E suite runs nightly
+([`e2e.yml`](./.github/workflows/e2e.yml)).
 
 ```bash
 pnpm code-health:report   # full local report

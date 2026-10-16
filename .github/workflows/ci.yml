@@ -2,9 +2,10 @@ name: CI
 
 # Test gate for every PR and every push to main. See docs/ci.md.
 #
-# Adding a job (code health, e2e, ...): give it a `uses: ./.github/actions/setup`
-# step and append its id to `ci-gate.needs`. Branch protection only requires
-# "CI gate", so new jobs become blocking without touching repo settings.
+# PRs run only the jobs their paths can affect (see `changes` job).
+# `main` / merge queue / manual dispatch still run everything.
+# Branch protection only requires "CI gate", so skipped jobs stay green
+# and new jobs become blocking when appended to `ci-gate.needs`.
 
 on:
   pull_request:
@@ -15,6 +16,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
@@ -25,14 +27,97 @@ env:
   TURBO_CACHE_DIR: .turbo/cache
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      unit: ${{ steps.out.outputs.unit }}
+      api: ${{ steps.out.outputs.api }}
+      e2e: ${{ steps.out.outputs.e2e }}
+    steps:
+      - name: Path filter
+        id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            unit:
+              - 'apps/**'
+              - 'packages/**'
+              - 'e2e/**'
+              - 'supabase/**'
+              - 'code-health/**'
+              - 'scripts/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+              - 'tsconfig*.json'
+              - 'knip.json'
+              - '.jscpd.json'
+              - '*.ts'
+              - '*.js'
+              - '*.mjs'
+              - '*.cjs'
+            api:
+              - 'apps/api/**'
+              - 'packages/**'
+            e2e:
+              - 'apps/api/**'
+              - 'apps/web/**'
+              - 'apps/admin/**'
+              - 'apps/mobile/**'
+              - 'e2e/**'
+              - 'packages/**'
+              - 'supabase/**'
+
+      - name: Set outputs
+        id: out
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "unit=true" >> "$GITHUB_OUTPUT"
+            echo "api=true" >> "$GITHUB_OUTPUT"
+            echo "e2e=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "unit=${{ steps.filter.outputs.unit }}" >> "$GITHUB_OUTPUT"
+            echo "api=${{ steps.filter.outputs.api }}" >> "$GITHUB_OUTPUT"
+            echo "e2e=${{ steps.filter.outputs.e2e }}" >> "$GITHUB_OUTPUT"
+          fi
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          turbo-cache-key: lint
+
+      - name: Run lint
+        run: >-
+          pnpm turbo run lint
+          --filter=api
+          --filter=admin
+          --filter=crawler
+          --filter=mobile
+          --filter=web
+          --filter=e2e
+
   unit:
     name: ${{ matrix.task }}
+    needs: [changes]
+    if: needs.changes.outputs.unit == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        task: [typecheck, lint, test]
+        task: [typecheck, test]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,6 +139,8 @@ jobs:
 
   api-coverage:
     name: api coverage
+    needs: [changes]
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -77,6 +164,8 @@ jobs:
 
   code-health:
     name: code-health
+    needs: [changes]
+    if: needs.changes.outputs.unit == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -94,6 +183,8 @@ jobs:
   # Playwright smoke against local Supabase (Docker). Full suite: e2e.yml (nightly).
   e2e-smoke:
     name: e2e smoke
+    needs: [changes]
+    if: needs.changes.outputs.e2e == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 75
     steps:
@@ -141,7 +232,7 @@ jobs:
   ci-gate:
     name: CI gate
     if: always()
-    needs: [unit, api-coverage, code-health, e2e-smoke]
+    needs: [changes, lint, unit, api-coverage, code-health, e2e-smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

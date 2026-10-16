@@ -3,17 +3,20 @@
 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on every pull
 request, every push to `main`, merge-queue builds and manual dispatch.
 
+PR runs use `dorny/paths-filter` so only jobs that can be affected execute.
+`main` / merge queue / `workflow_dispatch` still run every job. Concurrent PR
+pushes cancel the older run (`concurrency.cancel-in-progress`).
+
 ## What runs
 
-| Job | Command |
-|-----|---------|
-| `typecheck` | `pnpm turbo run typecheck` for api, admin, crawler, mobile, web, e2e |
-| `lint` | `pnpm turbo run lint` for the same packages |
-| `test` | `pnpm turbo run test` (Vitest unit tests) for the apps that define it |
-| `api coverage` | `pnpm --filter api test:coverage` — prints a text report and uploads `coverage-summary.json` |
-| `code-health` | `pnpm code-health` — ESLint size/complexity, knip, jscpd, dependency-cruiser; fails only on findings not in `code-health/baselines/` |
-| `e2e smoke` | Local Supabase (`supabase start`) + Playwright `@smoke` across api/web/admin/app — see [`e2e/README.md`](../e2e/README.md) |
-| `CI gate` | Fails unless every job above succeeded |
+| Job | Command | When (PRs) |
+|-----|---------|------------|
+| `lint` | `pnpm turbo run lint` for api, admin, crawler, mobile, web, e2e | Always |
+| `typecheck` / `test` | `pnpm turbo run …` for the same packages | App / shared code paths (not docs- or `.github`-only) |
+| `api coverage` | `pnpm --filter api test:coverage` — text report + `coverage-summary.json` | `apps/api/**` or `packages/**` |
+| `code-health` | `pnpm code-health` — ESLint size/complexity, knip, jscpd, dependency-cruiser; fails only on findings not in `code-health/baselines/` | Same as typecheck / test |
+| `e2e smoke` | Local Supabase (`supabase start`) + Playwright `@smoke` across api/web/admin/app — see [`e2e/README.md`](../e2e/README.md) | `apps/api`, `apps/web`, `apps/admin`, `apps/mobile`, `e2e`, `packages`, or `supabase` |
+| `CI gate` | Fails unless every needed job succeeded (treats `skipped` as OK) | Always |
 
 The full E2E suite runs nightly in
 [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml) (not part of the

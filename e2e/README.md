@@ -49,7 +49,7 @@ Constants live in `src/env.ts`. Fixtures/helpers: `src/fixtures.ts`, `src/helper
 
 | When | Workflow | Suite |
 |------|----------|--------|
-| Every PR / push to `main` | [`ci.yml`](../.github/workflows/ci.yml) job `e2e-smoke` | `@smoke` (CI gate) |
+| PR (when api/web/admin/mobile/e2e/packages/supabase change) / every push to `main` | [`ci.yml`](../.github/workflows/ci.yml) job `e2e-smoke` | `@smoke` (CI gate) |
 | Nightly 06:00 UTC + manual | [`e2e.yml`](../.github/workflows/e2e.yml) | Full |
 
 Traces, HTML report, and `test-results/` upload as artifacts on failure or success.
