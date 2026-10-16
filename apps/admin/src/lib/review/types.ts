@@ -37,11 +37,12 @@ export type DiffResult = {
 
 type Quoted<T> = { value: T; quote: string };
 
-/** Only the parts of the extraction the review page reads. */
+/** Only the parts of the extraction the review page / approve path read. */
 export type Extraction = {
   card_name?: Quoted<string> | null;
   network?: Quoted<string> | null;
   annual_fee?: Quoted<number> | null;
+  reward_currency?: Quoted<string> | null;
   earn_rates?: Array<{ category: string; rate: number; unit: string; quote: string }>;
   welcome_bonus?: Quoted<{ summary: string; points: number | null }> | null;
 };
