@@ -47,7 +47,7 @@ describe("buildCatalogWrite skipped kinds", () => {
   });
 });
 
-describe("buildCatalogWrite changed", () => {
+describe("buildCatalogWrite changed merge", () => {
   it("updates only saved fields on a changed card, merging earn rates", () => {
     const res = buildCatalogWrite({
       diffKind: "changed",
@@ -83,7 +83,9 @@ describe("buildCatalogWrite changed", () => {
       },
     });
   });
+});
 
+describe("buildCatalogWrite changed guards", () => {
   it("requires a linked catalog card for changed findings", () => {
     expect(
       buildCatalogWrite({
@@ -116,8 +118,94 @@ describe("buildCatalogWrite changed", () => {
       ok: true,
       write: {
         op: "update",
-        set: { welcome_offer: { summary: "50000 Scene+ points after spend", estimatedValueCad: 400 } },
+        set: {
+          welcome_offer: {
+            summary: "50000 Scene+ points after spend",
+            estimatedValueCad: 400,
+            points: 50000,
+          },
+        },
       },
+    });
+  });
+});
+
+describe("buildCatalogWrite validation", () => {
+  it("rejects invalid MCCs and non-ISO dates on approve", () => {
+    const extracted = {
+      earn_rates: [
+        {
+          category: "groceries",
+          rate: 5,
+          unit: "points_per_dollar",
+          quote: "5x groceries",
+          mccs: ["5411"],
+        },
+      ],
+    };
+    expect(
+      buildCatalogWrite({
+        diffKind: "changed",
+        linkedCardId: "scotia-gold-amex",
+        cardName: "Gold",
+        issuerName: "Scotiabank",
+        fields: {
+          fields: [{ key: "earn_rates[0].mccs", save: true, page_value: "5411", value: "541" }],
+        },
+        existing,
+        extractedPointCurrency: null,
+        extracted,
+        now: NOW,
+      }),
+    ).toMatchObject({ ok: false, message: expect.stringContaining("four digits") });
+
+    expect(
+      buildCatalogWrite({
+        diffKind: "changed",
+        linkedCardId: "scotia-gold-amex",
+        cardName: "Gold",
+        issuerName: "Scotiabank",
+        fields: {
+          fields: [
+            { key: "welcome_bonus.valid_to", save: true, page_value: "2026-03-31", value: "03/31/2026" },
+          ],
+        },
+        existing,
+        extractedPointCurrency: null,
+        now: NOW,
+      }),
+    ).toMatchObject({ ok: false, message: expect.stringContaining("YYYY-MM-DD") });
+  });
+});
+
+describe("buildCatalogWrite welcome fields", () => {
+  it("writes welcome bonus dates/rate into the catalog", () => {
+    const res = buildCatalogWrite({
+      diffKind: "changed",
+      linkedCardId: "scotia-gold-amex",
+      cardName: "Gold",
+      issuerName: "Scotiabank",
+      fields: {
+        fields: [
+          { key: "welcome_bonus.rate", save: true, page_value: "", value: "1.5" },
+          { key: "welcome_bonus.valid_from", save: true, page_value: "", value: "2026-01-01" },
+          { key: "welcome_bonus.valid_to", save: true, page_value: "", value: "2026-06-30" },
+          { key: "welcome_bonus.new_cardholders_only", save: true, page_value: "yes", value: "yes" },
+        ],
+      },
+      existing,
+      extractedPointCurrency: null,
+      now: NOW,
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok || !res.write || res.write.op !== "update") throw new Error("expected update");
+    expect(res.write.set.welcome_offer).toEqual({
+      summary: "40,000 Scene+ points after spend",
+      estimatedValueCad: 400,
+      rate: 1.5,
+      validFrom: "2026-01-01",
+      validTo: "2026-06-30",
+      newCardholdersOnly: true,
     });
   });
 });

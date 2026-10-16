@@ -79,6 +79,21 @@ export function numberInQuote(value: number, quote: string): boolean {
   return value === 0 && /\b(no|zero|free|none|waived|nil)\b/i.test(quote);
 }
 
+/**
+ * ISO `YYYY-MM-DD` is in its quote when the year appears, or the year plus a
+ * day/month form (full ISO, "March 31, 2026", "31/03/2026", … — all include the year).
+ */
+export function dateInQuote(isoDate: string, quote: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate.trim());
+  if (!m) return false;
+  const year = m[1]!;
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+  const q = normaliseForMatch(quote);
+  return q.includes(isoDate) || q.includes(year);
+}
+
 const loose = (s: string) => normaliseForMatch(s).toLowerCase().replace(/[^a-z0-9+]/g, "");
 
 const STRING_ALIASES: Record<string, string[]> = {
@@ -137,6 +152,155 @@ function checkQuoted(
   return finish({ field, quote_found, value_in_quote: valueCheck, in_range: range, issues });
 }
 
+function mismatch(
+  field: string,
+  quote: string,
+  page: string,
+  issue: string,
+  in_range: boolean | null = null,
+): FieldCheck {
+  return finish({
+    field,
+    quote_found: quoteInText(quote, page),
+    value_in_quote: false,
+    in_range,
+    issues: [issue],
+  });
+}
+
+function checkMccsAndMerchants(
+  e: CardExtraction["earn_rates"][number],
+  prefix: string,
+  page: string,
+): FieldCheck[] {
+  const fields: FieldCheck[] = [];
+  for (const mcc of e.mccs ?? []) {
+    if (/^\d{4}$/.test(mcc) && e.quote.includes(mcc)) continue;
+    const issue = /^\d{4}$/.test(mcc)
+      ? `MCC ${mcc} does not appear in its quote`
+      : `MCC ${mcc} is not a four-digit code`;
+    fields.push(mismatch(`${prefix}.mccs`, e.quote, page, issue));
+  }
+  for (const merchant of e.merchants ?? []) {
+    if (stringInQuote(merchant, e.quote)) continue;
+    fields.push(mismatch(`${prefix}.merchants`, e.quote, page, `merchant "${merchant}" does not appear in its quote`));
+  }
+  return fields;
+}
+
+function flagMissingNumber(
+  field: string,
+  value: number,
+  quote: string,
+  page: string,
+  label: string,
+): FieldCheck {
+  return mismatch(field, quote, page, `${label} does not appear in its quote`, inRange(value, [0, 1_000_000]));
+}
+
+function checkDatedFields(
+  prefix: string,
+  quote: string,
+  page: string,
+  dates: Array<{ key: "valid_from" | "valid_to"; value: string | null | undefined }>,
+): FieldCheck[] {
+  const fields: FieldCheck[] = [];
+  for (const { key, value } of dates) {
+    if (value == null || value === "") continue;
+    if (dateInQuote(value, quote)) continue;
+    const label = key === "valid_from" ? "start date" : "end date";
+    fields.push(mismatch(`${prefix}.${key}`, quote, page, `${label} does not appear in its quote`));
+  }
+  return fields;
+}
+
+function checkCapAndTier(
+  e: CardExtraction["earn_rates"][number],
+  prefix: string,
+  page: string,
+): FieldCheck[] {
+  const fields: FieldCheck[] = [];
+  if (e.cap_amount != null && !numberInQuote(e.cap_amount, e.quote)) {
+    fields.push(flagMissingNumber(`${prefix}.cap_amount`, e.cap_amount, e.quote, page, "cap amount"));
+  }
+  if (e.rate_after_cap != null && !numberInQuote(e.rate_after_cap, e.quote)) {
+    fields.push(flagMissingNumber(`${prefix}.rate_after_cap`, e.rate_after_cap, e.quote, page, "rate after cap"));
+  }
+  if (e.tier_threshold != null && !numberInQuote(e.tier_threshold, e.quote)) {
+    fields.push(flagMissingNumber(`${prefix}.tier_threshold`, e.tier_threshold, e.quote, page, "tier threshold"));
+  }
+  fields.push(
+    ...checkDatedFields(prefix, e.quote, page, [
+      { key: "valid_from", value: e.valid_from },
+      { key: "valid_to", value: e.valid_to },
+    ]),
+  );
+  if (e.mcc_source === "terms" && (e.mccs?.length ?? 0) === 0 && (e.merchants?.length ?? 0) === 0) {
+    fields.push(
+      finish({
+        field: `${prefix}.mcc_source`,
+        quote_found: quoteInText(e.quote, page),
+        value_in_quote: null,
+        in_range: null,
+        issues: ["mcc_source is terms but no MCCs or merchants were extracted"],
+      }),
+    );
+  }
+  return fields;
+}
+
+function checkEarnRateRules(e: CardExtraction["earn_rates"][number], index: number, page: string): FieldCheck[] {
+  const prefix = `earn_rates[${index}] ${e.category}`;
+  return [
+    checkQuoted(
+      prefix,
+      e,
+      page,
+      numberInQuote(e.rate, e.quote),
+      e.rate > 0 && inRange(e.rate, EARN_RANGES[e.unit]),
+    ),
+    ...checkMccsAndMerchants(e, prefix, page),
+    ...checkCapAndTier(e, prefix, page),
+  ];
+}
+
+function checkWelcomeAndPromos(extraction: CardExtraction, page: string): FieldCheck[] {
+  const fields: FieldCheck[] = [];
+  const wb = extraction.welcome_bonus;
+  if (wb) {
+    const nums = [wb.value.points, wb.value.cashback_cad, wb.value.rate ?? null].filter(
+      (n): n is number => n !== null,
+    );
+    const valueOk = nums.length ? nums.every((n) => numberInQuote(n, wb.quote)) : null;
+    const rangeOk =
+      nums.length === 0
+        ? null
+        : (wb.value.points === null || inRange(wb.value.points, BONUS_POINTS_RANGE)) &&
+          (wb.value.cashback_cad === null || inRange(wb.value.cashback_cad, BONUS_CASH_RANGE)) &&
+          (wb.value.rate == null || inRange(wb.value.rate, [0, 20]));
+    fields.push(checkQuoted("welcome_bonus", wb, page, valueOk, rangeOk));
+    fields.push(
+      ...checkDatedFields("welcome_bonus", wb.quote, page, [
+        { key: "valid_from", value: wb.value.valid_from },
+        { key: "valid_to", value: wb.value.valid_to },
+      ]),
+    );
+  }
+  for (const [i, p] of (extraction.promotions ?? []).entries()) {
+    const nums = [p.rate, p.points].filter((n): n is number => n !== null);
+    const valueOk = nums.length ? nums.every((n) => numberInQuote(n, p.quote)) : null;
+    const prefix = `promotions[${i}]`;
+    fields.push(checkQuoted(prefix, p, page, valueOk, null));
+    fields.push(
+      ...checkDatedFields(prefix, p.quote, page, [
+        { key: "valid_from", value: p.valid_from },
+        { key: "valid_to", value: p.valid_to },
+      ]),
+    );
+  }
+  return fields;
+}
+
 /** Runs every deterministic check. Failed values are flagged here, never removed from the extraction. */
 export function checkExtraction(
   extraction: CardExtraction,
@@ -164,28 +328,8 @@ export function checkExtraction(
     const q = extraction[f];
     if (q) fields.push(checkQuoted(f, q, page, numberInQuote(q.value, q.quote), inRange(q.value, RANGES[f])));
   }
-  extraction.earn_rates.forEach((e, i) => {
-    fields.push(
-      checkQuoted(
-        `earn_rates[${i}] ${e.category}`,
-        e,
-        page,
-        numberInQuote(e.rate, e.quote),
-        e.rate > 0 && inRange(e.rate, EARN_RANGES[e.unit]),
-      ),
-    );
-  });
-  const wb = extraction.welcome_bonus;
-  if (wb) {
-    const nums = [wb.value.points, wb.value.cashback_cad].filter((n): n is number => n !== null);
-    const valueOk = nums.length ? nums.every((n) => numberInQuote(n, wb.quote)) : null;
-    const rangeOk =
-      nums.length === 0
-        ? null
-        : (wb.value.points === null || inRange(wb.value.points, BONUS_POINTS_RANGE)) &&
-          (wb.value.cashback_cad === null || inRange(wb.value.cashback_cad, BONUS_CASH_RANGE));
-    fields.push(checkQuoted("welcome_bonus", wb, page, valueOk, rangeOk));
-  }
+  extraction.earn_rates.forEach((e, i) => fields.push(...checkEarnRateRules(e, i, page)));
+  fields.push(...checkWelcomeAndPromos(extraction, page));
   extraction.insurance_highlights.forEach((h, i) => {
     fields.push(checkQuoted(`insurance_highlights[${i}]`, h, page, null, null));
   });

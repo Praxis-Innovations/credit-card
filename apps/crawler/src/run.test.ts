@@ -251,6 +251,33 @@ describe("runCrawl", () => {
     expect(extractor.extractCard).toHaveBeenCalledWith(expect.objectContaining({ pageUrl: SCENE }));
   });
 
+  it("re-extracts when the page hash matches but the stored extraction predates the MC2 schema", async () => {
+    const mem = memoryStore();
+    const { cleanPage } = await import("./clean");
+    const { contentHash } = await import("./hash");
+    // Pre-MC2 findings omit `promotions` entirely (not an empty array).
+    const preMc2 = { ...goldExtraction() } as unknown as Record<string, unknown>;
+    delete preMc2.promotions;
+    vi.mocked(mem.store.previousCard).mockImplementation(async (_s, url) =>
+      url === GOLD
+        ? {
+            hash: contentHash(cleanPage(goldHtml, GOLD).text),
+            extraction: preMc2 as unknown as ReturnType<typeof goldExtraction>,
+            model: "claude-sonnet-5-5",
+          }
+        : null,
+    );
+    const extractor = mockExtractor();
+    const summary = await runCrawl({ source: "scotiabank", dryRun: false }, deps({ store: mem.store, extractor }));
+    expect(extractor.extractCard).toHaveBeenCalledWith(expect.objectContaining({ pageUrl: GOLD }));
+    expect(extractor.extractCard).toHaveBeenCalledWith(expect.objectContaining({ pageUrl: SCENE }));
+    expect(summary.counts.hash_skips).toBe(0);
+    expect(mem.findings.find((f) => f.product_url === GOLD)).toMatchObject({
+      reused_extraction: false,
+      extracted: expect.objectContaining({ promotions: expect.any(Array) }),
+    });
+  });
+
   it("writes nothing to the database on a dry run", async () => {
     const mem = memoryStore();
     const summary = await runCrawl({ source: "scotiabank", dryRun: true }, deps({ store: new ReadOnlyStore(mem.store) }));

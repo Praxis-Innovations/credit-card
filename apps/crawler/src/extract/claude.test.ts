@@ -29,14 +29,37 @@ describe("ClaudeExtractor.extractCard", () => {
         annual_fee: { value: "$120", quote: "Annual fee $120" },
         purchase_apr: { value: "n/a", quote: "x" },
         earn_rates: [
-          { category: "groceries", description: "Sobeys", rate: 6, unit: "points_per_dollar", cap: null, quote: "Earn 6" },
+          {
+            category: "groceries",
+            description: "Sobeys",
+            rate: 6,
+            unit: "points_per_dollar",
+            cap: null,
+            quote: "Earn 6 at Sobeys",
+            mccs: [],
+            merchants: ["Sobeys"],
+            mcc_source: "terms",
+            exclusions: [],
+            cap_amount: null,
+            cap_period: null,
+            cap_group: null,
+            rate_after_cap: null,
+            tier_threshold: null,
+            valid_from: null,
+            valid_to: null,
+          },
           { category: "pets", description: "?", rate: 9, unit: "points_per_dollar", cap: null, quote: "Earn 9" },
         ],
+        promotions: [],
         insurance_highlights: [{ value: "Travel medical", quote: "Travel medical" }, "bad"],
       }),
     );
     const extractor = new ClaudeExtractor(client, "claude-sonnet-5-5");
-    const { extraction, usage } = await extractor.extractCard({ issuer: "Scotiabank", pageUrl: "https://x", pageText: "Gold Card" });
+    const { extraction, usage } = await extractor.extractCard({
+      issuer: "Scotiabank",
+      pageUrl: "https://bank.example/gold",
+      pageText: "Gold Card",
+    });
 
     const params = (create.mock.calls[0] as unknown as [Anthropic.MessageCreateParamsNonStreaming])[0];
     expect(params.model).toBe("claude-sonnet-5-5");
@@ -49,6 +72,12 @@ describe("ClaudeExtractor.extractCard", () => {
     expect(extraction.purchase_apr).toBeNull();
     expect(extraction.issuer).toBeNull();
     expect(extraction.earn_rates.map((e) => e.category)).toEqual(["groceries"]);
+    expect(extraction.earn_rates[0]).toMatchObject({
+      merchants: ["Sobeys"],
+      mcc_source: "terms",
+      source_url: "https://bank.example/gold",
+    });
+    expect(extraction.promotions).toEqual([]);
     expect(extraction.insurance_highlights).toHaveLength(1);
   });
 

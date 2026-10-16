@@ -16,7 +16,7 @@ export type ApplyToCatalogInput = {
   cardName: string | null;
   issuerName: string | null;
   fields: ReviewFields;
-  /** Raw extraction — used for point currency on new cards. */
+  /** Raw extraction — used for point currency and indexed card-rule fields. */
   extracted?: Extraction | null;
 };
 
@@ -25,6 +25,48 @@ export type ApplyToCatalogResult =
   | { ok: false; message: string };
 
 type ExistingCard = NonNullable<BuildCatalogWriteInput["existing"]>;
+
+function optionalNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function optionalString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+function optionalStringList(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const list = value.filter((v): v is string => typeof v === "string" && v.trim().length > 0);
+  return list.length ? list : undefined;
+}
+
+function copyOptionalFields(out: RewardCategory, r: Record<string, unknown>): void {
+  const capMonthly = optionalNumber(r.capMonthly);
+  if (capMonthly != null) out.capMonthly = capMonthly;
+  const capAnnual = optionalNumber(r.capAnnual);
+  if (capAnnual != null) out.capAnnual = capAnnual;
+  const mccs = optionalStringList(r.mccs);
+  if (mccs) out.mccs = mccs;
+  const merchants = optionalStringList(r.merchants);
+  if (merchants) out.merchants = merchants;
+  if (r.mccSource === "terms" || r.mccSource === "network_default") out.mccSource = r.mccSource;
+  const exclusions = optionalStringList(r.exclusions);
+  if (exclusions) out.exclusions = exclusions;
+  const capGroup = optionalString(r.capGroup);
+  if (capGroup) out.capGroup = capGroup;
+  const rateAfterCap = optionalNumber(r.rateAfterCap);
+  if (rateAfterCap != null) out.rateAfterCap = rateAfterCap;
+  const tierThreshold = optionalNumber(r.tierThreshold);
+  if (tierThreshold != null) out.tierThreshold = tierThreshold;
+  const validFrom = optionalString(r.validFrom);
+  if (validFrom) out.validFrom = validFrom;
+  const validTo = optionalString(r.validTo);
+  if (validTo) out.validTo = validTo;
+  const quote = optionalString(r.quote);
+  if (quote) out.quote = quote;
+  const sourceUrl = optionalString(r.sourceUrl);
+  if (sourceUrl) out.sourceUrl = sourceUrl;
+}
 
 function asRewardCategories(value: unknown): RewardCategory[] {
   if (!Array.isArray(value)) return [];
@@ -36,8 +78,7 @@ function asRewardCategories(value: unknown): RewardCategory[] {
       const earnRate = Number(r.earnRate);
       if (!category || !Number.isFinite(earnRate)) return null;
       const out: RewardCategory = { category, earnRate };
-      if (typeof r.capMonthly === "number") out.capMonthly = r.capMonthly;
-      if (typeof r.capAnnual === "number") out.capAnnual = r.capAnnual;
+      copyOptionalFields(out, r);
       return out;
     })
     .filter((r): r is RewardCategory => r !== null);
@@ -45,15 +86,21 @@ function asRewardCategories(value: unknown): RewardCategory[] {
 
 function asWelcomeOffer(value: unknown): WelcomeOffer | null {
   if (!value || typeof value !== "object") return null;
-  const summary = (value as { summary?: unknown }).summary;
-  if (typeof summary !== "string" || !summary.trim()) return null;
-  const estimated = (value as { estimatedValueCad?: unknown }).estimatedValueCad;
-  return {
-    summary,
-    ...(typeof estimated === "number" && Number.isFinite(estimated)
-      ? { estimatedValueCad: estimated }
-      : {}),
-  };
+  const r = value as Record<string, unknown>;
+  if (typeof r.summary !== "string" || !r.summary.trim()) return null;
+  const offer: WelcomeOffer = { summary: r.summary };
+  const estimated = optionalNumber(r.estimatedValueCad);
+  if (estimated != null) offer.estimatedValueCad = estimated;
+  const points = optionalNumber(r.points);
+  if (points != null && Number.isInteger(points)) offer.points = points;
+  const rate = optionalNumber(r.rate);
+  if (rate != null) offer.rate = rate;
+  const validFrom = optionalString(r.validFrom);
+  if (validFrom) offer.validFrom = validFrom;
+  const validTo = optionalString(r.validTo);
+  if (validTo) offer.validTo = validTo;
+  if (typeof r.newCardholdersOnly === "boolean") offer.newCardholdersOnly = r.newCardholdersOnly;
+  return offer;
 }
 
 async function loadExistingCard(
@@ -157,6 +204,7 @@ export async function applyApprovedFindingToCatalog(
     fields: input.fields,
     existing: ctx.existing,
     extractedPointCurrency: input.extracted?.reward_currency?.value ?? null,
+    extracted: input.extracted,
     takenIds: ctx.takenIds,
   });
   if (!built.ok) return built;

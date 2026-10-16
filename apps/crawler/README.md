@@ -262,11 +262,15 @@ new row with `trigger = 'schedule'`.
    Links an admin marked `included = false` are skipped.
 7. **Extract**: Claude fills the fixed schema in `extract/schema.ts` through a
    forced tool call. Every value is `{ value, quote }` or `null` (never a
-   guess).
+   guess). Earn rates include MCC lists, named merchants, `mcc_source`,
+   exclusions, caps (amount/period/shared group/rate after cap), spend tiers
+   and dates; welcome bonuses and public promotions carry start/end dates.
+   The crawler stamps each rate/promotion with the page `source_url`.
 8. **Check** (`checks.ts`): the quote must appear verbatim in the page text
    (only whitespace and typography are normalised), the value must appear in
    its quote, and numbers must be in range (fee 0–1000, APR 0–40, earn rate
-   0–20 pts/$ or 0–15 %, …). Failures are flagged, not dropped.
+   0–20 pts/$ or 0–15 %, …). MCC codes and named merchants must appear in
+   their quote. Failures are flagged, not dropped.
 9. **Hash skip** (`hash.ts`): SHA-256 of the cleaned text. If a page is
    unchanged since its last extraction (database history, else
    `output/cache.json`), the previous extraction is reused and Claude is not

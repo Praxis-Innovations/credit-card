@@ -1,4 +1,18 @@
-import type { DiffKind, FieldDecision, ReviewFields } from "./types";
+import {
+  applyPromotions,
+  applyWelcomeOffer,
+  hasWelcomeDecisions,
+} from "./catalog-write-offers";
+import { isEmpty, parseNonNegNumber } from "./catalog-write-parse";
+import {
+  applyEarnRates,
+  hasEarnRuleDecisions,
+  type RewardCategory,
+  type WelcomeOffer,
+} from "./catalog-write-rules";
+import type { DiffKind, Extraction, FieldDecision, ReviewFields } from "./types";
+
+export type { RewardCategory, WelcomeOffer };
 
 /** Columns the approve path may set on public.cards. */
 type CatalogCardRow = {
@@ -13,18 +27,6 @@ type CatalogCardRow = {
   last_verified: string;
   verified_at: string;
   status: "verified";
-};
-
-export type RewardCategory = {
-  category: string;
-  earnRate: number;
-  capMonthly?: number;
-  capAnnual?: number;
-};
-
-export type WelcomeOffer = {
-  summary: string;
-  estimatedValueCad?: number;
 };
 
 type CatalogNetwork = "Visa" | "Mastercard" | "Amex" | null;
@@ -60,6 +62,8 @@ export type BuildCatalogWriteInput = {
   } | null;
   /** From extraction when review fields don't cover it (new cards). */
   extractedPointCurrency: string | null;
+  /** Full extraction — needed to map indexed earn_rates / promotions. */
+  extracted?: Extraction | null;
   /** Today (YYYY-MM-DD) and ISO timestamp — injectable for tests. */
   now?: { date: string; iso: string };
   /** Existing card ids that would collide with a generated slug. */
@@ -94,22 +98,8 @@ const POINT_CURRENCY_HINTS: Array<[string, string]> = [
   ["moi", "Moi"],
 ];
 
-const EMPTY = "none";
-
 function saved(fields: ReviewFields): Map<string, FieldDecision> {
   return new Map(fields.fields.filter((f) => f.save).map((f) => [f.key, f]));
-}
-
-function isEmpty(value: string): boolean {
-  return value.trim() === "" || value.trim().toLowerCase() === EMPTY;
-}
-
-function parseNonNegNumber(value: string, integer: boolean): number | null {
-  if (isEmpty(value)) return null;
-  const n = Number(value.replace(/,/g, "").trim());
-  if (!Number.isFinite(n) || n < 0) return null;
-  if (integer && !Number.isInteger(n)) return null;
-  return n;
 }
 
 /** Stable catalog id from issuer + card name (e.g. scotiabank-gold-amex). */
@@ -148,47 +138,16 @@ function normalizePointCurrency(raw: string | null): string {
   return raw.trim().slice(0, 64);
 }
 
-function applyEarnRates(
+function applyRewardRules(
   base: RewardCategory[],
   decisions: Map<string, FieldDecision>,
+  extracted: Extraction | null | undefined,
 ): { ok: true; categories: RewardCategory[] } | { ok: false; message: string } {
-  const byCat = new Map(base.map((r) => [r.category, { ...r }]));
-  for (const [key, d] of decisions) {
-    if (!key.startsWith("earn_rate.")) continue;
-    const category = key.slice("earn_rate.".length);
-    if (!category) return { ok: false, message: `Invalid earn-rate field ${key}.` };
-    const rate = parseNonNegNumber(d.value, false);
-    if (rate === null) return { ok: false, message: `Enter a valid earn rate for ${category}.` };
-    const prev = byCat.get(category);
-    byCat.set(category, prev ? { ...prev, earnRate: rate } : { category, earnRate: rate });
-  }
-  const categories = [...byCat.values()];
-  if (categories.length === 0) categories.push({ category: "other", earnRate: 1 });
-  return { ok: true, categories };
-}
-
-function applyWelcomePoints(
-  current: WelcomeOffer | null,
-  decisions: Map<string, FieldDecision>,
-): { ok: true; offer: WelcomeOffer | null } | { ok: false; message: string } {
-  const d = decisions.get("welcome_bonus.points");
-  if (!d) return { ok: true, offer: current };
-  const points = parseNonNegNumber(d.value, true);
-  if (points === null && !isEmpty(d.value)) {
-    return { ok: false, message: "Enter a valid welcome-bonus points value." };
-  }
-  if (points === null) return { ok: true, offer: null };
-  if (current?.summary) {
-    const replaced = current.summary.replace(/(\d{1,3}(?:,\d{3})+|\d+)/, String(points));
-    return {
-      ok: true,
-      offer: {
-        ...current,
-        summary: replaced === current.summary ? `${points} points after qualifying spend` : replaced,
-      },
-    };
-  }
-  return { ok: true, offer: { summary: `${points} points after qualifying spend` } };
+  const rates = applyEarnRates(base, decisions, extracted?.earn_rates);
+  if (!rates.ok) return { ok: false, message: rates.message };
+  const withPromos = applyPromotions(rates.value, decisions, extracted?.promotions);
+  if (!withPromos.ok) return { ok: false, message: withPromos.message };
+  return { ok: true, categories: withPromos.value };
 }
 
 export type BuildCatalogWriteResult =
@@ -238,18 +197,36 @@ function buildChangedWrite(
     if (network === undefined) return { ok: false, message: "Enter Visa, Mastercard, or American Express." };
     set.network = network;
   }
-  if ([...decisions.keys()].some((k) => k.startsWith("earn_rate."))) {
-    const rates = applyEarnRates(input.existing.reward_categories, decisions);
+  if (hasEarnRuleDecisions(decisions)) {
+    const rates = applyRewardRules(input.existing.reward_categories, decisions, input.extracted);
     if (!rates.ok) return rates;
     set.reward_categories = rates.categories;
   }
-  if (decisions.has("welcome_bonus.points")) {
-    const welcome = applyWelcomePoints(input.existing.welcome_offer, decisions);
-    if (!welcome.ok) return welcome;
-    set.welcome_offer = welcome.offer;
+  if (hasWelcomeDecisions(decisions)) {
+    const welcome = applyWelcomeOffer(input.existing.welcome_offer, decisions);
+    if (!welcome.ok) return { ok: false, message: welcome.message };
+    set.welcome_offer = welcome.value;
   }
 
   return { ok: true, write: { op: "update", id: input.linkedCardId, set } };
+}
+
+function newCardFeeAndNetwork(
+  decisions: Map<string, FieldDecision>,
+): { ok: true; annual_fee: number; network: CatalogNetwork } | { ok: false; message: string } {
+  let annual_fee = 0;
+  if (decisions.has("annual_fee")) {
+    const fee = parseNonNegNumber(decisions.get("annual_fee")!.value, false);
+    if (fee === null) return { ok: false, message: "Enter a valid annual fee." };
+    annual_fee = fee;
+  }
+  let network: CatalogNetwork = null;
+  if (decisions.has("network")) {
+    const mapped = mapNetwork(decisions.get("network")!.value);
+    if (mapped === undefined) return { ok: false, message: "Enter Visa, Mastercard, or American Express." };
+    network = mapped;
+  }
+  return { ok: true, annual_fee, network };
 }
 
 function buildNewWrite(
@@ -263,24 +240,15 @@ function buildNewWrite(
   const name = (decisions.get("name")?.value ?? input.cardName ?? "").trim();
   if (!name || isEmpty(name)) return { ok: false, message: "Card name is required to create a catalog card." };
 
-  let annual_fee = 0;
-  if (decisions.has("annual_fee")) {
-    const fee = parseNonNegNumber(decisions.get("annual_fee")!.value, false);
-    if (fee === null) return { ok: false, message: "Enter a valid annual fee." };
-    annual_fee = fee;
-  }
+  const basics = newCardFeeAndNetwork(decisions);
+  if (!basics.ok) return basics;
 
-  let network: CatalogNetwork = null;
-  if (decisions.has("network")) {
-    const mapped = mapNetwork(decisions.get("network")!.value);
-    if (mapped === undefined) return { ok: false, message: "Enter Visa, Mastercard, or American Express." };
-    network = mapped;
-  }
-
-  const rates = applyEarnRates([], decisions);
+  const rates = applyRewardRules([], decisions, input.extracted);
   if (!rates.ok) return rates;
-  const welcome = applyWelcomePoints(null, decisions);
-  if (!welcome.ok) return welcome;
+  const welcome = applyWelcomeOffer(null, decisions);
+  if (!welcome.ok) return { ok: false, message: welcome.message };
+  const reward_categories =
+    rates.categories.length > 0 ? rates.categories : [{ category: "other", earnRate: 1 }];
 
   return {
     ok: true,
@@ -290,11 +258,11 @@ function buildNewWrite(
         id: uniqueCardId(cardIdFor(issuer, name), input.takenIds ?? new Set()),
         name,
         issuer,
-        annual_fee,
+        annual_fee: basics.annual_fee,
         point_currency: normalizePointCurrency(input.extractedPointCurrency),
-        reward_categories: rates.categories,
-        welcome_offer: welcome.offer,
-        network,
+        reward_categories,
+        welcome_offer: welcome.value,
+        network: basics.network,
         last_verified: now.date,
         verified_at: now.iso,
         status: "verified",

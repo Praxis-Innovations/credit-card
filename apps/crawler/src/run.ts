@@ -4,7 +4,11 @@ import { cleanPage } from "./clean";
 import { estimateCostUsd } from "./config";
 import { diffCard, findPossiblyDiscontinued, reviewStatusFor, type DiffResult } from "./diff";
 import type { Extractor } from "./extract/claude";
-import type { CardExtraction } from "./extract/schema";
+import {
+  canReuseCardExtraction,
+  EXTRACTION_SCHEMA_VERSION,
+  type CardExtraction,
+} from "./extract/schema";
 import type { FetchResult } from "./fetcher";
 import { contentHash } from "./hash";
 import { acceptDiscoveredLinks, heuristicCardLinks } from "./links";
@@ -225,14 +229,21 @@ export async function runCrawl(opts: RunOptions, deps: RunDeps): Promise<RunSumm
       let callCost = 0;
       let reused = false;
       const prev = (await deps.store.previousCard(source.id, link.url)) ?? deps.cache.getCard(link.url);
-      // Only reuse when the page is unchanged AND the prior extraction used this
-      // same model — otherwise Sonnet↔Haiku compares would silently skip Claude.
-      if (prev && prev.hash === hash && prev.model === model) {
-        extraction = prev.extraction;
+      // Reuse only when page, schema, and model all match — otherwise Sonnet↔Haiku
+      // compares or pre-MC2 findings would silently skip Claude.
+      if (canReuseCardExtraction(prev, hash) && prev!.model === model) {
+        extraction = prev!.extraction;
         reused = true;
         counts.hash_skips++;
         log("  unchanged since last fetch; reusing previous extraction");
       } else {
+        if (prev && prev.hash === hash) {
+          const why =
+            prev.model !== model
+              ? "prior extraction used a different model"
+              : "extraction schema outdated";
+          log(`  page unchanged but ${why}; re-extracting`);
+        }
         try {
           const res = await deps.extractor!.extractCard({
             issuer: source.issuer_name,
@@ -252,7 +263,12 @@ export async function runCrawl(opts: RunOptions, deps: RunDeps): Promise<RunSumm
       // Widen earn-rate / BT APR quotes to the table row or sentence that holds
       // the number before checks — values stay as Claude returned them.
       extraction = selectQuoteSpans(extraction, cleaned.text);
-      deps.cache.setCard(link.url, { hash, extraction, model });
+      deps.cache.setCard(link.url, {
+        hash,
+        extraction,
+        schemaVersion: EXTRACTION_SCHEMA_VERSION,
+        model,
+      });
       counts.cards_extracted++;
 
       const checks = checkExtraction(extraction, cleaned.text);
