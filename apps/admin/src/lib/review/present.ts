@@ -13,8 +13,6 @@ export type FieldRow = {
   changed: boolean;
 };
 
-export type FieldSection = "needs_look" | "looks_right";
-
 export const DIFF_LABELS: Record<DiffKind, { label: string; tone: PillTone }> = {
   new: { label: "New card", tone: "warn" },
   changed: { label: "Changed", tone: "neutral" },
@@ -99,21 +97,12 @@ export function buildFieldRows(finding: Pick<PendingFinding, "extracted" | "chec
   return rows;
 }
 
-/**
- * Needs a look: warnings (failed checks) and catalog changes.
- * Looks right: values found in their quotes with no change to apply.
- */
-export function fieldSection(row: FieldRow): FieldSection {
-  if (row.changed) return "needs_look";
-  if (row.check && !row.check.ok) return "needs_look";
-  return "looks_right";
-}
-
+/** Needs a look: warnings (failed checks) and catalog changes; else Looks right. */
 export function splitFieldRows(rows: FieldRow[]): { needsLook: FieldRow[]; looksRight: FieldRow[] } {
   const needsLook: FieldRow[] = [];
   const looksRight: FieldRow[] = [];
   for (const row of rows) {
-    if (fieldSection(row) === "needs_look") needsLook.push(row);
+    if (row.changed || (row.check && !row.check.ok)) needsLook.push(row);
     else looksRight.push(row);
   }
   return { needsLook, looksRight };

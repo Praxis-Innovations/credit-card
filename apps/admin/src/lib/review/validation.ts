@@ -20,6 +20,31 @@ function asString(raw: unknown, label: string): { ok: true; value: string } | { 
   return { ok: true, value: raw };
 }
 
+function parseFieldDecision(
+  item: unknown,
+  allowedKeys: ReadonlySet<string>,
+  seen: Set<string>,
+): { ok: true; field: FieldDecision } | { ok: false; error: string } {
+  if (item === null || typeof item !== "object" || Array.isArray(item)) {
+    return { ok: false, error: "Each field decision is invalid." };
+  }
+  const row = item as Record<string, unknown>;
+  if (typeof row.key !== "string" || row.key.trim() === "") {
+    return { ok: false, error: "Each field needs a key." };
+  }
+  const key = row.key;
+  if (!allowedKeys.has(key)) return { ok: false, error: `Unknown field: ${key}.` };
+  if (seen.has(key)) return { ok: false, error: `Duplicate field: ${key}.` };
+  if (typeof row.save !== "boolean") return { ok: false, error: "Each field needs a save choice." };
+
+  const page = asString(row.page_value, "page value");
+  if (!page.ok) return page;
+  const value = asString(row.value, "value");
+  if (!value.ok) return value;
+
+  return { ok: true, field: { key, save: row.save, page_value: page.value, value: value.value } };
+}
+
 /**
  * Field decisions sent with Approve. Keys must be unique; every row carries
  * the page value and the (possibly edited) final value.
@@ -36,32 +61,15 @@ export function validateReviewFields(
 
   const seen = new Set<string>();
   const fields: FieldDecision[] = [];
-
   for (const item of fieldsRaw) {
-    if (item === null || typeof item !== "object" || Array.isArray(item)) {
-      return { ok: false, error: "Each field decision is invalid." };
-    }
-    const row = item as Record<string, unknown>;
-    if (typeof row.key !== "string" || row.key.trim() === "") {
-      return { ok: false, error: "Each field needs a key." };
-    }
-    const key = row.key;
-    if (!allowedKeys.has(key)) return { ok: false, error: `Unknown field: ${key}.` };
-    if (seen.has(key)) return { ok: false, error: `Duplicate field: ${key}.` };
-    if (typeof row.save !== "boolean") return { ok: false, error: "Each field needs a save choice." };
-
-    const page = asString(row.page_value, "page value");
-    if (!page.ok) return page;
-    const value = asString(row.value, "value");
-    if (!value.ok) return value;
-
-    seen.add(key);
-    fields.push({ key, save: row.save, page_value: page.value, value: value.value });
+    const parsed = parseFieldDecision(item, allowedKeys, seen);
+    if (!parsed.ok) return parsed;
+    seen.add(parsed.field.key);
+    fields.push(parsed.field);
   }
 
   if (allowedKeys.size > 0 && seen.size !== allowedKeys.size) {
     return { ok: false, error: "Decide every field before approving." };
   }
-
   return { ok: true, fields: { fields } };
 }

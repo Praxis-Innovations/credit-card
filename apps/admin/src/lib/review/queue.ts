@@ -21,7 +21,7 @@ export function loadReviewQueue(supabase: SupabaseClient) {
     .returns<PendingFinding[]>();
 }
 
-export function loadFinding(supabase: SupabaseClient, id: string) {
+function loadFinding(supabase: SupabaseClient, id: string) {
   return supabase.from("card_findings").select(FINDING_COLUMNS).eq("id", id).returns<PendingFinding>().maybeSingle();
 }
 
