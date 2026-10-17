@@ -44,21 +44,26 @@ export function acceptDiscoveredLinks(
 }
 
 const NETWORK_SEGMENT = /\/(visa|mastercard|master-card|american-express|amex)\//i;
+/** Filename contains a network token (e.g. RBC `rbc-avion-visa-infinite.html`). */
+const NETWORK_IN_NAME = /(^|[^a-z])(visa|mastercard|master-card|american-express|amex)([^a-z]|$)/i;
 const NON_PRODUCT =
-  /(compare|calculator|manage|activate|apply|faq|help|benefits-guide|insurance-certificate|rewards-program|redeem|welcome-kit|supplementary|offers?\.html$|index\.html$)/i;
+  /(compare|calculator|manage|activate|apply|faq|help|benefits-guide|insurance-certificate|rewards-program|redeem|welcome-kit|supplementary|offers?\.html$|index\.html$|all-credit-cards|credit-cards\.html$|choose-a-credit-card)/i;
 
 /**
  * Deterministic stand-in for Claude's link pick, used by `--no-llm` runs so
  * fetching and discovery can be tested without an API key. Card product pages
- * live under a network folder or end in `-card`; hub pages are excluded.
+ * live under a network folder, end in `-card`, or name a network in the
+ * filename; hub and tool pages are excluded.
  */
 export function heuristicCardLinks(offered: PageLink[], urlPattern: string | null): CardLink[] {
   const out: CardLink[] = [];
   for (const link of offered) {
     if (!matchesUrlPattern(link.url, urlPattern)) continue;
     const path = new URL(link.url).pathname;
+    if (/\/tools?\//i.test(path)) continue;
     const last = path.split("/").filter(Boolean).pop() ?? "";
-    const looksLikeProduct = NETWORK_SEGMENT.test(path) || /-card(\.html?)?$/i.test(last);
+    const looksLikeProduct =
+      NETWORK_SEGMENT.test(path) || /-card(\.html?)?$/i.test(last) || NETWORK_IN_NAME.test(last);
     if (!looksLikeProduct || NON_PRODUCT.test(last)) continue;
     out.push({ card_name: labelFromLinkText(link.text) || last, url: link.url });
   }
