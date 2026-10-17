@@ -2,7 +2,8 @@
 
 OpenAPI 3.1 spec for the purchase-specific recommender and public catalog API.
 Implemented by **`apps/api`** (Next.js on Vercel). Domain model + ranking live
-**inside** `apps/api/src/domain` — not a shared workspace package for clients.
+**inside** `apps/api/src/domain`. Shared wire constants (`CATEGORIES` /
+`CATEGORY_LABELS`) live in `@northtap/api-contract` for api + mobile.
 
 | File | Role |
 |------|------|

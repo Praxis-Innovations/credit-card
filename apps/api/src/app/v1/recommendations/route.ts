@@ -1,5 +1,8 @@
 import { ApiError } from "@/lib/errors";
-import { mapSharedStoreFields } from "@/lib/recommend-request";
+import {
+  mapSharedStoreFields,
+  parseNonNegativeIdMap,
+} from "@/lib/recommend-request";
 import {
   handleRecommendationPost,
   recommendationOptions,
@@ -46,14 +49,14 @@ export async function POST(request: Request) {
       ownedCardIds: Array.isArray(raw.ownedCardIds)
         ? (raw.ownedCardIds as string[])
         : undefined,
-      capGroupSpendToDate:
-        raw.capGroupSpendToDate && typeof raw.capGroupSpendToDate === "object"
-          ? (raw.capGroupSpendToDate as Record<string, number>)
-          : undefined,
-      annualSpendByCard:
-        raw.annualSpendByCard && typeof raw.annualSpendByCard === "object"
-          ? (raw.annualSpendByCard as Record<string, number>)
-          : undefined,
+      capGroupSpendToDate: parseNonNegativeIdMap(
+        raw.capGroupSpendToDate,
+        "capGroupSpendToDate",
+      ),
+      annualSpendByCard: parseNonNegativeIdMap(
+        raw.annualSpendByCard,
+        "annualSpendByCard",
+      ),
       fuelGrade:
         raw.fuelGrade === undefined || raw.fuelGrade === null
           ? undefined

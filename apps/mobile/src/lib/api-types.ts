@@ -1,35 +1,16 @@
 /**
  * Wire-format types for apps/api — kept in sync with docs/api/openapi.yaml by hand.
  * Types only: no ranking, matching, or catalog data.
+ * CATEGORIES / CATEGORY_LABELS live in @northtap/api-contract (shared with apps/api).
  */
 
-export const CATEGORIES = [
-  "groceries",
-  "dining",
-  "gas",
-  "transit",
-  "drugstore",
-  "recurring_bills",
-  "travel",
-  "foreign_currency",
-  "entertainment",
-  "other",
-] as const;
+export {
+  CATEGORIES,
+  CATEGORY_LABELS,
+  type Category,
+} from "@northtap/api-contract";
 
-export type Category = (typeof CATEGORIES)[number];
-
-export const CATEGORY_LABELS: Record<Category, string> = {
-  groceries: "Groceries",
-  dining: "Dining",
-  gas: "Gas",
-  transit: "Transit",
-  drugstore: "Drugstore",
-  recurring_bills: "Recurring bills",
-  travel: "Travel",
-  foreign_currency: "Foreign currency",
-  entertainment: "Entertainment",
-  other: "Everything else",
-};
+import type { Category } from "@northtap/api-contract";
 
 export type PointCurrency = string;
 

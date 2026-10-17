@@ -22,6 +22,7 @@
     "import:store_type_mccs": "tsx src/lib/mcc-import-cli.ts store_type_mccs"
   },
   "dependencies": {
+    "@northtap/api-contract": "workspace:*",
     "@supabase/supabase-js": "^2.116.0",
     "next": "^15.3.4",
     "react": "^19.1.0",

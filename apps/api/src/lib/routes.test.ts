@@ -518,6 +518,40 @@ describe("POST /v1/recommendations", () => {
     expect(res.status).toBe(422);
   });
 
+  it("rejects invalid spendToDate / valuations maps with 400", async () => {
+    for (const bad of [
+      { spendToDate: { monthly: { groceries: Number.NaN } } },
+      { spendToDate: { monthly: { not_a_category: 10 } } },
+      { valuations: { Aeroplan: "2" } },
+      { valuations: { NotACurrency: 1 } },
+      { capGroupSpendToDate: { "cobalt-5x": -1 } },
+      {
+        annualSpendByCard: Object.fromEntries(
+          Array.from({ length: 65 }, (_, i) => [`c${i}`, 1]),
+        ),
+      },
+    ]) {
+      const res = await postRecommendations(
+        req("/v1/recommendations", {
+          method: "POST",
+          headers: {
+            ...authHeaders(),
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amountCad: 50,
+            categoryFallback: "dining",
+            ownedCardIds: ["amex-cobalt"],
+            ...bad,
+          }),
+        }),
+      );
+      expect(res.status).toBe(400);
+      const body = (await jsonOf(res)) as { error: { code: string } };
+      expect(body.error.code).toBe("bad_request");
+    }
+  });
+
   it("rejects unauthenticated recommendations", async () => {
     const res = await postRecommendations(
       req("/v1/recommendations", {
