@@ -60,6 +60,41 @@ describe("heuristicCardLinks", () => {
       { card_name: "Momentum No-Fee for Students", url: `${BASE}/visa/student-scotia-momentum-no-fee-visa.html` },
     ]);
   });
+
+  it("picks RBC-style product filenames that name a network without a network folder", () => {
+    const rbc: PageLink[] = [
+      {
+        url: "https://www.rbcroyalbank.com/credit-cards/travel/rbc-avion-visa-infinite.html",
+        text: "RBC Avion Visa Infinite",
+      },
+      {
+        url: "https://www.rbcroyalbank.com/credit-cards/cash-back/rbc-cashback-mastercard.html",
+        text: "RBC Cash Back Mastercard",
+      },
+      {
+        url: "https://www.rbcroyalbank.com/credit-cards/all-credit-cards.html",
+        text: "All credit cards",
+      },
+      {
+        url: "https://www.rbcroyalbank.com/credit-cards/travel/avion-rbc-credit-cards.html",
+        text: "Avion cards hub",
+      },
+      {
+        url: "https://www.rbcroyalbank.com/credit-cards/tools/choose-a-credit-card.html",
+        text: "Help Me Choose",
+      },
+    ];
+    expect(heuristicCardLinks(rbc, "/credit-cards/")).toEqual([
+      {
+        card_name: "RBC Avion Visa Infinite",
+        url: "https://www.rbcroyalbank.com/credit-cards/travel/rbc-avion-visa-infinite.html",
+      },
+      {
+        card_name: "RBC Cash Back Mastercard",
+        url: "https://www.rbcroyalbank.com/credit-cards/cash-back/rbc-cashback-mastercard.html",
+      },
+    ]);
+  });
 });
 
 describe("labelFromLinkText", () => {

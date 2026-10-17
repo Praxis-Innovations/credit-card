@@ -6,6 +6,7 @@
 export const ISSUER_DOMAINS: Record<string, readonly string[]> = {
   "american express": ["americanexpress.com"],
   bmo: ["bmo.com"],
+  brim: ["brimfinancial.com"],
   "canadian tire": ["canadiantire.ca", "ctfs.com", "triangle.com"],
   cibc: ["cibc.com"],
   desjardins: ["desjardins.com"],

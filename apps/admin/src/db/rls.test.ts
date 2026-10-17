@@ -56,17 +56,25 @@ async function affected(tx: Transaction, sql: string): Promise<number> {
 
 const scotiaId = `(select id from public.crawl_sources where issuer_name = 'Scotiabank')`;
 
+/** Scotiabank (admin_console) + 16 issuers from the CR4 crawl_sources migration. */
+const SEEDED_SOURCES = 17;
+
 describe("seed", () => {
-  it("allow-lists the owner as admin and seeds Scotiabank as the only source", async () => {
+  it("allow-lists the owner as admin and seeds the issuer scrape list", async () => {
     const admins = await db.query<{ role: string; active: boolean }>(
       "select role, active from public.admin_users where email = 'info.praxisinnovations@gmail.com'",
     );
     expect(admins.rows).toEqual([{ role: "admin", active: true }]);
 
-    const { rows } = await db.query(
-      "select issuer_name, compare_url, url_pattern, schedule, status from public.crawl_sources",
+    const { rows } = await db.query<{ issuer_name: string; status: string }>(
+      "select issuer_name, status from public.crawl_sources order by issuer_name",
     );
-    expect(rows).toEqual([
+    expect(rows).toHaveLength(SEEDED_SOURCES);
+
+    const scotia = await db.query(
+      "select issuer_name, compare_url, url_pattern, schedule, status from public.crawl_sources where issuer_name = 'Scotiabank'",
+    );
+    expect(scotia.rows).toEqual([
       {
         issuer_name: "Scotiabank",
         compare_url: "https://www.scotiabank.com/ca/en/personal/credit-cards/compare-cards.html",
@@ -75,6 +83,14 @@ describe("seed", () => {
         status: "active",
       },
     ]);
+
+    const blocked = rows
+      .filter((r) => r.status === "blocked")
+      .map((r) => r.issuer_name)
+      .sort();
+    expect(blocked).toEqual(
+      ["American Express", "BMO", "Canadian Tire", "CIBC", "HSBC", "PC Financial", "Simplii"].sort(),
+    );
   });
 
   it("enables RLS on every admin table", async () => {
@@ -184,7 +200,7 @@ describe("console roles", () => {
       await count(tx, "crawl_sources"),
       await affected(tx, "update public.crawl_sources set notes = 'x'"),
     ]);
-    expect(n).toBe(1);
+    expect(n).toBe(SEEDED_SOURCES);
     expect(updated).toBe(0);
   });
 
@@ -204,7 +220,7 @@ describe("console roles", () => {
       urls: await count(tx, "discovered_card_urls"),
       admins: await count(tx, "admin_users"),
     }));
-    expect(counts).toEqual({ sources: 1, urls: 1, admins: 4 });
+    expect(counts).toEqual({ sources: SEEDED_SOURCES, urls: 1, admins: 4 });
   });
 
   it("rejects a duplicate issuer name regardless of case", async () => {
