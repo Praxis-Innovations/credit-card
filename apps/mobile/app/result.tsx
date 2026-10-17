@@ -61,6 +61,7 @@ export default function ResultScreen() {
   const router = useRouter();
   const {
     hydrated,
+    authReady,
     store,
     setStore,
     amount,
@@ -103,7 +104,18 @@ export default function ResultScreen() {
     void run();
   }, [hydrated, run]);
 
-  if (hydrated && walletIds.length === 0 && !user) return <Redirect href="/cards" />;
+  // Wait for authReady so an OAuth return on /result is not treated as a guest.
+  if (!hydrated || !authReady) {
+    return (
+      <Screen>
+        <View style={styles.loading} accessibilityLabel="Loading">
+          <ActivityIndicator color={colors.primary} size="large" />
+        </View>
+      </Screen>
+    );
+  }
+  // Guest + empty wallet → pick cards; signed-in + empty → store.
+  if (walletIds.length === 0 && !user) return <Redirect href="/cards" />;
   if (state.status === "empty") return <Redirect href="/store" />;
 
   const ready = state.status === "ready" ? state : null;

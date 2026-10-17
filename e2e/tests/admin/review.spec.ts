@@ -23,8 +23,9 @@ test.describe("admin review", () => {
     await expect(rowButton).toBeVisible();
     await rowButton.click();
 
-    await page.getByRole("button", { name: "Approve", exact: true }).click();
-    await expect(page.getByRole("status")).toContainText(`Approved ${approveName}`);
+    await page.getByRole("button", { name: "Approve and next →" }).click();
+    // Approve navigates to the next pending card; confirm via the queue.
+    await page.goto("/review");
     await expect(page.getByRole("button", { name: approveName })).toHaveCount(0);
   });
 
@@ -36,13 +37,11 @@ test.describe("admin review", () => {
     await expect(rowButton).toBeVisible();
     await rowButton.click();
 
-    await page.getByRole("button", { name: "Reject…" }).click();
-    await page
-      .getByLabel("Reason for rejecting (required)")
-      .fill("Fee quote does not match the current product page.");
-    await page.getByRole("button", { name: "Confirm reject" }).click();
-
-    await expect(page.getByRole("status")).toContainText(`Rejected ${rejectName}`);
+    await page.getByLabel("Reject reason").fill(
+      "Fee quote does not match the current product page.",
+    );
+    await page.getByRole("button", { name: "Reject card" }).click();
+    await page.goto("/review");
     await expect(page.getByRole("button", { name: rejectName })).toHaveCount(0);
   });
 });

@@ -36,7 +36,7 @@ test.describe("first-run flow (guest)", () => {
     ).toBeVisible();
 
     await expect(page.getByText("Other cards in your wallet")).toBeVisible();
-    const other = page.getByLabel("Gold American Express, $1.00 back");
+    const other = page.getByLabel("Gold American Express, $3.67 back");
     await expect(other).toBeVisible();
     await expect(other.getByText("1× Scene+ on gas")).toBeVisible();
     await expect(page.getByText("Keep your wallet")).toBeVisible();
@@ -135,7 +135,7 @@ test.describe("first-run flow (guest)", () => {
     await expect(page.getByRole("tab", { name: "Browse" })).toHaveAttribute("aria-selected", "true");
     await expect(page.getByText("Location is off, so pick your store here.")).toBeVisible();
     await browseShellAndSkip(page);
-    await expect(page.getByLabel("Best card").getByText("$1.00")).toBeVisible();
+    await expect(page.getByLabel("Best card").getByText("$3.67")).toBeVisible();
   });
 
   test("offline → shows the last cached result, labelled as possibly out of date", async ({
