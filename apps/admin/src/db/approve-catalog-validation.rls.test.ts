@@ -11,6 +11,20 @@ const EARN_FIELDS = {
   fields: [{ key: "earn_rates[0].rate", save: true, page_value: "1", value: "2" }],
 };
 
+/** Live scotia-gold-amex catalog earn rules (seed). */
+const SCOTIA_GOLD_CATEGORIES = [
+  { category: "groceries", earnRate: 5, capMonthly: 2000 },
+  { category: "entertainment", earnRate: 5, capMonthly: 2000 },
+  { category: "dining", earnRate: 3 },
+  { category: "transit", earnRate: 2 },
+  { category: "gas", earnRate: 1 },
+  { category: "travel", earnRate: 1 },
+  { category: "drugstore", earnRate: 1 },
+  { category: "recurring_bills", earnRate: 1 },
+  { category: "foreign_currency", earnRate: 1 },
+  { category: "other", earnRate: 1 },
+];
+
 let db: PGlite;
 
 beforeAll(async () => {
@@ -103,6 +117,30 @@ describe("approve_finding_to_catalog validation", () => {
     await expect(
       approve(EARN_FIELDS, rewardCategoriesOp([{ category: "other", earnRate: 101 }])),
     ).rejects.toThrow(/earnRate out of bounds/);
+  });
+
+  it("rejects valid reward_categories whose earnRate diverges from saved earn_rate.<cat>", async () => {
+    const fields = {
+      fields: [{ key: "earn_rate.dining", save: true, page_value: "3", value: "3" }],
+    };
+    const mismatched = SCOTIA_GOLD_CATEGORIES.map((row) =>
+      row.category === "dining" ? { ...row, earnRate: 50 } : row,
+    );
+    await expect(approve(fields, rewardCategoriesOp(mismatched))).rejects.toThrow(
+      /card_op reward_categories does not match review_fields/,
+    );
+  });
+
+  it("rejects rewriting an uncovered category while saving earn_rate.<cat>", async () => {
+    const fields = {
+      fields: [{ key: "earn_rate.dining", save: true, page_value: "3", value: "3" }],
+    };
+    const rewritten = SCOTIA_GOLD_CATEGORIES.map((row) =>
+      row.category === "groceries" ? { ...row, earnRate: 99 } : row,
+    );
+    await expect(approve(fields, rewardCategoriesOp(rewritten))).rejects.toThrow(
+      /card_op reward_categories does not match review_fields/,
+    );
   });
 
   it("returns null without mutating cards when the finding is no longer pending", async () => {

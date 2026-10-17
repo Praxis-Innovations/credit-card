@@ -148,13 +148,128 @@ begin
 end;
 $$;
 
+-- Compare reward_categories content to saved earn_rate.<cat> values (and keep
+-- uncovered entries identical to the existing catalog row on update).
+create or replace function public.assert_reward_categories_match_review(
+  p_categories jsonb,
+  p_review_fields jsonb,
+  p_existing jsonb,
+  p_extracted jsonb
+)
+returns void
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_f jsonb;
+  v_key text;
+  v_cat text;
+  v_expected numeric;
+  v_max numeric;
+  v_covered text[] := array[]::text[];
+  v_has_promo boolean := false;
+  v_idx int;
+  v_elem jsonb;
+  v_ext_cat text;
+begin
+  if p_categories is null or jsonb_typeof(p_categories) <> 'array' then
+    return;
+  end if;
+
+  for v_f in
+    select f
+    from jsonb_array_elements(p_review_fields -> 'fields') as f
+    where coalesce((f->>'save')::boolean, false)
+  loop
+    v_key := v_f->>'key';
+    if v_key like 'earn_rate.%' and v_key not like 'earn_rates[%' then
+      v_cat := nullif(btrim(substr(v_key, length('earn_rate.') + 1)), '');
+      if v_cat is null then
+        raise exception 'card_op reward_categories does not match review_fields'
+          using errcode = '22023';
+      end if;
+      begin
+        v_expected := (v_f->>'value')::numeric;
+      exception when others then
+        raise exception 'card_op reward_categories does not match review_fields'
+          using errcode = '22023';
+      end;
+      select max((e->>'earnRate')::numeric)
+        into v_max
+      from jsonb_array_elements(p_categories) as e
+      where e->>'category' = v_cat;
+      if v_max is distinct from v_expected then
+        raise exception 'card_op reward_categories does not match review_fields'
+          using errcode = '22023';
+      end if;
+      if not (v_cat = any (v_covered)) then
+        v_covered := v_covered || v_cat;
+      end if;
+    elsif v_key like 'earn_rates[%' then
+      v_idx := substring(v_key from 'earn_rates\[(\d+)\]')::int;
+      v_ext_cat := nullif(
+        btrim(p_extracted -> 'earn_rates' -> v_idx ->> 'category'),
+        ''
+      );
+      if v_ext_cat is not null and not (v_ext_cat = any (v_covered)) then
+        v_covered := v_covered || v_ext_cat;
+      end if;
+    elsif v_key like 'promotion.%' then
+      v_has_promo := true;
+    end if;
+  end loop;
+
+  -- Update only: uncovered entries must stay identical to the live catalog row.
+  if p_existing is null or jsonb_typeof(p_existing) <> 'array' then
+    return;
+  end if;
+
+  for v_elem in select value from jsonb_array_elements(p_existing)
+  loop
+    v_cat := v_elem->>'category';
+    if v_cat is null or v_cat = any (v_covered) then
+      continue;
+    end if;
+    if not exists (
+      select 1 from jsonb_array_elements(p_categories) as e where e = v_elem
+    ) then
+      raise exception 'card_op reward_categories does not match review_fields'
+        using errcode = '22023';
+    end if;
+  end loop;
+
+  for v_elem in select value from jsonb_array_elements(p_categories)
+  loop
+    v_cat := v_elem->>'category';
+    if v_cat is null or v_cat = any (v_covered) then
+      continue;
+    end if;
+    if exists (
+      select 1 from jsonb_array_elements(p_existing) as e where e = v_elem
+    ) then
+      continue;
+    end if;
+    -- Promotions may append dated rows that are not yet on the catalog card.
+    if v_has_promo then
+      continue;
+    end if;
+    raise exception 'card_op reward_categories does not match review_fields'
+      using errcode = '22023';
+  end loop;
+end;
+$$;
+
 -- Ensure p_card_op only writes values justified by saved review_fields.
+drop function if exists public.assert_card_op_matches_review(jsonb, jsonb, text, text, text);
 create or replace function public.assert_card_op_matches_review(
   p_card_op jsonb,
   p_review_fields jsonb,
   p_diff_kind text,
   p_finding_card_name text,
-  p_issuer_name text
+  p_issuer_name text,
+  p_existing_reward_categories jsonb default null,
+  p_extracted jsonb default null
 )
 returns void
 language plpgsql
@@ -231,6 +346,12 @@ begin
           using errcode = '22023';
       end if;
       perform public.validate_reward_categories(v_payload -> 'reward_categories');
+      perform public.assert_reward_categories_match_review(
+        v_payload -> 'reward_categories',
+        p_review_fields,
+        p_existing_reward_categories,
+        p_extracted
+      );
     end if;
 
     if v_has_welcome then
@@ -299,6 +420,12 @@ begin
     end if;
 
     perform public.validate_reward_categories(v_payload -> 'reward_categories');
+    perform public.assert_reward_categories_match_review(
+      v_payload -> 'reward_categories',
+      p_review_fields,
+      null,
+      p_extracted
+    );
 
     if not v_has_welcome
        and v_payload ? 'welcome_offer'
@@ -315,7 +442,9 @@ revoke all on function public.review_saved_value(jsonb, text) from public, anon,
 revoke all on function public.review_has_saved_prefix(jsonb, text) from public, anon, authenticated;
 revoke all on function public.map_review_network(text) from public, anon, authenticated;
 revoke all on function public.validate_reward_categories(jsonb) from public, anon, authenticated;
-revoke all on function public.assert_card_op_matches_review(jsonb, jsonb, text, text, text)
+revoke all on function public.assert_reward_categories_match_review(jsonb, jsonb, jsonb, jsonb)
+  from public, anon, authenticated;
+revoke all on function public.assert_card_op_matches_review(jsonb, jsonb, text, text, text, jsonb, jsonb)
   from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------------
@@ -349,6 +478,7 @@ declare
   v_before jsonb;
   v_after jsonb;
   v_issuer_name text;
+  v_existing_cats jsonb;
   v_actor text := coalesce(nullif(auth.jwt() ->> 'email', ''), 'system:' || session_user);
 begin
   if not public.is_admin('validator') then
@@ -383,12 +513,21 @@ begin
     end if;
     v_op := p_card_op ->> 'op';
 
+    v_existing_cats := null;
+    if v_op = 'update' and v_finding.linked_card_id is not null then
+      select c.reward_categories into v_existing_cats
+      from public.cards c
+      where c.id = v_finding.linked_card_id;
+    end if;
+
     perform public.assert_card_op_matches_review(
       p_card_op,
       p_review_fields,
       v_finding.diff_kind,
       v_finding.card_name,
-      v_issuer_name
+      v_issuer_name,
+      v_existing_cats,
+      v_finding.extracted
     );
 
     if v_op = 'insert' then
