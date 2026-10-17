@@ -2,9 +2,9 @@ import { expect, test } from "../../src/fixtures";
 import { signInAdminBrowser } from "../../src/helpers/admin-auth";
 import { deleteIssuerByName } from "../../src/helpers/admin-data";
 
-const ISSUER = "Tangerine";
-const VALID_COMPARE =
-  "https://www.tangerine.ca/en/products/spending/credit-cards/compare-credit-cards.html";
+// Must not be a seeded crawl_sources issuer: beforeEach/afterEach delete it by name.
+const ISSUER = "Koho";
+const VALID_COMPARE = "https://www.koho.ca/credit/";
 const BAD_COMPARE = "https://www.ratehub.ca/credit-cards";
 
 test.describe("admin sources", () => {
@@ -28,7 +28,7 @@ test.describe("admin sources", () => {
     await page.getByLabel("Compare page URL (official site only)").fill(BAD_COMPARE);
     await page.getByRole("button", { name: "Save issuer" }).click();
 
-    await expect(page.getByText(/Use Tangerine's own site/i)).toBeVisible();
+    await expect(page.getByText(/Use Koho's own site/i)).toBeVisible();
     await expect(page.getByRole("heading", { name: "Sources" })).toBeVisible();
     // Still on the form — issuer was not added.
     await expect(page.getByRole("heading", { name: "Add an issuer to the scrape list" })).toBeVisible();
