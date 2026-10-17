@@ -201,7 +201,21 @@ describe("approve_finding_to_catalog update", () => {
 });
 
 describe("approve_finding_to_catalog validation", () => {
-  it("rejects non-array reward_categories on update", async () => {
+  it("rejects a p_card_op whose annual_fee diverges from review_fields", async () => {
+    await expect(
+      asRole(db, "authenticated", VALIDATOR, (tx) =>
+        tx.query(
+          `select public.approve_finding_to_catalog(
+            (select id from public.card_findings where run_id = ${RUN} and review_status = 'pending'),
+            $1::jsonb, $2::jsonb
+          )`,
+          [JSON.stringify(FIELDS), JSON.stringify(updateCardOp(1))],
+        ),
+      ),
+    ).rejects.toThrow(/card_op annual_fee does not match review_fields/);
+  });
+
+  it("rejects unjustified reward_categories on update", async () => {
     await expect(
       asRole(db, "authenticated", VALIDATOR, (tx) =>
         tx.query(
@@ -211,6 +225,38 @@ describe("approve_finding_to_catalog validation", () => {
           )`,
           [
             JSON.stringify(FIELDS),
+            JSON.stringify({
+              op: "update",
+              id: "scotia-gold-amex",
+              set: {
+                annual_fee: 599,
+                reward_categories: [{ category: "other", earnRate: 99 }],
+                last_verified: "2026-10-16",
+                verified_at: "2026-10-16T12:00:00.000Z",
+                status: "verified",
+              },
+            }),
+          ],
+        ),
+      ),
+    ).rejects.toThrow(/card_op\.set contains unjustified key reward_categories/);
+  });
+
+  it("rejects non-array reward_categories when earn rules are saved", async () => {
+    const earnFields = {
+      fields: [
+        { key: "earn_rates[0].rate", save: true, page_value: "1", value: "2" },
+      ],
+    };
+    await expect(
+      asRole(db, "authenticated", VALIDATOR, (tx) =>
+        tx.query(
+          `select public.approve_finding_to_catalog(
+            (select id from public.card_findings where run_id = ${RUN} and review_status = 'pending'),
+            $1::jsonb, $2::jsonb
+          )`,
+          [
+            JSON.stringify(earnFields),
             JSON.stringify({
               op: "update",
               id: "scotia-gold-amex",
@@ -225,6 +271,61 @@ describe("approve_finding_to_catalog validation", () => {
         ),
       ),
     ).rejects.toThrow(/reward_categories must be a json array/);
+  });
+
+  it("rejects reward_categories with unknown category or out-of-bounds rate", async () => {
+    const earnFields = {
+      fields: [
+        { key: "earn_rates[0].rate", save: true, page_value: "1", value: "2" },
+      ],
+    };
+    await expect(
+      asRole(db, "authenticated", VALIDATOR, (tx) =>
+        tx.query(
+          `select public.approve_finding_to_catalog(
+            (select id from public.card_findings where run_id = ${RUN} and review_status = 'pending'),
+            $1::jsonb, $2::jsonb
+          )`,
+          [
+            JSON.stringify(earnFields),
+            JSON.stringify({
+              op: "update",
+              id: "scotia-gold-amex",
+              set: {
+                reward_categories: [{ category: "not_a_category", earnRate: 2 }],
+                last_verified: "2026-10-16",
+                verified_at: "2026-10-16T12:00:00.000Z",
+                status: "verified",
+              },
+            }),
+          ],
+        ),
+      ),
+    ).rejects.toThrow(/unknown category/);
+
+    await expect(
+      asRole(db, "authenticated", VALIDATOR, (tx) =>
+        tx.query(
+          `select public.approve_finding_to_catalog(
+            (select id from public.card_findings where run_id = ${RUN} and review_status = 'pending'),
+            $1::jsonb, $2::jsonb
+          )`,
+          [
+            JSON.stringify(earnFields),
+            JSON.stringify({
+              op: "update",
+              id: "scotia-gold-amex",
+              set: {
+                reward_categories: [{ category: "other", earnRate: 101 }],
+                last_verified: "2026-10-16",
+                verified_at: "2026-10-16T12:00:00.000Z",
+                status: "verified",
+              },
+            }),
+          ],
+        ),
+      ),
+    ).rejects.toThrow(/earnRate out of bounds/);
   });
 
   it("returns null without mutating cards when the finding is no longer pending", async () => {

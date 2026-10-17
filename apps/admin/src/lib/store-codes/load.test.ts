@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
-import { SUPABASE_PAGE_SIZE } from "./fetch-all";
+import { SUPABASE_PAGE_SIZE } from "@/lib/supabase/fetch-all";
 import { loadStoreCodeList } from "./load";
 
 type Page = { from: number; to: number };

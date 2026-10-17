@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Extraction } from "@/lib/review/types";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import {
   CARD_AUDIT_COLUMNS,
   CARD_COLUMNS,
@@ -14,35 +15,55 @@ type ApprovedFinding = { extracted: Extraction | null };
 
 /**
  * Load the catalog for the Cards list, plus pending-change and crawl-source flags.
- * At ~500 cards this stays a single round-trip trio; filters/pagination are client-side.
+ * Pages past the PostgREST 1,000-row cap; filters/pagination stay client-side.
  */
 export async function loadCatalogCards(supabase: SupabaseClient): Promise<{
   cards: CatalogCardListItem[];
   error: string | null;
 }> {
   const [cardsRes, pendingRes, sourcesRes] = await Promise.all([
-    supabase.from("cards").select(CARD_COLUMNS).order("issuer").order("name").returns<CatalogCard[]>(),
-    supabase
-      .from("card_findings")
-      .select("linked_card_id")
-      .eq("review_status", "pending")
-      .not("linked_card_id", "is", null)
-      .returns<PendingLink[]>(),
-    supabase.from("crawl_sources").select("issuer_name").returns<SourceName[]>(),
+    fetchAllRows<CatalogCard>((from, to) =>
+      supabase
+        .from("cards")
+        .select(CARD_COLUMNS)
+        .order("issuer")
+        .order("name")
+        .order("id")
+        .range(from, to)
+        .returns<CatalogCard[]>(),
+    ),
+    fetchAllRows<PendingLink>((from, to) =>
+      supabase
+        .from("card_findings")
+        .select("linked_card_id")
+        .eq("review_status", "pending")
+        .not("linked_card_id", "is", null)
+        .order("linked_card_id")
+        .order("id")
+        .range(from, to)
+        .returns<PendingLink[]>(),
+    ),
+    fetchAllRows<SourceName>((from, to) =>
+      supabase
+        .from("crawl_sources")
+        .select("issuer_name")
+        .order("issuer_name")
+        .order("id")
+        .range(from, to)
+        .returns<SourceName[]>(),
+    ),
   ]);
 
-  if (cardsRes.error) {
+  if (cardsRes.error || pendingRes.error || sourcesRes.error) {
     return { cards: [], error: "Could not load the card catalog. Refresh to try again." };
   }
 
   const pendingIds = new Set(
-    (pendingRes.data ?? []).map((r) => r.linked_card_id).filter((id): id is string => Boolean(id)),
+    pendingRes.data.map((r) => r.linked_card_id).filter((id): id is string => Boolean(id)),
   );
-  const sourceIssuers = new Set(
-    (sourcesRes.data ?? []).map((s) => s.issuer_name.trim().toLowerCase()),
-  );
+  const sourceIssuers = new Set(sourcesRes.data.map((s) => s.issuer_name.trim().toLowerCase()));
 
-  const cards: CatalogCardListItem[] = (cardsRes.data ?? []).map((c) => ({
+  const cards: CatalogCardListItem[] = cardsRes.data.map((c) => ({
     ...c,
     reward_categories: Array.isArray(c.reward_categories) ? c.reward_categories : [],
     pending_change: pendingIds.has(c.id),
