@@ -190,6 +190,118 @@ describe("approve_finding_to_catalog validation", () => {
   });
 });
 
+function networkFields(value: string) {
+  return { fields: [{ key: "network", save: true, page_value: "Amex", value }] };
+}
+
+function networkUpdateOp(network: string | null) {
+  return {
+    op: "update",
+    id: "scotia-gold-amex",
+    set: {
+      network,
+      last_verified: "2026-10-16",
+      verified_at: "2026-10-16T12:00:00.000Z",
+      status: "verified",
+    },
+  };
+}
+
+function newCardInsertOp(network: string | null) {
+  return {
+    op: "insert",
+    row: {
+      id: "scotiabank-network-clear-card",
+      name: "Network Clear Card",
+      issuer: "Scotiabank",
+      annual_fee: 0,
+      point_currency: "cashback",
+      reward_categories: [{ category: "other", earnRate: 1 }],
+      welcome_offer: null,
+      network,
+      last_verified: "2026-10-16",
+      verified_at: "2026-10-16T12:00:00.000Z",
+      status: "verified",
+    },
+  };
+}
+
+/** Approve inside a rolled-back transaction; returns the resulting card network. */
+async function approveAndReadNetwork(
+  findingSql: string,
+  cardId: string,
+  fields: unknown,
+  cardOp: unknown,
+  setup?: string,
+): Promise<string | null | undefined> {
+  return db.transaction(async (tx) => {
+    if (setup) await tx.exec(setup);
+    await tx.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify(VALIDATOR)]);
+    await tx.exec("set local role authenticated");
+    await tx.query(`select public.approve_finding_to_catalog((${findingSql}), $1::jsonb, $2::jsonb)`, [
+      JSON.stringify(fields),
+      JSON.stringify(cardOp),
+    ]);
+    await tx.exec("reset role");
+    const { rows } = await tx.query<{ network: string | null }>(
+      "select network from public.cards where id = $1",
+      [cardId],
+    );
+    await tx.rollback();
+    return rows[0]?.network;
+  });
+}
+
+const PENDING_GOLD = `select id from public.card_findings where run_id = ${RUN} and review_status = 'pending'`;
+const NEW_FINDING_SETUP = `
+  insert into public.card_findings (run_id, source_id, product_url, card_name, extracted, diff_kind)
+  select ${RUN}, id, 'https://www.scotiabank.com/ca/en/personal/credit-cards/network-clear.html',
+    'Network Clear Card', '{}'::jsonb, 'new'
+  from public.crawl_sources where issuer_name = 'Scotiabank';
+`;
+const NEW_FINDING = `select id from public.card_findings where card_name = 'Network Clear Card'`;
+
+describe("approve_finding_to_catalog network clear", () => {
+  it.each(["", "none"])("clears network on update when saved as %j", async (value) => {
+    const network = await approveAndReadNetwork(
+      PENDING_GOLD,
+      "scotia-gold-amex",
+      networkFields(value),
+      networkUpdateOp(null),
+    );
+    expect(network).toBeNull();
+  });
+
+  it.each(["", "none"])("inserts a null network when saved as %j", async (value) => {
+    const network = await approveAndReadNetwork(
+      NEW_FINDING,
+      "scotiabank-network-clear-card",
+      networkFields(value),
+      newCardInsertOp(null),
+      NEW_FINDING_SETUP,
+    );
+    expect(network).toBeNull();
+  });
+
+  it("rejects a non-null network on update when the saved network is cleared", async () => {
+    await expect(approve(networkFields("none"), networkUpdateOp("Visa"))).rejects.toThrow(
+      /card_op network does not match review_fields/,
+    );
+  });
+
+  it("rejects a non-null network on insert when the saved network is cleared", async () => {
+    await expect(
+      approveAndReadNetwork(
+        NEW_FINDING,
+        "scotiabank-network-clear-card",
+        networkFields(""),
+        newCardInsertOp("Visa"),
+        NEW_FINDING_SETUP,
+      ),
+    ).rejects.toThrow(/card_op network does not match review_fields/);
+  });
+});
+
 describe("approve_finding_to_catalog welcome_offer validation", () => {
   it("rejects welcome_offer whose points diverge from saved welcome_bonus.points", async () => {
     const fields = {

@@ -42,6 +42,16 @@ as $$
   limit 1;
 $$;
 
+-- Mirrors isEmpty() in catalog-write-parse.ts: blank or "none" clears a field.
+create or replace function public.review_value_is_clear(p_raw text)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select coalesce(btrim(p_raw), '') = '' or lower(btrim(p_raw)) = 'none';
+$$;
+
 create or replace function public.review_field_saved(p_review_fields jsonb, p_key text)
 returns boolean
 language sql
@@ -538,12 +548,19 @@ begin
       end if;
     end if;
 
-    v_saved := public.review_saved_value(p_review_fields, 'network');
-    if v_saved is not null then
+    if public.review_field_saved(p_review_fields, 'network') then
       v_allowed := v_allowed || array['network'];
-      v_mapped := public.map_review_network(v_saved);
-      if v_mapped is null
-         or not (v_payload ? 'network')
+      v_saved := public.review_saved_raw(p_review_fields, 'network');
+      if public.review_value_is_clear(v_saved) then
+        v_mapped := null;
+      else
+        v_mapped := public.map_review_network(v_saved);
+        if v_mapped is null then
+          raise exception 'card_op network does not match review_fields'
+            using errcode = '22023';
+        end if;
+      end if;
+      if not (v_payload ? 'network')
          or nullif(btrim(v_payload ->> 'network'), '') is distinct from v_mapped then
         raise exception 'card_op network does not match review_fields'
           using errcode = '22023';
@@ -625,11 +642,19 @@ begin
       end if;
     end if;
 
-    v_saved := public.review_saved_value(p_review_fields, 'network');
-    if v_saved is not null then
-      v_mapped := public.map_review_network(v_saved);
+    if public.review_field_saved(p_review_fields, 'network') then
+      v_saved := public.review_saved_raw(p_review_fields, 'network');
+      if public.review_value_is_clear(v_saved) then
+        v_mapped := null;
+      else
+        v_mapped := public.map_review_network(v_saved);
+        if v_mapped is null then
+          raise exception 'card_op network does not match review_fields'
+            using errcode = '22023';
+        end if;
+      end if;
       v_network := nullif(btrim(v_payload ->> 'network'), '');
-      if v_mapped is null or v_network is distinct from v_mapped then
+      if v_network is distinct from v_mapped then
         raise exception 'card_op network does not match review_fields'
           using errcode = '22023';
       end if;
@@ -662,6 +687,7 @@ $$;
 revoke all on function public.review_saved_value(jsonb, text) from public, anon, authenticated;
 revoke all on function public.review_saved_raw(jsonb, text) from public, anon, authenticated;
 revoke all on function public.review_field_saved(jsonb, text) from public, anon, authenticated;
+revoke all on function public.review_value_is_clear(text) from public, anon, authenticated;
 revoke all on function public.review_has_saved_prefix(jsonb, text) from public, anon, authenticated;
 revoke all on function public.map_review_network(text) from public, anon, authenticated;
 revoke all on function public.validate_reward_categories(jsonb) from public, anon, authenticated;
