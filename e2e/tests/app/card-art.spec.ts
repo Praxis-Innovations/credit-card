@@ -40,12 +40,12 @@ test("renders API card art at 1.586:1 and falls back when an image fails", async
   await page.getByRole("button", { name: "Choose a store instead" }).click();
   await browseShellAndSkip(page);
 
-  // Costco (3% on gas) beats Gold Amex (1×) at Shell; its image 404s.
-  const best = page.getByLabel("Best card").getByTestId("card-art-cibc-costco-mc");
-  await expectFallback(best);
+  // Gold Amex (~$3.67 with Shell stack) beats Costco 3%; Costco art 404s.
+  const best = page.getByLabel("Best card").getByTestId("card-art-scotia-gold-amex");
+  await expectRealArt(best, CARD_ART.scotia.path);
   await expectCardShape(best, 112);
 
-  const other = page.getByTestId("card-art-scotia-gold-amex").last();
-  await expectRealArt(other, CARD_ART.scotia.path);
+  const other = page.getByTestId("card-art-cibc-costco-mc").last();
+  await expectFallback(other);
   await expectCardShape(other, 56);
 });

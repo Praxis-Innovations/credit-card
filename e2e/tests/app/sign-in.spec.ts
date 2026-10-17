@@ -68,7 +68,7 @@ test.describe("sign-in (Save your wallet)", () => {
     await expect(page.getByText("Wallet saved")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText(/user@northtap\.test/)).toBeVisible();
     await expect(page.getByText("Shell · $100.00")).toBeVisible();
-    await expect(page.getByLabel("Best card").getByText("$3.00")).toBeVisible();
+    await expect(page.getByLabel("Best card").getByText("$3.67")).toBeVisible();
 
     expect(oauth.authorizeUrls.length).toBeGreaterThan(0);
     const authorize = new URL(oauth.authorizeUrls[0]!);

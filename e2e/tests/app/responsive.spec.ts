@@ -300,14 +300,14 @@ for (const vp of VIEWPORTS) {
         await expect(rows.nth(1)).toContainText("$4.00");
         await expect(rows.nth(2)).toContainText("Gold American Express");
         await expect(rows.nth(2)).toContainText("1× Scene+ on gas");
-        await expect(rows.nth(2)).toContainText("$1.00");
+        await expect(rows.nth(2)).toContainText("$3.67");
         const tableBox = await box(table);
         const keep = await box(page.getByText("Keep your wallet"));
         expect(keep.x).toBeGreaterThan(tableBox.x + tableBox.width);
       } else {
         await expect(best.getByLabel("Earn rate on gas: 4 pts per $1")).toBeVisible();
         const others = page.getByText("Other cards in your wallet");
-        await expect(page.getByLabel("Gold American Express, $1.00 back")).toBeVisible();
+        await expect(page.getByLabel("Gold American Express, $3.67 back")).toBeVisible();
         const bestBox = await box(best);
         expect((await box(others)).y).toBeGreaterThan(bestBox.y + bestBox.height);
       }

@@ -22,9 +22,13 @@ test.describe("admin review", () => {
     const rowButton = page.getByRole("button", { name: approveName });
     await expect(rowButton).toBeVisible();
     await rowButton.click();
+    await page.waitForURL(/\/review\/[^/]+$/);
 
-    await page.getByRole("button", { name: "Approve", exact: true }).click();
-    await expect(page.getByRole("status")).toContainText(`Approved ${approveName}`);
+    const detailPath = new URL(page.url()).pathname;
+    await page.getByRole("button", { name: "Approve and next →" }).click();
+    // runDecision only navigates after approveFinding resolves successfully.
+    await page.waitForURL((u) => u.pathname !== detailPath);
+    await page.goto("/review");
     await expect(page.getByRole("button", { name: approveName })).toHaveCount(0);
   });
 
@@ -35,14 +39,15 @@ test.describe("admin review", () => {
     const rowButton = page.getByRole("button", { name: rejectName });
     await expect(rowButton).toBeVisible();
     await rowButton.click();
+    await page.waitForURL(/\/review\/[^/]+$/);
 
-    await page.getByRole("button", { name: "Reject…" }).click();
-    await page
-      .getByLabel("Reason for rejecting (required)")
-      .fill("Fee quote does not match the current product page.");
-    await page.getByRole("button", { name: "Confirm reject" }).click();
-
-    await expect(page.getByRole("status")).toContainText(`Rejected ${rejectName}`);
+    const detailPath = new URL(page.url()).pathname;
+    await page.getByLabel("Reject reason").fill(
+      "Fee quote does not match the current product page.",
+    );
+    await page.getByRole("button", { name: "Reject card" }).click();
+    await page.waitForURL((u) => u.pathname !== detailPath);
+    await page.goto("/review");
     await expect(page.getByRole("button", { name: rejectName })).toHaveCount(0);
   });
 });

@@ -40,6 +40,8 @@ export type LocationState =
 
 interface FlowContextValue {
   hydrated: boolean;
+  /** True once the initial Supabase session check has finished (or Supabase is off). */
+  authReady: boolean;
   walletIds: string[];
   setWalletIds: (ids: string[]) => void;
   toggleCard: (id: string) => void;
@@ -69,6 +71,7 @@ function errorMessage(err: unknown, fallback: string): string {
 
 export function FlowProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const [walletIds, setWalletIdsState] = useState<string[]>([]);
   const walletRef = useRef<string[]>([]);
   const [catalog, setCatalog] = useState<Loadable<CreditCard[]>>({ status: "idle" });
@@ -161,13 +164,24 @@ export function FlowProvider({ children }: { children: ReactNode }) {
   // after the Google redirect on web) and follow auth changes.
   useEffect(() => {
     const supabase = getSupabaseClient();
-    if (!supabase) return;
+    if (!supabase) {
+      setAuthReady(true);
+      return;
+    }
     let cancelled = false;
+    const hashHasOAuthToken = () =>
+      typeof window !== "undefined" && /access_token=/.test(window.location.hash);
+
     void supabase.auth.getSession().then(({ data }) => {
-      if (!cancelled) setUser(data.session?.user ?? null);
+      if (cancelled) return;
+      setUser(data.session?.user ?? null);
+      // Implicit OAuth: detectSessionInUrl may still be parsing the hash.
+      // Wait for onAuthStateChange before treating the user as a guest.
+      if (!hashHasOAuthToken()) setAuthReady(true);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      setAuthReady(true);
     });
     return () => {
       cancelled = true;
@@ -213,6 +227,7 @@ export function FlowProvider({ children }: { children: ReactNode }) {
   const value = useMemo<FlowContextValue>(
     () => ({
       hydrated,
+      authReady,
       walletIds,
       setWalletIds,
       toggleCard,
@@ -235,6 +250,7 @@ export function FlowProvider({ children }: { children: ReactNode }) {
     }),
     [
       hydrated,
+      authReady,
       walletIds,
       setWalletIds,
       toggleCard,
