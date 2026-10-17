@@ -75,14 +75,18 @@ function saved(entries: Array<[string, string]>): { fields: FieldDecision[] } {
 }
 
 /** The write the admin app itself builds for these decisions. */
-function appWrite(diffKind: "changed" | "new", fields: { fields: FieldDecision[] }) {
+function appWrite(
+  diffKind: "changed" | "new",
+  fields: { fields: FieldDecision[] },
+  card: NonNullable<BuildCatalogWriteInput["existing"]> = existing,
+) {
   const res = buildCatalogWrite({
     diffKind,
     linkedCardId: diffKind === "changed" ? "scotia-gold-amex" : null,
     cardName: diffKind === "changed" ? "Scotiabank Gold American Express Card" : "Rewards Parity Card",
     issuerName: "Scotiabank",
     fields,
-    existing: diffKind === "changed" ? existing : null,
+    existing: diffKind === "changed" ? card : null,
     extractedPointCurrency: null,
     extracted: EXTRACTED,
     now: NOW,
@@ -93,9 +97,12 @@ function appWrite(diffKind: "changed" | "new", fields: { fields: FieldDecision[]
     : { op: "update" as const, id: res.write.id, set: res.write.set };
 }
 
-/** Approve inside a rolled-back transaction; returns the card's resulting reward_categories. */
-async function approve(findingSql: string, fields: unknown, cardOp: { op: string }, cardId: string) {
+type CardRow = { reward_categories: RewardCategory[]; welcome_offer: unknown };
+
+/** Approve inside a rolled-back transaction (after optional setup SQL); returns the resulting card. */
+async function approve(findingSql: string, fields: unknown, cardOp: { op: string }, cardId: string, setup = "") {
   return db.transaction(async (tx) => {
+    if (setup) await tx.exec(setup);
     await tx.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify(VALIDATOR)]);
     await tx.exec("set local role authenticated");
     await tx.query(`select public.approve_finding_to_catalog((${findingSql}), $1::jsonb, $2::jsonb)`, [
@@ -103,12 +110,12 @@ async function approve(findingSql: string, fields: unknown, cardOp: { op: string
       JSON.stringify(cardOp),
     ]);
     await tx.exec("reset role");
-    const { rows } = await tx.query<{ reward_categories: RewardCategory[] }>(
-      "select reward_categories from public.cards where id = $1",
+    const { rows } = await tx.query<CardRow>(
+      "select reward_categories, welcome_offer from public.cards where id = $1",
       [cardId],
     );
     await tx.rollback();
-    return rows[0]?.reward_categories;
+    return rows[0];
   });
 }
 
@@ -127,16 +134,16 @@ describe("reward_categories parity with the admin app", () => {
   ])("accepts the app's own update write for %s", async (_label, fields) => {
     const op = appWrite("changed", fields);
     if (op.op !== "update") throw new Error("expected update");
-    const rewards = await approve(CHANGED, fields, op, "scotia-gold-amex");
-    expect(rewards).toEqual(op.set.reward_categories);
+    const card = await approve(CHANGED, fields, op, "scotia-gold-amex");
+    expect(card?.reward_categories).toEqual(op.set.reward_categories);
   });
 
   it("accepts the app's own insert write with earn rules", async () => {
     const fields = saved([["earn_rate.dining", "3"], ["earn_rates[0].mccs", "5812"]]);
     const op = appWrite("new", fields);
     if (op.op !== "insert") throw new Error("expected insert");
-    const rewards = await approve(NEW, fields, op, op.row.id);
-    expect(rewards).toEqual(op.row.reward_categories);
+    const card = await approve(NEW, fields, op, op.row.id);
+    expect(card?.reward_categories).toEqual(op.row.reward_categories);
   });
 });
 
@@ -170,5 +177,67 @@ describe("reward_categories mismatches", () => {
     const fields = saved([["annual_fee", "0"]]);
     const op = tamper(appWrite("new", fields), (rows) => [...rows, { category: "dining", earnRate: 50 }]);
     await expect(approve(NEW, fields, op, "scotiabank-rewards-parity-card")).rejects.toThrow(MISMATCH);
+  });
+});
+
+const NO_OFFER = "update public.cards set welcome_offer = null where id = 'scotia-gold-amex'";
+const WELCOME_MISMATCH = /card_op welcome_offer does not match review_fields/;
+
+function withOffer(op: ReturnType<typeof appWrite>, offer: unknown) {
+  if (op.op === "update") return { ...op, set: { ...op.set, welcome_offer: offer } };
+  return { ...op, row: { ...op.row, welcome_offer: offer } };
+}
+
+describe("welcome_offer parity with the admin app", () => {
+  it.each([
+    [
+      "points, rate, dates and new-cardholders-only",
+      saved([
+        ["welcome_bonus.points", "50,000"],
+        ["welcome_bonus.rate", "1.5"],
+        ["welcome_bonus.valid_to", "2026-12-31"],
+        ["welcome_bonus.new_cardholders_only", "yes"],
+      ]),
+    ],
+    ["a cleared points value, which clears the offer", saved([["welcome_bonus.points", "none"]])],
+  ])("accepts the app's own update write for %s", async (_label, fields) => {
+    const op = appWrite("changed", fields);
+    if (op.op !== "update") throw new Error("expected update");
+    const card = await approve(CHANGED, fields, op, "scotia-gold-amex");
+    expect(card?.welcome_offer).toEqual(op.set.welcome_offer ?? null);
+  });
+
+  it("accepts the app's own write on a card with no offer yet", async () => {
+    const fields = saved([["welcome_bonus.points", "40000"]]);
+    const op = appWrite("changed", fields, { ...existing, welcome_offer: null });
+    if (op.op !== "update") throw new Error("expected update");
+    const card = await approve(CHANGED, fields, op, "scotia-gold-amex", NO_OFFER);
+    expect(card?.welcome_offer).toEqual(op.set.welcome_offer);
+  });
+
+  it("accepts the app's own insert write with a welcome bonus", async () => {
+    const fields = saved([["welcome_bonus.points", "20000"]]);
+    const op = appWrite("new", fields);
+    if (op.op !== "insert") throw new Error("expected insert");
+    const card = await approve(NEW, fields, op, op.row.id);
+    expect(card?.welcome_offer).toEqual(op.row.welcome_offer);
+  });
+});
+
+describe("welcome_offer mismatches", () => {
+  it("rejects an unjustified estimatedValueCad when the card has no offer yet", async () => {
+    const fields = saved([["welcome_bonus.points", "40000"]]);
+    const op = appWrite("changed", fields, { ...existing, welcome_offer: null });
+    if (op.op !== "update") throw new Error("expected update");
+    const forged = withOffer(op, { ...op.set.welcome_offer, estimatedValueCad: 999 });
+    await expect(approve(CHANGED, fields, forged, "scotia-gold-amex", NO_OFFER)).rejects.toThrow(WELCOME_MISMATCH);
+  });
+
+  it("rejects unjustified offer fields on insert", async () => {
+    const fields = saved([["welcome_bonus.points", "20000"]]);
+    const op = appWrite("new", fields);
+    if (op.op !== "insert") throw new Error("expected insert");
+    const forged = withOffer(op, { ...op.row.welcome_offer, rate: 5, newCardholdersOnly: false });
+    await expect(approve(NEW, fields, forged, op.row.id)).rejects.toThrow(WELCOME_MISMATCH);
   });
 });
