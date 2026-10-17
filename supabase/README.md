@@ -88,6 +88,11 @@ Written by `apps/crawler` with its own server-side key (migration
 | `crawl_runs` | One crawl run: scope, trigger, status (`requested` → `running` → `done` / `failed`), counts, tokens, cost estimate, skipped pages, error. |
 | `card_findings` | Per-card output of a run: page hash, extraction (each value with a verbatim quote), check results, diff vs `cards` (`new` / `changed` / `unchanged` / `possibly_discontinued`), linked card, `review_status` (`pending` for new / changed / possibly discontinued; `checked` for unchanged, which never enter the review queue), `checked_at` (when the crawler diffed it), `review_fields` (per-field save/edit decisions from the review card; audited on approve/reject). |
 
+Authoritative review queues are `card_findings` (AD2) and
+`merchant_code_findings` (AD6). The old `pipeline_review_decisions` table from
+the retired Big Six data pipeline was dropped; do not recreate it.
+`reviewed_by` on catalog rows (`cards`, etc.) stays for current approve flows.
+
 RLS matches the admin tables: console roles read; only admins insert or
 delete (admins may only insert runs as `requested`); validators may update a
 finding's decision columns (`review_status` / `review_note` / `review_fields` /

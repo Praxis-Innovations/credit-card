@@ -88,6 +88,40 @@ describe("supabase migrations", () => {
     expect(migrationFiles.some((f) => f.endsWith("_mcc_recommend.sql"))).toBe(
       true,
     );
+    expect(
+      migrationFiles.some((f) =>
+        f.endsWith("_drop_pipeline_review_decisions.sql"),
+      ),
+    ).toBe(true);
+  });
+
+  it("drops the retired pipeline_review_decisions table but keeps catalog reviewed_by", async () => {
+    expect(
+      await count(
+        `select count(*) as n from information_schema.tables
+         where table_schema = 'public' and table_name = 'pipeline_review_decisions'`,
+      ),
+    ).toBe(0);
+    expect(
+      await count(
+        `select count(*) as n from pg_indexes
+         where schemaname = 'public' and indexname = 'pipeline_review_decisions_status_idx'`,
+      ),
+    ).toBe(0);
+    for (const table of [
+      "cards",
+      "loyalty_programs",
+      "merchant_brands",
+      "merchant_partnerships",
+    ]) {
+      expect(
+        await count(
+          `select count(*) as n from information_schema.columns
+           where table_schema = 'public' and table_name = '${table}'
+             and column_name = 'reviewed_by'`,
+        ),
+      ).toBe(1);
+    }
   });
 
   it("creates empty MCC tables with no seed rows", async () => {

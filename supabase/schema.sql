@@ -2,8 +2,8 @@
 -- Source of truth: supabase/migrations/. Regenerate mentally after adding migrations;
 -- do not apply this file with the CLI (use migrations instead).
 
--- Future hooks (not built yet): spend tracking, bank linking, welcome-bonus tracking,
--- crawler promotion of pending/stale catalog rows.
+-- Future hooks (not built yet): spend tracking, bank linking, welcome-bonus tracking.
+-- Catalog review is on card_findings / merchant_code_findings (not pipeline_review_decisions).
 
 create table public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
