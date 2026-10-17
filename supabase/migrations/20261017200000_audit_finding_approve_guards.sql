@@ -105,8 +105,42 @@ as $$
     select 1
     from jsonb_array_elements(p_review_fields -> 'fields') as f
     where coalesce((f->>'save')::boolean, false)
-      and f->>'key' like p_prefix || '%'
+      and starts_with(f->>'key', p_prefix)
   );
+$$;
+
+-- Saved decisions in review order, one row per key (later duplicates win the
+-- value, the first occurrence keeps the position), like `new Map(...)` in TS.
+create or replace function public.review_decisions(p_review_fields jsonb)
+returns table (key text, value text, pos bigint)
+language sql
+stable
+set search_path = ''
+as $$
+  select s.k, coalesce((array_agg(s.v order by s.o desc))[1], ''), min(s.o)
+  from (
+    select f->>'key' as k, f->>'value' as v, t.o
+    from jsonb_array_elements(p_review_fields -> 'fields') with ordinality as t(f, o)
+    where coalesce((f->>'save')::boolean, false)
+  ) s
+  group by s.k;
+$$;
+
+create or replace function public.review_iso_date(p_raw text)
+returns text
+language plpgsql
+immutable
+set search_path = ''
+as $$
+begin
+  if btrim(p_raw) !~ '^\d{4}-\d{2}-\d{2}$' then
+    return null;
+  end if;
+  perform btrim(p_raw)::date;
+  return btrim(p_raw);
+exception when others then
+  return null;
+end;
 $$;
 
 create or replace function public.map_review_network(p_raw text)
@@ -215,8 +249,644 @@ begin
 end;
 $$;
 
--- Compare reward_categories content to saved earn_rate.<cat> values (and keep
--- uncovered entries identical to the existing catalog row on update).
+-- ---------------------------------------------------------------------------
+-- reward_categories derivation: a SQL port of applyEarnRates (catalog-write-
+-- rules.ts) and applyPromotions (catalog-write-offers.ts). The approve RPC
+-- requires the client's reward_categories to equal this derivation exactly.
+-- Inputs the admin app would refuse raise the same mismatch error.
+-- ---------------------------------------------------------------------------
+
+-- Mirrors asRewardCategories() in apply-to-catalog.ts (null = row dropped).
+create or replace function public.reward_normalize_row(p_row jsonb)
+returns jsonb
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  v_rate numeric;
+  v_out jsonb;
+  v_key text;
+  v_list jsonb;
+begin
+  if jsonb_typeof(p_row) is distinct from 'object'
+     or jsonb_typeof(p_row -> 'category') is distinct from 'string'
+     or p_row ->> 'category' = '' then
+    return null;
+  end if;
+
+  case jsonb_typeof(p_row -> 'earnRate')
+    when 'number' then
+      v_rate := (p_row ->> 'earnRate')::numeric;
+    when 'string' then
+      if btrim(p_row ->> 'earnRate') = '' then
+        v_rate := 0;
+      else
+        begin
+          v_rate := btrim(p_row ->> 'earnRate')::numeric;
+        exception when others then
+          return null;
+        end;
+      end if;
+    when 'boolean' then
+      v_rate := case when (p_row ->> 'earnRate')::boolean then 1 else 0 end;
+    when 'null' then
+      v_rate := 0;
+    else
+      return null;
+  end case;
+  if v_rate::text in ('NaN', 'Infinity', '-Infinity') then
+    return null;
+  end if;
+
+  v_out := jsonb_build_object('category', p_row -> 'category', 'earnRate', v_rate);
+
+  foreach v_key in array array['capMonthly', 'capAnnual', 'rateAfterCap', 'tierThreshold']
+  loop
+    if jsonb_typeof(p_row -> v_key) = 'number' then
+      v_out := v_out || jsonb_build_object(v_key, p_row -> v_key);
+    end if;
+  end loop;
+
+  foreach v_key in array array['mccs', 'merchants', 'exclusions']
+  loop
+    if jsonb_typeof(p_row -> v_key) = 'array' then
+      select jsonb_agg(e order by o) into v_list
+      from jsonb_array_elements(p_row -> v_key) with ordinality as t(e, o)
+      where jsonb_typeof(e) = 'string' and btrim(e #>> '{}') <> '';
+      if v_list is not null then
+        v_out := v_out || jsonb_build_object(v_key, v_list);
+      end if;
+    end if;
+  end loop;
+
+  if jsonb_typeof(p_row -> 'mccSource') = 'string'
+     and p_row ->> 'mccSource' in ('terms', 'network_default') then
+    v_out := v_out || jsonb_build_object('mccSource', p_row -> 'mccSource');
+  end if;
+
+  foreach v_key in array array['capGroup', 'validFrom', 'validTo', 'quote', 'sourceUrl']
+  loop
+    if jsonb_typeof(p_row -> v_key) = 'string' and btrim(p_row ->> v_key) <> '' then
+      v_out := v_out || jsonb_build_object(v_key, p_row -> v_key);
+    end if;
+  end loop;
+
+  return v_out;
+end;
+$$;
+
+-- Mirrors INDEXED_HANDLERS in catalog-write-rules.ts. Cap amount/period are
+-- staged in _capAmount/_capPeriod until reward_finalize_cap, as in TS.
+create or replace function public.reward_apply_indexed_field(p_row jsonb, p_field text, p_raw text)
+returns jsonb
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  c_err constant text := 'card_op reward_categories does not match review_fields';
+  v_clear boolean := public.review_value_is_clear(p_raw);
+  v_parts text[];
+  v_list jsonb;
+  v_num numeric;
+  v_key text;
+  v_text text;
+begin
+  case p_field
+    when 'mccs' then
+      if v_clear then
+        return p_row - 'mccs';
+      end if;
+      select array_agg(btrim(p) order by o) into v_parts
+      from regexp_split_to_table(p_raw, '[,\s]+') with ordinality as t(p, o)
+      where btrim(p) <> '';
+      if exists (select 1 from unnest(v_parts) as x where x !~ '^\d{4}$') then
+        raise exception '%', c_err using errcode = '22023';
+      end if;
+      select coalesce(jsonb_agg(d.x order by d.first_o), '[]'::jsonb) into v_list
+      from (
+        select x, min(o) as first_o
+        from unnest(v_parts) with ordinality as u(x, o)
+        group by x
+      ) d;
+      return p_row || jsonb_build_object('mccs', v_list);
+
+    when 'merchants', 'exclusions' then
+      if v_clear then
+        return p_row - p_field;
+      end if;
+      select jsonb_agg(btrim(p) order by o) into v_list
+      from regexp_split_to_table(p_raw, ',') with ordinality as t(p, o)
+      where btrim(p) <> '';
+      if v_list is null then
+        return p_row - p_field;
+      end if;
+      return p_row || jsonb_build_object(p_field, v_list);
+
+    when 'mcc_source' then
+      if v_clear then
+        return p_row - 'mccSource';
+      end if;
+      if btrim(p_raw) not in ('terms', 'network_default') then
+        raise exception '%', c_err using errcode = '22023';
+      end if;
+      return p_row || jsonb_build_object('mccSource', btrim(p_raw));
+
+    when 'cap_amount' then
+      v_num := public.review_parse_non_neg_number(p_raw);
+      if v_num is null and not v_clear then
+        raise exception '%', c_err using errcode = '22023';
+      end if;
+      if v_num is null then
+        return p_row - 'capMonthly' - 'capAnnual' - '_capAmount';
+      end if;
+      return (p_row - 'capMonthly' - 'capAnnual') || jsonb_build_object('_capAmount', v_num);
+
+    when 'cap_period' then
+      if v_clear then
+        return p_row;
+      end if;
+      if btrim(p_raw) not in ('monthly', 'annual', 'statement') then
+        raise exception '%', c_err using errcode = '22023';
+      end if;
+      return p_row || jsonb_build_object('_capPeriod', btrim(p_raw));
+
+    when 'cap_group' then
+      if v_clear then
+        return p_row - 'capGroup';
+      end if;
+      return p_row || jsonb_build_object('capGroup', btrim(p_raw));
+
+    when 'rate_after_cap', 'tier_threshold' then
+      v_key := case p_field when 'rate_after_cap' then 'rateAfterCap' else 'tierThreshold' end;
+      v_num := public.review_parse_non_neg_number(p_raw);
+      if v_num is null and not v_clear then
+        raise exception '%', c_err using errcode = '22023';
+      end if;
+      if v_num is null then
+        return p_row - v_key;
+      end if;
+      return p_row || jsonb_build_object(v_key, v_num);
+
+    when 'valid_from', 'valid_to' then
+      v_key := case p_field when 'valid_from' then 'validFrom' else 'validTo' end;
+      if v_clear then
+        return p_row - v_key;
+      end if;
+      v_text := public.review_iso_date(p_raw);
+      if v_text is null then
+        raise exception '%', c_err using errcode = '22023';
+      end if;
+      return p_row || jsonb_build_object(v_key, v_text);
+
+    when 'source_url' then
+      if v_clear then
+        return p_row - 'sourceUrl';
+      end if;
+      return p_row || jsonb_build_object('sourceUrl', btrim(p_raw));
+
+    else
+      raise exception '%', c_err using errcode = '22023';
+  end case;
+end;
+$$;
+
+-- Mirrors finalizeCap() in catalog-write-rules.ts.
+create or replace function public.reward_finalize_cap(p_row jsonb)
+returns jsonb
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  v_amount jsonb := p_row -> '_capAmount';
+  v_row jsonb := p_row - '_capAmount' - '_capPeriod';
+begin
+  if v_amount is null or v_amount = 'null'::jsonb then
+    return v_row;
+  end if;
+  if p_row ->> '_capPeriod' = 'annual' then
+    return (v_row - 'capMonthly') || jsonb_build_object('capAnnual', v_amount);
+  end if;
+  return (v_row - 'capAnnual') || jsonb_build_object('capMonthly', v_amount);
+end;
+$$;
+
+-- Mirrors findBaseIndex() in catalog-write-rules.ts (0-based; -1 = none).
+create or replace function public.reward_find_base_index(p_rows jsonb, p_ext jsonb, p_claimed int[])
+returns int
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  v_cat text := p_ext ->> 'category';
+  v_group text := nullif(p_ext ->> 'cap_group', '');
+  v_tier jsonb := case when jsonb_typeof(p_ext -> 'tier_threshold') = 'number' then p_ext -> 'tier_threshold' end;
+  v_row jsonb;
+  v_i int;
+  v_row_group text;
+  v_row_tier jsonb;
+  v_category_only int := -1;
+begin
+  for v_row, v_i in
+    select e, (o - 1)::int
+    from jsonb_array_elements(p_rows) with ordinality as t(e, o)
+    order by o
+  loop
+    continue when v_i = any (p_claimed);
+    continue when v_row ->> 'category' is distinct from v_cat;
+    v_row_group := nullif(v_row ->> 'capGroup', '');
+    v_row_tier := case when jsonb_typeof(v_row -> 'tierThreshold') = 'number' then v_row -> 'tierThreshold' end;
+    continue when v_group is not null and v_row_group is not null and v_row_group <> v_group;
+    continue when v_tier is not null and v_row_tier is not null and v_row_tier <> v_tier;
+    if (v_group is null or v_row_group is not distinct from v_group)
+       and (v_tier is null or v_row_tier is not distinct from v_tier) then
+      return v_i;
+    end if;
+    if v_category_only < 0 then
+      v_category_only := v_i;
+    end if;
+  end loop;
+  return v_category_only;
+end;
+$$;
+
+-- Mirrors applyRatesByCategory() in catalog-write-rules.ts (JS Map semantics:
+-- a repeated category keeps its first position and its last value).
+create or replace function public.reward_apply_rates_by_category(p_rows jsonb, p_cats text[], p_rates numeric[])
+returns jsonb
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  v_cats text[] := array[]::text[];
+  v_vals jsonb[] := array[]::jsonb[];
+  v_row jsonb;
+  v_p int;
+  v_k int;
+begin
+  for v_row in
+    select e from jsonb_array_elements(p_rows) with ordinality as t(e, o) order by o
+  loop
+    v_p := array_position(v_cats, v_row ->> 'category');
+    if v_p is null then
+      v_cats := array_append(v_cats, v_row ->> 'category');
+      v_vals := array_append(v_vals, v_row);
+    else
+      v_vals[v_p] := v_row;
+    end if;
+  end loop;
+
+  for v_k in 1 .. coalesce(cardinality(p_cats), 0)
+  loop
+    v_p := array_position(v_cats, p_cats[v_k]);
+    if v_p is null then
+      v_cats := array_append(v_cats, p_cats[v_k]);
+      v_vals := array_append(v_vals, jsonb_build_object('category', p_cats[v_k], 'earnRate', p_rates[v_k]));
+    else
+      v_vals[v_p] := v_vals[v_p] || jsonb_build_object('earnRate', p_rates[v_k]);
+    end if;
+  end loop;
+
+  if cardinality(v_vals) = 0 then
+    return '[{"category":"other","earnRate":1}]'::jsonb;
+  end if;
+  return to_jsonb(v_vals);
+end;
+$$;
+
+-- Mirrors promoDate() in catalog-write-offers.ts.
+create or replace function public.reward_promo_date(p_fields jsonb, p_key text, p_fallback jsonb)
+returns text
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  v_date text;
+begin
+  if not (p_fields ? p_key) then
+    if jsonb_typeof(p_fallback) = 'string' and p_fallback #>> '{}' <> '' then
+      return p_fallback #>> '{}';
+    end if;
+    return null;
+  end if;
+  if public.review_value_is_clear(p_fields ->> p_key) then
+    return null;
+  end if;
+  v_date := public.review_iso_date(p_fields ->> p_key);
+  if v_date is null then
+    raise exception 'card_op reward_categories does not match review_fields' using errcode = '22023';
+  end if;
+  return v_date;
+end;
+$$;
+
+-- Mirrors promoIdentity() in catalog-write-offers.ts.
+create or replace function public.reward_promo_identity(p_row jsonb)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select concat(
+    p_row ->> 'category', '|',
+    coalesce(p_row ->> 'validFrom', ''), '|',
+    coalesce(p_row ->> 'validTo', ''), '|',
+    coalesce(p_row ->> 'quote', '')
+  );
+$$;
+
+-- Mirrors buildPromoRows() in catalog-write-offers.ts. p_fields maps the saved
+-- promotion.<i>.<field> suffixes to their raw values.
+create or replace function public.reward_promo_rows(p_fields jsonb, p_base jsonb)
+returns jsonb
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  c_err constant text := 'card_op reward_categories does not match review_fields';
+  v_summary text;
+  v_raw text;
+  v_rate numeric;
+  v_from text;
+  v_to text;
+  v_src text;
+  v_cats jsonb;
+  v_cat jsonb;
+  v_out jsonb := '[]'::jsonb;
+begin
+  v_summary := case when p_fields ? 'summary' then p_fields ->> 'summary' else p_base ->> 'summary' end;
+  if public.review_value_is_clear(v_summary) then
+    return '[]'::jsonb;
+  end if;
+
+  if p_fields ? 'rate' then
+    v_raw := p_fields ->> 'rate';
+    v_rate := public.review_parse_non_neg_number(v_raw);
+    if v_rate is null and not public.review_value_is_clear(v_raw) then
+      raise exception '%', c_err using errcode = '22023';
+    end if;
+  elsif jsonb_typeof(p_base -> 'rate') = 'number' then
+    v_rate := (p_base ->> 'rate')::numeric;
+  end if;
+  -- Points-only promotions are not earn rates.
+  if v_rate is null then
+    return '[]'::jsonb;
+  end if;
+
+  v_from := public.reward_promo_date(p_fields, 'valid_from', p_base -> 'valid_from');
+  v_to := public.reward_promo_date(p_fields, 'valid_to', p_base -> 'valid_to');
+
+  if not (p_fields ? 'source_url') then
+    if jsonb_typeof(p_base -> 'source_url') = 'string' and p_base ->> 'source_url' <> '' then
+      v_src := p_base ->> 'source_url';
+    end if;
+  elsif not public.review_value_is_clear(p_fields ->> 'source_url') then
+    v_src := btrim(p_fields ->> 'source_url');
+  end if;
+
+  if not (p_fields ? 'categories') then
+    if jsonb_typeof(p_base -> 'categories') = 'array' and jsonb_array_length(p_base -> 'categories') > 0 then
+      v_cats := p_base -> 'categories';
+    end if;
+  elsif not public.review_value_is_clear(p_fields ->> 'categories') then
+    select jsonb_agg(to_jsonb(btrim(p)) order by o) into v_cats
+    from regexp_split_to_table(p_fields ->> 'categories', ',') with ordinality as t(p, o)
+    where btrim(p) <> '';
+  end if;
+  v_cats := coalesce(v_cats, '["other"]'::jsonb);
+
+  for v_cat in
+    select c from jsonb_array_elements(v_cats) with ordinality as t(c, o) order by o
+  loop
+    v_out := v_out || jsonb_build_array(
+      jsonb_build_object('category', v_cat, 'earnRate', v_rate)
+      || case when p_base ? 'quote' then jsonb_build_object('quote', p_base -> 'quote') else '{}'::jsonb end
+      || case when v_from is not null then jsonb_build_object('validFrom', v_from) else '{}'::jsonb end
+      || case when v_to is not null then jsonb_build_object('validTo', v_to) else '{}'::jsonb end
+      || case when v_src is not null then jsonb_build_object('sourceUrl', v_src) else '{}'::jsonb end
+    );
+  end loop;
+  return v_out;
+end;
+$$;
+
+-- Mirrors applyPromotions() in catalog-write-offers.ts.
+create or replace function public.reward_apply_promotions(p_rows jsonb, p_review_fields jsonb, p_extracted jsonb)
+returns jsonb
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  c_err constant text := 'card_op reward_categories does not match review_fields';
+  v_promos jsonb := p_extracted -> 'promotions';
+  v_extra jsonb := '[]'::jsonb;
+  v_i int;
+  v_fields jsonb;
+  v_base jsonb;
+  v_ids text[];
+begin
+  if not exists (
+    select 1 from public.review_decisions(p_review_fields) r where starts_with(r.key, 'promotion.')
+  ) then
+    return p_rows;
+  end if;
+  if jsonb_typeof(v_promos) is distinct from 'array' or jsonb_array_length(v_promos) = 0 then
+    raise exception '%', c_err using errcode = '22023';
+  end if;
+
+  for v_i, v_fields in
+    select (s.m)[1]::int, jsonb_object_agg((s.m)[2], s.v)
+    from (
+      select regexp_match(r.key, '^promotion\.(\d+)\.(.+)$') as m, r.value as v
+      from public.review_decisions(p_review_fields) r
+    ) s
+    where s.m is not null
+    group by 1
+    order by 1
+  loop
+    v_base := v_promos -> v_i;
+    if v_base is null or jsonb_typeof(v_base) <> 'object' then
+      raise exception '%', c_err using errcode = '22023';
+    end if;
+    v_extra := v_extra || public.reward_promo_rows(v_fields, v_base);
+  end loop;
+
+  if jsonb_array_length(v_extra) = 0 then
+    return p_rows;
+  end if;
+  select array_agg(public.reward_promo_identity(e)) into v_ids from jsonb_array_elements(v_extra) as e;
+  return coalesce(
+    (
+      select jsonb_agg(e order by o)
+      from jsonb_array_elements(p_rows) with ordinality as t(e, o)
+      where not (public.reward_promo_identity(e) = any (v_ids))
+    ),
+    '[]'::jsonb
+  ) || v_extra;
+end;
+$$;
+
+-- Mirrors applyEarnRates() then applyPromotions() (applyRewardRules in
+-- catalog-write.ts). p_base is the live card's reward_categories ([] on insert).
+create or replace function public.derive_reward_categories(p_base jsonb, p_review_fields jsonb, p_extracted jsonb)
+returns jsonb
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  c_err constant text := 'card_op reward_categories does not match review_fields';
+  v_rows jsonb := '[]'::jsonb;
+  v_d record;
+  v_m text[];
+  v_ov_cats text[] := array[]::text[];
+  v_ov_rates numeric[] := array[]::numeric[];
+  v_touched int[] := array[]::int[];
+  v_claimed int[] := array[]::int[];
+  v_applied text[] := array[]::text[];
+  v_ext_rates jsonb := p_extracted -> 'earn_rates';
+  v_ext jsonb;
+  v_ext_cat text;
+  v_ext_rate numeric;
+  v_max numeric;
+  v_num numeric;
+  v_rate numeric;
+  v_override numeric;
+  v_pos int;
+  v_idx int;
+  v_i int;
+  v_k int;
+  v_row jsonb;
+begin
+  if jsonb_typeof(p_base) = 'array' then
+    select coalesce(jsonb_agg(s.n order by s.o), '[]'::jsonb) into v_rows
+    from (
+      select public.reward_normalize_row(e) as n, o
+      from jsonb_array_elements(p_base) with ordinality as t(e, o)
+    ) s
+    where s.n is not null;
+  end if;
+
+  -- rateOverrides() and collectTouchedIndices()
+  for v_d in select r.key, r.value from public.review_decisions(p_review_fields) r order by r.pos
+  loop
+    if starts_with(v_d.key, 'earn_rate.') then
+      v_num := public.review_parse_non_neg_number(v_d.value);
+      if length(v_d.key) = length('earn_rate.') or v_num is null then
+        raise exception '%', c_err using errcode = '22023';
+      end if;
+      v_ov_cats := array_append(v_ov_cats, substr(v_d.key, length('earn_rate.') + 1));
+      v_ov_rates := array_append(v_ov_rates, v_num);
+    else
+      v_m := regexp_match(v_d.key, '^earn_rates\[(\d+)\]\.(.+)$');
+      if v_m is not null and not (v_m[1]::int = any (v_touched)) then
+        v_touched := array_append(v_touched, v_m[1]::int);
+      end if;
+    end if;
+  end loop;
+
+  if cardinality(v_touched) = 0 then
+    if cardinality(v_ov_cats) > 0 then
+      v_rows := public.reward_apply_rates_by_category(v_rows, v_ov_cats, v_ov_rates);
+    end if;
+    return public.reward_apply_promotions(v_rows, p_review_fields, p_extracted);
+  end if;
+
+  if jsonb_typeof(v_ext_rates) is distinct from 'array' or jsonb_array_length(v_ext_rates) = 0 then
+    raise exception '%', c_err using errcode = '22023';
+  end if;
+  select array_agg(x order by x) into v_touched from unnest(v_touched) as x;
+
+  foreach v_i in array v_touched
+  loop
+    v_ext := v_ext_rates -> v_i;
+    if v_ext is null or jsonb_typeof(v_ext) <> 'object' then
+      raise exception '%', c_err using errcode = '22023';
+    end if;
+    v_ext_cat := v_ext ->> 'category';
+    v_ext_rate := case when jsonb_typeof(v_ext -> 'rate') = 'number' then (v_ext ->> 'rate')::numeric end;
+
+    -- rateForTouchedRow(): earn_rate.<cat> applies to the category's max tier only.
+    v_rate := null;
+    v_override := null;
+    v_pos := array_position(v_ov_cats, v_ext_cat);
+    if v_pos is not null then
+      v_override := v_ov_rates[v_pos];
+      select max(case when jsonb_typeof(e -> 'rate') = 'number' then (e ->> 'rate')::numeric end)
+        into v_max
+      from jsonb_array_elements(v_ext_rates) as e
+      where e ->> 'category' = v_ext_cat;
+      v_rate := case when v_ext_rate is not distinct from v_max then v_override else v_ext_rate end;
+    end if;
+
+    -- mergeTouchedIndex()
+    v_idx := public.reward_find_base_index(v_rows, v_ext, v_claimed);
+    if v_idx < 0 then
+      v_rows := v_rows || jsonb_build_array(jsonb_strip_nulls(jsonb_build_object(
+        'category', v_ext -> 'category',
+        'earnRate', coalesce(to_jsonb(v_rate), v_ext -> 'rate')
+      )));
+      v_idx := jsonb_array_length(v_rows) - 1;
+    end if;
+    v_claimed := array_append(v_claimed, v_idx);
+
+    v_row := v_rows -> v_idx;
+    for v_d in select r.key, r.value from public.review_decisions(p_review_fields) r order by r.pos
+    loop
+      v_m := regexp_match(v_d.key, '^earn_rates\[(\d+)\]\.(.+)$');
+      continue when v_m is null or v_m[1]::int <> v_i;
+      v_row := public.reward_apply_indexed_field(v_row, v_m[2], v_d.value);
+    end loop;
+    v_row := public.reward_finalize_cap(v_row);
+    if v_rate is not null then
+      v_row := v_row || jsonb_build_object('earnRate', v_rate);
+      if v_rate = v_override then
+        v_applied := array_append(v_applied, v_ext_cat);
+      end if;
+    end if;
+    v_rows := jsonb_set(v_rows, array[v_idx::text], v_row);
+  end loop;
+
+  -- applyRemainingRateOverrides()
+  for v_k in 1 .. cardinality(v_ov_cats)
+  loop
+    continue when v_ov_cats[v_k] = any (v_applied);
+    select (o - 1)::int into v_idx
+    from jsonb_array_elements(v_rows) with ordinality as t(e, o)
+    where e ->> 'category' = v_ov_cats[v_k] and not ((o - 1)::int = any (v_claimed))
+    order by o
+    limit 1;
+    if v_idx is null then
+      select (o - 1)::int into v_idx
+      from jsonb_array_elements(v_rows) with ordinality as t(e, o)
+      where e ->> 'category' = v_ov_cats[v_k]
+      order by o
+      limit 1;
+    end if;
+    if v_idx is null then
+      v_rows := v_rows || jsonb_build_array(jsonb_build_object('category', v_ov_cats[v_k], 'earnRate', v_ov_rates[v_k]));
+    else
+      v_rows := jsonb_set(v_rows, array[v_idx::text], (v_rows -> v_idx) || jsonb_build_object('earnRate', v_ov_rates[v_k]));
+    end if;
+    v_applied := array_append(v_applied, v_ov_cats[v_k]);
+  end loop;
+
+  if jsonb_array_length(v_rows) = 0 then
+    v_rows := '[{"category":"other","earnRate":1}]'::jsonb;
+  end if;
+  return public.reward_apply_promotions(v_rows, p_review_fields, p_extracted);
+end;
+$$;
+
+-- reward_categories must equal the derivation. p_existing is null on insert,
+-- where an empty result falls back to one "other" row (buildNewWrite).
 create or replace function public.assert_reward_categories_match_review(
   p_categories jsonb,
   p_review_fields jsonb,
@@ -229,100 +899,15 @@ stable
 set search_path = ''
 as $$
 declare
-  v_f jsonb;
-  v_key text;
-  v_cat text;
-  v_expected numeric;
-  v_max numeric;
-  v_covered text[] := array[]::text[];
-  v_has_promo boolean := false;
-  v_idx int;
-  v_elem jsonb;
-  v_ext_cat text;
+  v_expected jsonb;
 begin
-  if p_categories is null or jsonb_typeof(p_categories) <> 'array' then
-    return;
+  v_expected := public.derive_reward_categories(coalesce(p_existing, '[]'::jsonb), p_review_fields, p_extracted);
+  if p_existing is null and jsonb_array_length(v_expected) = 0 then
+    v_expected := '[{"category":"other","earnRate":1}]'::jsonb;
   end if;
-
-  for v_f in
-    select f
-    from jsonb_array_elements(p_review_fields -> 'fields') as f
-    where coalesce((f->>'save')::boolean, false)
-  loop
-    v_key := v_f->>'key';
-    if v_key like 'earn_rate.%' and v_key not like 'earn_rates[%' then
-      v_cat := nullif(btrim(substr(v_key, length('earn_rate.') + 1)), '');
-      if v_cat is null then
-        raise exception 'card_op reward_categories does not match review_fields'
-          using errcode = '22023';
-      end if;
-      v_expected := public.review_parse_non_neg_number(v_f->>'value');
-      if v_expected is null then
-        raise exception 'card_op reward_categories does not match review_fields'
-          using errcode = '22023';
-      end if;
-      select max((e->>'earnRate')::numeric)
-        into v_max
-      from jsonb_array_elements(p_categories) as e
-      where e->>'category' = v_cat;
-      if v_max is distinct from v_expected then
-        raise exception 'card_op reward_categories does not match review_fields'
-          using errcode = '22023';
-      end if;
-      if not (v_cat = any (v_covered)) then
-        v_covered := v_covered || v_cat;
-      end if;
-    elsif v_key like 'earn_rates[%' then
-      v_idx := substring(v_key from 'earn_rates\[(\d+)\]')::int;
-      v_ext_cat := nullif(
-        btrim(p_extracted -> 'earn_rates' -> v_idx ->> 'category'),
-        ''
-      );
-      if v_ext_cat is not null and not (v_ext_cat = any (v_covered)) then
-        v_covered := v_covered || v_ext_cat;
-      end if;
-    elsif v_key like 'promotion.%' then
-      v_has_promo := true;
-    end if;
-  end loop;
-
-  -- Update only: uncovered entries must stay identical to the live catalog row.
-  if p_existing is null or jsonb_typeof(p_existing) <> 'array' then
-    return;
+  if p_categories is distinct from v_expected then
+    raise exception 'card_op reward_categories does not match review_fields' using errcode = '22023';
   end if;
-
-  for v_elem in select value from jsonb_array_elements(p_existing)
-  loop
-    v_cat := v_elem->>'category';
-    if v_cat is null or v_cat = any (v_covered) then
-      continue;
-    end if;
-    if not exists (
-      select 1 from jsonb_array_elements(p_categories) as e where e = v_elem
-    ) then
-      raise exception 'card_op reward_categories does not match review_fields'
-        using errcode = '22023';
-    end if;
-  end loop;
-
-  for v_elem in select value from jsonb_array_elements(p_categories)
-  loop
-    v_cat := v_elem->>'category';
-    if v_cat is null or v_cat = any (v_covered) then
-      continue;
-    end if;
-    if exists (
-      select 1 from jsonb_array_elements(p_existing) as e where e = v_elem
-    ) then
-      continue;
-    end if;
-    -- Promotions may append dated rows that are not yet on the catalog card.
-    if v_has_promo then
-      continue;
-    end if;
-    raise exception 'card_op reward_categories does not match review_fields'
-      using errcode = '22023';
-  end loop;
 end;
 $$;
 
@@ -702,6 +1287,18 @@ revoke all on function public.review_parse_non_neg_number(text, boolean) from pu
 revoke all on function public.review_has_saved_prefix(jsonb, text) from public, anon, authenticated;
 revoke all on function public.map_review_network(text) from public, anon, authenticated;
 revoke all on function public.validate_reward_categories(jsonb) from public, anon, authenticated;
+revoke all on function public.review_decisions(jsonb) from public, anon, authenticated;
+revoke all on function public.review_iso_date(text) from public, anon, authenticated;
+revoke all on function public.reward_normalize_row(jsonb) from public, anon, authenticated;
+revoke all on function public.reward_apply_indexed_field(jsonb, text, text) from public, anon, authenticated;
+revoke all on function public.reward_finalize_cap(jsonb) from public, anon, authenticated;
+revoke all on function public.reward_find_base_index(jsonb, jsonb, int[]) from public, anon, authenticated;
+revoke all on function public.reward_apply_rates_by_category(jsonb, text[], numeric[]) from public, anon, authenticated;
+revoke all on function public.reward_promo_date(jsonb, text, jsonb) from public, anon, authenticated;
+revoke all on function public.reward_promo_identity(jsonb) from public, anon, authenticated;
+revoke all on function public.reward_promo_rows(jsonb, jsonb) from public, anon, authenticated;
+revoke all on function public.reward_apply_promotions(jsonb, jsonb, jsonb) from public, anon, authenticated;
+revoke all on function public.derive_reward_categories(jsonb, jsonb, jsonb) from public, anon, authenticated;
 revoke all on function public.assert_reward_categories_match_review(jsonb, jsonb, jsonb, jsonb)
   from public, anon, authenticated;
 revoke all on function public.assert_welcome_offer_match_review(jsonb, jsonb, jsonb)
