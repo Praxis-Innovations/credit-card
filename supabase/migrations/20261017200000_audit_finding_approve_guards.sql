@@ -52,6 +52,35 @@ as $$
   select coalesce(btrim(p_raw), '') = '' or lower(btrim(p_raw)) = 'none';
 $$;
 
+-- Mirrors parseNonNegNumber() in catalog-write-parse.ts: strips commas, null
+-- when cleared, unparseable, non-finite, negative, or (p_integer) fractional.
+create or replace function public.review_parse_non_neg_number(p_raw text, p_integer boolean default false)
+returns numeric
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  v numeric;
+begin
+  if public.review_value_is_clear(p_raw) then
+    return null;
+  end if;
+  begin
+    v := btrim(replace(p_raw, ',', ''))::numeric;
+  exception when others then
+    return null;
+  end;
+  if v::text in ('NaN', 'Infinity', '-Infinity') or v < 0 then
+    return null;
+  end if;
+  if p_integer and v <> trunc(v) then
+    return null;
+  end if;
+  return v;
+end;
+$$;
+
 create or replace function public.review_field_saved(p_review_fields jsonb, p_key text)
 returns boolean
 language sql
@@ -227,12 +256,11 @@ begin
         raise exception 'card_op reward_categories does not match review_fields'
           using errcode = '22023';
       end if;
-      begin
-        v_expected := (v_f->>'value')::numeric;
-      exception when others then
+      v_expected := public.review_parse_non_neg_number(v_f->>'value');
+      if v_expected is null then
         raise exception 'card_op reward_categories does not match review_fields'
           using errcode = '22023';
-      end;
+      end if;
       select max((e->>'earnRate')::numeric)
         into v_max
       from jsonb_array_elements(p_categories) as e
@@ -331,8 +359,8 @@ begin
 
   -- welcome_bonus.points → points
   if public.review_field_saved(p_review_fields, 'welcome_bonus.points') then
-    v_raw := coalesce(public.review_saved_raw(p_review_fields, 'welcome_bonus.points'), '');
-    if nullif(btrim(v_raw), '') is null then
+    v_raw := public.review_saved_raw(p_review_fields, 'welcome_bonus.points');
+    if public.review_value_is_clear(v_raw) then
       v_cleared := true;
       if v_offer ? 'points'
          and v_offer -> 'points' is not null
@@ -341,13 +369,9 @@ begin
           using errcode = '22023';
       end if;
     else
-      begin
-        v_expected := btrim(v_raw)::numeric;
-      exception when others then
-        raise exception 'card_op welcome_offer does not match review_fields'
-          using errcode = '22023';
-      end;
-      if (v_offer ->> 'points')::numeric is distinct from v_expected then
+      v_expected := public.review_parse_non_neg_number(v_raw, true);
+      if v_expected is null
+         or (v_offer ->> 'points')::numeric is distinct from v_expected then
         raise exception 'card_op welcome_offer does not match review_fields'
           using errcode = '22023';
       end if;
@@ -361,8 +385,8 @@ begin
 
   -- welcome_bonus.rate → rate
   if public.review_field_saved(p_review_fields, 'welcome_bonus.rate') then
-    v_raw := coalesce(public.review_saved_raw(p_review_fields, 'welcome_bonus.rate'), '');
-    if nullif(btrim(v_raw), '') is null then
+    v_raw := public.review_saved_raw(p_review_fields, 'welcome_bonus.rate');
+    if public.review_value_is_clear(v_raw) then
       if v_offer ? 'rate'
          and v_offer -> 'rate' is not null
          and v_offer -> 'rate' <> 'null'::jsonb then
@@ -370,13 +394,9 @@ begin
           using errcode = '22023';
       end if;
     else
-      begin
-        v_expected := btrim(v_raw)::numeric;
-      exception when others then
-        raise exception 'card_op welcome_offer does not match review_fields'
-          using errcode = '22023';
-      end;
-      if (v_offer ->> 'rate')::numeric is distinct from v_expected then
+      v_expected := public.review_parse_non_neg_number(v_raw);
+      if v_expected is null
+         or (v_offer ->> 'rate')::numeric is distinct from v_expected then
         raise exception 'card_op welcome_offer does not match review_fields'
           using errcode = '22023';
       end if;
@@ -391,7 +411,7 @@ begin
   -- welcome_bonus.valid_from → validFrom
   if public.review_field_saved(p_review_fields, 'welcome_bonus.valid_from') then
     v_raw := nullif(btrim(coalesce(public.review_saved_raw(p_review_fields, 'welcome_bonus.valid_from'), '')), '');
-    if v_raw is null then
+    if public.review_value_is_clear(v_raw) then
       if nullif(btrim(v_offer ->> 'validFrom'), '') is not null then
         raise exception 'card_op welcome_offer does not match review_fields'
           using errcode = '22023';
@@ -411,7 +431,7 @@ begin
   -- welcome_bonus.valid_to → validTo
   if public.review_field_saved(p_review_fields, 'welcome_bonus.valid_to') then
     v_raw := nullif(btrim(coalesce(public.review_saved_raw(p_review_fields, 'welcome_bonus.valid_to'), '')), '');
-    if v_raw is null then
+    if public.review_value_is_clear(v_raw) then
       if nullif(btrim(v_offer ->> 'validTo'), '') is not null then
         raise exception 'card_op welcome_offer does not match review_fields'
           using errcode = '22023';
@@ -434,7 +454,7 @@ begin
       btrim(coalesce(public.review_saved_raw(p_review_fields, 'welcome_bonus.new_cardholders_only'), '')),
       ''
     );
-    if v_raw is null then
+    if public.review_value_is_clear(v_raw) then
       if v_offer ? 'newCardholdersOnly'
          and v_offer -> 'newCardholdersOnly' is not null
          and v_offer -> 'newCardholdersOnly' <> 'null'::jsonb then
@@ -532,16 +552,11 @@ begin
       end if;
     end if;
 
-    v_saved := public.review_saved_value(p_review_fields, 'annual_fee');
-    if v_saved is not null then
+    if public.review_field_saved(p_review_fields, 'annual_fee') then
       v_allowed := v_allowed || array['annual_fee'];
-      begin
-        v_fee := v_saved::numeric;
-      exception when others then
-        raise exception 'card_op annual_fee does not match review_fields'
-          using errcode = '22023';
-      end;
-      if not (v_payload ? 'annual_fee')
+      v_fee := public.review_parse_non_neg_number(public.review_saved_raw(p_review_fields, 'annual_fee'));
+      if v_fee is null
+         or not (v_payload ? 'annual_fee')
          or (v_payload ->> 'annual_fee')::numeric is distinct from v_fee then
         raise exception 'card_op annual_fee does not match review_fields'
           using errcode = '22023';
@@ -628,15 +643,10 @@ begin
         using errcode = '22023';
     end if;
 
-    v_saved := public.review_saved_value(p_review_fields, 'annual_fee');
-    if v_saved is not null then
-      begin
-        v_fee := v_saved::numeric;
-      exception when others then
-        raise exception 'card_op annual_fee does not match review_fields'
-          using errcode = '22023';
-      end;
-      if (v_payload ->> 'annual_fee')::numeric is distinct from v_fee then
+    if public.review_field_saved(p_review_fields, 'annual_fee') then
+      v_fee := public.review_parse_non_neg_number(public.review_saved_raw(p_review_fields, 'annual_fee'));
+      if v_fee is null
+         or (v_payload ->> 'annual_fee')::numeric is distinct from v_fee then
         raise exception 'card_op annual_fee does not match review_fields'
           using errcode = '22023';
       end if;
@@ -688,6 +698,7 @@ revoke all on function public.review_saved_value(jsonb, text) from public, anon,
 revoke all on function public.review_saved_raw(jsonb, text) from public, anon, authenticated;
 revoke all on function public.review_field_saved(jsonb, text) from public, anon, authenticated;
 revoke all on function public.review_value_is_clear(text) from public, anon, authenticated;
+revoke all on function public.review_parse_non_neg_number(text, boolean) from public, anon, authenticated;
 revoke all on function public.review_has_saved_prefix(jsonb, text) from public, anon, authenticated;
 revoke all on function public.map_review_network(text) from public, anon, authenticated;
 revoke all on function public.validate_reward_categories(jsonb) from public, anon, authenticated;
