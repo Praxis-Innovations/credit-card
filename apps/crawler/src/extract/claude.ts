@@ -1,5 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import { MAX_CARD_TEXT_CHARS, MAX_COMPARE_LINKS, MAX_COMPARE_TEXT_CHARS } from "../config";
+import { MAX_CARD_TEXT_CHARS, MAX_COMPARE_LINKS, MAX_COMPARE_TEXT_CHARS, MAX_OUTPUT_TOKENS } from "../config";
 import type { CardLink, PageLink, Usage } from "../types";
 import { coerceExtraction, stampSourceUrl, type CardExtraction } from "./schema";
 import { CARD_TOOL_SCHEMA, LINKS_TOOL_SCHEMA } from "./schema-tool";
@@ -19,10 +19,13 @@ export interface Extractor {
   }): Promise<{ extraction: CardExtraction; usage: Usage }>;
 }
 
-/** The slice of the SDK we use, so tests can pass a stub. */
+/**
+ * The slice of the SDK we use, so tests can pass a stub. Streaming because the SDK
+ * rejects non-streaming requests with max_tokens above ~21k.
+ */
 export interface MessagesClient {
   messages: {
-    create(params: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message>;
+    stream(params: Anthropic.MessageStreamParams): { finalMessage(): Promise<Anthropic.Message> };
   };
 }
 
@@ -63,7 +66,11 @@ function usageOf(msg: Anthropic.Message): Usage {
 }
 
 function toolInput(msg: Anthropic.Message, tool: string): unknown {
-  if (msg.stop_reason === "max_tokens") throw new Error(`Claude hit max_tokens before finishing ${tool}`);
+  if (msg.stop_reason === "max_tokens") {
+    throw new Error(
+      `Claude hit max_tokens before finishing ${tool} (output_tokens=${msg.usage.output_tokens}, max_tokens=${MAX_OUTPUT_TOKENS})`,
+    );
+  }
   const block = msg.content.find((b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === tool);
   if (!block) throw new Error(`Claude did not call ${tool} (stop_reason=${msg.stop_reason})`);
   return block.input;
@@ -81,9 +88,9 @@ export class ClaudeExtractor implements Extractor {
       .slice(0, MAX_COMPARE_LINKS)
       .map((l, i) => `${i + 1}. ${l.text || "(no text)"} | ${l.url}`)
       .join("\n");
-    const msg = await this.client.messages.create({
+    const msg = await this.client.messages.stream({
       model: this.model,
-      max_tokens: 4096,
+      max_tokens: MAX_OUTPUT_TOKENS,
       system: LINKS_SYSTEM,
       tools: [
         {
@@ -101,7 +108,7 @@ export class ClaudeExtractor implements Extractor {
           content: `Issuer: ${input.issuer}\nPage: ${input.pageUrl}\n\n<page_text>\n${truncate(input.pageText, MAX_COMPARE_TEXT_CHARS)}\n</page_text>\n\n<links>\n${list}\n</links>`,
         },
       ],
-    });
+    }).finalMessage();
     const raw = toolInput(msg, "report_card_pages") as { cards?: unknown };
     const cards: CardLink[] = (Array.isArray(raw.cards) ? raw.cards : []).flatMap((c) =>
       c && typeof c === "object" && typeof (c as CardLink).url === "string"
@@ -112,9 +119,9 @@ export class ClaudeExtractor implements Extractor {
   }
 
   async extractCard(input: { issuer: string; pageUrl: string; pageText: string }) {
-    const msg = await this.client.messages.create({
+    const msg = await this.client.messages.stream({
       model: this.model,
-      max_tokens: 4096,
+      max_tokens: MAX_OUTPUT_TOKENS,
       system: CARD_SYSTEM,
       tools: [
         {
@@ -131,7 +138,7 @@ export class ClaudeExtractor implements Extractor {
           content: `Issuer: ${input.issuer}\nPage: ${input.pageUrl}\n\n<page_text>\n${truncate(input.pageText, MAX_CARD_TEXT_CHARS)}\n</page_text>`,
         },
       ],
-    });
+    }).finalMessage();
     const extraction = stampSourceUrl(coerceExtraction(toolInput(msg, "record_card")), input.pageUrl);
     return { extraction, usage: usageOf(msg) };
   }

@@ -1,8 +1,12 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it, vi } from "vitest";
+import { MAX_OUTPUT_TOKENS } from "../config";
 import { ClaudeExtractor, type MessagesClient } from "./claude";
 
-function message(input: unknown, opts: { name?: string; stop?: Anthropic.Message["stop_reason"] } = {}): Anthropic.Message {
+function message(
+  input: unknown,
+  opts: { name?: string; stop?: Anthropic.Message["stop_reason"]; outputTokens?: number } = {},
+): Anthropic.Message {
   return {
     id: "msg_1",
     type: "message",
@@ -11,13 +15,13 @@ function message(input: unknown, opts: { name?: string; stop?: Anthropic.Message
     stop_reason: opts.stop ?? "tool_use",
     stop_sequence: null,
     content: [{ type: "tool_use", id: "tu_1", name: opts.name ?? "record_card", input } as Anthropic.ToolUseBlock],
-    usage: { input_tokens: 1200, output_tokens: 300 },
+    usage: { input_tokens: 1200, output_tokens: opts.outputTokens ?? 300 },
   } as Anthropic.Message;
 }
 
 function stub(msg: Anthropic.Message) {
-  const create = vi.fn(async () => msg);
-  return { client: { messages: { create } } as unknown as MessagesClient, create };
+  const create = vi.fn<MessagesClient["messages"]["stream"]>(() => ({ finalMessage: async () => msg }));
+  return { client: { messages: { stream: create } }, create };
 }
 
 describe("ClaudeExtractor.extractCard", () => {
@@ -61,8 +65,9 @@ describe("ClaudeExtractor.extractCard", () => {
       pageText: "Gold Card",
     });
 
-    const params = (create.mock.calls[0] as unknown as [Anthropic.MessageCreateParamsNonStreaming])[0];
+    const params = create.mock.calls[0]![0];
     expect(params.model).toBe("claude-sonnet-5-5");
+    expect(params.max_tokens).toBe(MAX_OUTPUT_TOKENS);
     expect(params.tool_choice).toEqual({ type: "auto" });
     expect(params.messages[0]!.content).toContain("<page_text>\nGold Card\n</page_text>");
 
@@ -86,9 +91,15 @@ describe("ClaudeExtractor.extractCard", () => {
     await expect(
       new ClaudeExtractor(stub(noTool).client, "m").extractCard({ issuer: "x", pageUrl: "u", pageText: "t" }),
     ).rejects.toThrow(/did not call record_card/);
+  });
+
+  it("reports the output token count when Claude hits max_tokens", async () => {
+    const truncated = message({}, { stop: "max_tokens", outputTokens: MAX_OUTPUT_TOKENS });
     await expect(
-      new ClaudeExtractor(stub(message({}, { stop: "max_tokens" })).client, "m").extractCard({ issuer: "x", pageUrl: "u", pageText: "t" }),
-    ).rejects.toThrow(/max_tokens/);
+      new ClaudeExtractor(stub(truncated).client, "m").extractCard({ issuer: "x", pageUrl: "u", pageText: "t" }),
+    ).rejects.toThrow(
+      `Claude hit max_tokens before finishing record_card (output_tokens=${MAX_OUTPUT_TOKENS}, max_tokens=${MAX_OUTPUT_TOKENS})`,
+    );
   });
 });
 
@@ -103,9 +114,17 @@ describe("ClaudeExtractor.discoverCardLinks", () => {
       pageText: "Compare",
       links: [{ url: "https://b.example/gold.html", text: "Gold card" }],
     });
-    const params = (create.mock.calls[0] as unknown as [Anthropic.MessageCreateParamsNonStreaming])[0];
+    const params = create.mock.calls[0]![0];
+    expect(params.max_tokens).toBe(MAX_OUTPUT_TOKENS);
     expect(params.tool_choice).toEqual({ type: "auto" });
     expect(params.messages[0]!.content).toContain("1. Gold card | https://b.example/gold.html");
     expect(res.cards).toEqual([{ card_name: "Gold", url: "https://b.example/gold.html" }]);
+  });
+
+  it("reports the output token count when Claude hits max_tokens", async () => {
+    const truncated = message({}, { name: "report_card_pages", stop: "max_tokens", outputTokens: 9000 });
+    await expect(
+      new ClaudeExtractor(stub(truncated).client, "m").discoverCardLinks({ issuer: "Bank", pageUrl: "u", pageText: "t", links: [] }),
+    ).rejects.toThrow(/finishing report_card_pages \(output_tokens=9000,/);
   });
 });

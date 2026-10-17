@@ -12,6 +12,8 @@ export const ROBOTS_TIMEOUT_MS = 10_000;
 export const MAX_COMPARE_TEXT_CHARS = 40_000;
 export const MAX_CARD_TEXT_CHARS = 60_000;
 export const MAX_COMPARE_LINKS = 400;
+/** Output budget per Claude call; the full card schema (MCCs, caps, tiers, offers, quotes) can run long. */
+export const MAX_OUTPUT_TOKENS = 32_000;
 
 export const DEFAULT_MODEL = "claude-sonnet-5-5";
 
