@@ -5,7 +5,7 @@ import {
   STORE_CODE_KINDS,
   type MerchantCodeFinding,
 } from "@/lib/mcc-review/types";
-import { fetchAllRows } from "./fetch-all";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { toListItem } from "./present";
 import {
   BRAND_COLUMNS,

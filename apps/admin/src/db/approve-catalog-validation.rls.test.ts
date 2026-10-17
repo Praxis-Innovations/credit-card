@@ -1,0 +1,337 @@
+import type { PGlite } from "@electric-sql/pglite";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { asRole, createMigratedDb, jwtClaims } from "@/test/supabase-db";
+
+const VALIDATOR = jwtClaims({ email: "validator@example.com" });
+const RUN = "'00000000-0000-4000-8000-0000000000aa'";
+const FIELDS = {
+  fields: [{ key: "annual_fee", save: true, page_value: "120", value: "599" }],
+};
+const EARN_FIELDS = {
+  fields: [{ key: "earn_rates[0].rate", save: true, page_value: "1", value: "2" }],
+};
+
+/** Live scotia-gold-amex catalog earn rules (seed). */
+const SCOTIA_GOLD_CATEGORIES = [
+  { category: "groceries", earnRate: 5, capMonthly: 2000 },
+  { category: "entertainment", earnRate: 5, capMonthly: 2000 },
+  { category: "dining", earnRate: 3 },
+  { category: "transit", earnRate: 2 },
+  { category: "gas", earnRate: 1 },
+  { category: "travel", earnRate: 1 },
+  { category: "drugstore", earnRate: 1 },
+  { category: "recurring_bills", earnRate: 1 },
+  { category: "foreign_currency", earnRate: 1 },
+  { category: "other", earnRate: 1 },
+];
+
+let db: PGlite;
+
+beforeAll(async () => {
+  db = await createMigratedDb();
+  await db.exec(`
+    insert into public.admin_users (email, role) values
+      ('validator@example.com', 'validator'),
+      ('viewer@example.com', 'viewer');
+    insert into public.crawl_runs (id, source_id, source_scope, trigger, status, started_at)
+      select '00000000-0000-4000-8000-0000000000aa', id, 'Scotiabank', 'cli', 'running', now()
+      from public.crawl_sources where issuer_name = 'Scotiabank';
+    insert into public.card_findings (run_id, source_id, product_url, card_name, extracted, diff_kind, linked_card_id)
+      select '00000000-0000-4000-8000-0000000000aa', id,
+        'https://www.scotiabank.com/ca/en/personal/credit-cards/american-express/gold-card.html',
+        'Scotiabank Gold American Express Card', '{"annual_fee": {"value": 120, "quote": "$120"}}', 'changed',
+        'scotia-gold-amex'
+      from public.crawl_sources where issuer_name = 'Scotiabank';
+  `);
+}, 60_000);
+
+afterAll(async () => {
+  await db?.close();
+});
+
+function updateCardOp(annualFee: number) {
+  return {
+    op: "update",
+    id: "scotia-gold-amex",
+    set: {
+      annual_fee: annualFee,
+      last_verified: "2026-10-16",
+      verified_at: "2026-10-16T12:00:00.000Z",
+      status: "verified",
+    },
+  };
+}
+
+function rewardCategoriesOp(categories: unknown, extras: Record<string, unknown> = {}) {
+  return {
+    op: "update",
+    id: "scotia-gold-amex",
+    set: {
+      ...extras,
+      reward_categories: categories,
+      last_verified: "2026-10-16",
+      verified_at: "2026-10-16T12:00:00.000Z",
+      status: "verified",
+    },
+  };
+}
+
+/** Live scotia-gold-amex welcome_offer (seed). */
+const SCOTIA_GOLD_WELCOME = {
+  summary: "40,000 Scene+ points after spend",
+  estimatedValueCad: 400,
+};
+
+function welcomeOfferOp(offer: unknown) {
+  return {
+    op: "update",
+    id: "scotia-gold-amex",
+    set: {
+      welcome_offer: offer,
+      last_verified: "2026-10-16",
+      verified_at: "2026-10-16T12:00:00.000Z",
+      status: "verified",
+    },
+  };
+}
+
+function approve(fields: unknown, cardOp: unknown) {
+  return asRole(db, "authenticated", VALIDATOR, (tx) =>
+    tx.query(
+      `select public.approve_finding_to_catalog(
+        (select id from public.card_findings where run_id = ${RUN} and review_status = 'pending'),
+        $1::jsonb, $2::jsonb
+      )`,
+      [JSON.stringify(fields), JSON.stringify(cardOp)],
+    ),
+  );
+}
+
+describe("approve_finding_to_catalog validation", () => {
+  it("rejects a p_card_op whose annual_fee diverges from review_fields", async () => {
+    await expect(approve(FIELDS, updateCardOp(1))).rejects.toThrow(
+      /card_op annual_fee does not match review_fields/,
+    );
+  });
+
+  it("rejects unjustified reward_categories on update", async () => {
+    await expect(
+      approve(FIELDS, rewardCategoriesOp([{ category: "other", earnRate: 99 }], { annual_fee: 599 })),
+    ).rejects.toThrow(/card_op\.set contains unjustified key reward_categories/);
+  });
+
+  it("rejects non-array reward_categories when earn rules are saved", async () => {
+    await expect(approve(EARN_FIELDS, rewardCategoriesOp({ not: "an array" }))).rejects.toThrow(
+      /reward_categories must be a json array/,
+    );
+  });
+
+  it("rejects reward_categories with unknown category", async () => {
+    await expect(
+      approve(EARN_FIELDS, rewardCategoriesOp([{ category: "not_a_category", earnRate: 2 }])),
+    ).rejects.toThrow(/unknown category/);
+  });
+
+  it("rejects reward_categories with out-of-bounds earnRate", async () => {
+    await expect(
+      approve(EARN_FIELDS, rewardCategoriesOp([{ category: "other", earnRate: 101 }])),
+    ).rejects.toThrow(/earnRate out of bounds/);
+  });
+
+  it("rejects valid reward_categories whose earnRate diverges from saved earn_rate.<cat>", async () => {
+    const fields = {
+      fields: [{ key: "earn_rate.dining", save: true, page_value: "3", value: "3" }],
+    };
+    const mismatched = SCOTIA_GOLD_CATEGORIES.map((row) =>
+      row.category === "dining" ? { ...row, earnRate: 50 } : row,
+    );
+    await expect(approve(fields, rewardCategoriesOp(mismatched))).rejects.toThrow(
+      /card_op reward_categories does not match review_fields/,
+    );
+  });
+
+  it("rejects rewriting an uncovered category while saving earn_rate.<cat>", async () => {
+    const fields = {
+      fields: [{ key: "earn_rate.dining", save: true, page_value: "3", value: "3" }],
+    };
+    const rewritten = SCOTIA_GOLD_CATEGORIES.map((row) =>
+      row.category === "groceries" ? { ...row, earnRate: 99 } : row,
+    );
+    await expect(approve(fields, rewardCategoriesOp(rewritten))).rejects.toThrow(
+      /card_op reward_categories does not match review_fields/,
+    );
+  });
+
+  it("returns null without mutating cards when the finding is no longer pending", async () => {
+    const feeBefore = (
+      await db.query<{ annual_fee: string }>(`select annual_fee::text from public.cards where id = 'scotia-gold-amex'`)
+    ).rows[0]!.annual_fee;
+    const rpc = await db.transaction(async (tx) => {
+      await tx.query(
+        `update public.card_findings set review_status = 'rejected', review_note = 'taken' where run_id = ${RUN}`,
+      );
+      await tx.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify(VALIDATOR)]);
+      await tx.exec("set local role authenticated");
+      const { rows } = await tx.query<{ approve_finding_to_catalog: unknown }>(
+        `select public.approve_finding_to_catalog(
+          (select id from public.card_findings where run_id = ${RUN}),
+          $1::jsonb, $2::jsonb
+        ) as approve_finding_to_catalog`,
+        [JSON.stringify(FIELDS), JSON.stringify(updateCardOp(1))],
+      );
+      await tx.rollback();
+      return rows[0]!.approve_finding_to_catalog;
+    });
+    expect(rpc).toBeNull();
+    const feeAfter = (
+      await db.query<{ annual_fee: string }>(`select annual_fee::text from public.cards where id = 'scotia-gold-amex'`)
+    ).rows[0]!.annual_fee;
+    expect(feeAfter).toBe(feeBefore);
+  });
+});
+
+function networkFields(value: string) {
+  return { fields: [{ key: "network", save: true, page_value: "Amex", value }] };
+}
+
+function networkUpdateOp(network: string | null) {
+  return {
+    op: "update",
+    id: "scotia-gold-amex",
+    set: {
+      network,
+      last_verified: "2026-10-16",
+      verified_at: "2026-10-16T12:00:00.000Z",
+      status: "verified",
+    },
+  };
+}
+
+function newCardInsertOp(network: string | null) {
+  return {
+    op: "insert",
+    row: {
+      id: "scotiabank-network-clear-card",
+      name: "Network Clear Card",
+      issuer: "Scotiabank",
+      annual_fee: 0,
+      point_currency: "cashback",
+      reward_categories: [{ category: "other", earnRate: 1 }],
+      welcome_offer: null,
+      network,
+      last_verified: "2026-10-16",
+      verified_at: "2026-10-16T12:00:00.000Z",
+      status: "verified",
+    },
+  };
+}
+
+/** Approve inside a rolled-back transaction; returns the resulting card network. */
+async function approveAndReadNetwork(
+  findingSql: string,
+  cardId: string,
+  fields: unknown,
+  cardOp: unknown,
+  setup?: string,
+): Promise<string | null | undefined> {
+  return db.transaction(async (tx) => {
+    if (setup) await tx.exec(setup);
+    await tx.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify(VALIDATOR)]);
+    await tx.exec("set local role authenticated");
+    await tx.query(`select public.approve_finding_to_catalog((${findingSql}), $1::jsonb, $2::jsonb)`, [
+      JSON.stringify(fields),
+      JSON.stringify(cardOp),
+    ]);
+    await tx.exec("reset role");
+    const { rows } = await tx.query<{ network: string | null }>(
+      "select network from public.cards where id = $1",
+      [cardId],
+    );
+    await tx.rollback();
+    return rows[0]?.network;
+  });
+}
+
+const PENDING_GOLD = `select id from public.card_findings where run_id = ${RUN} and review_status = 'pending'`;
+const NEW_FINDING_SETUP = `
+  insert into public.card_findings (run_id, source_id, product_url, card_name, extracted, diff_kind)
+  select ${RUN}, id, 'https://www.scotiabank.com/ca/en/personal/credit-cards/network-clear.html',
+    'Network Clear Card', '{}'::jsonb, 'new'
+  from public.crawl_sources where issuer_name = 'Scotiabank';
+`;
+const NEW_FINDING = `select id from public.card_findings where card_name = 'Network Clear Card'`;
+
+describe("approve_finding_to_catalog network clear", () => {
+  it.each(["", "none"])("clears network on update when saved as %j", async (value) => {
+    const network = await approveAndReadNetwork(
+      PENDING_GOLD,
+      "scotia-gold-amex",
+      networkFields(value),
+      networkUpdateOp(null),
+    );
+    expect(network).toBeNull();
+  });
+
+  it.each(["", "none"])("inserts a null network when saved as %j", async (value) => {
+    const network = await approveAndReadNetwork(
+      NEW_FINDING,
+      "scotiabank-network-clear-card",
+      networkFields(value),
+      newCardInsertOp(null),
+      NEW_FINDING_SETUP,
+    );
+    expect(network).toBeNull();
+  });
+
+  it("rejects a non-null network on update when the saved network is cleared", async () => {
+    await expect(approve(networkFields("none"), networkUpdateOp("Visa"))).rejects.toThrow(
+      /card_op network does not match review_fields/,
+    );
+  });
+
+  it("rejects a non-null network on insert when the saved network is cleared", async () => {
+    await expect(
+      approveAndReadNetwork(
+        NEW_FINDING,
+        "scotiabank-network-clear-card",
+        networkFields(""),
+        newCardInsertOp("Visa"),
+        NEW_FINDING_SETUP,
+      ),
+    ).rejects.toThrow(/card_op network does not match review_fields/);
+  });
+});
+
+describe("approve_finding_to_catalog welcome_offer validation", () => {
+  it("rejects welcome_offer whose points diverge from saved welcome_bonus.points", async () => {
+    const fields = {
+      fields: [{ key: "welcome_bonus.points", save: true, page_value: "40000", value: "40000" }],
+    };
+    await expect(
+      approve(
+        fields,
+        welcomeOfferOp({
+          ...SCOTIA_GOLD_WELCOME,
+          summary: "40000 Scene+ points after spend",
+          points: 99999,
+        }),
+      ),
+    ).rejects.toThrow(/card_op welcome_offer does not match review_fields/);
+  });
+
+  it("rejects changing uncovered welcome_offer fields while saving welcome_bonus.points", async () => {
+    const fields = {
+      fields: [{ key: "welcome_bonus.points", save: true, page_value: "40000", value: "40000" }],
+    };
+    await expect(
+      approve(
+        fields,
+        welcomeOfferOp({
+          summary: "40000 Scene+ points after spend",
+          estimatedValueCad: 999,
+          points: 40000,
+        }),
+      ),
+    ).rejects.toThrow(/card_op welcome_offer does not match review_fields/);
+  });
+});

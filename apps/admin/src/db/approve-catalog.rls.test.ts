@@ -200,61 +200,6 @@ describe("approve_finding_to_catalog update", () => {
   });
 });
 
-describe("approve_finding_to_catalog validation", () => {
-  it("rejects non-array reward_categories on update", async () => {
-    await expect(
-      asRole(db, "authenticated", VALIDATOR, (tx) =>
-        tx.query(
-          `select public.approve_finding_to_catalog(
-            (select id from public.card_findings where run_id = ${RUN} and review_status = 'pending'),
-            $1::jsonb, $2::jsonb
-          )`,
-          [
-            JSON.stringify(FIELDS),
-            JSON.stringify({
-              op: "update",
-              id: "scotia-gold-amex",
-              set: {
-                reward_categories: { not: "an array" },
-                last_verified: "2026-10-16",
-                verified_at: "2026-10-16T12:00:00.000Z",
-                status: "verified",
-              },
-            }),
-          ],
-        ),
-      ),
-    ).rejects.toThrow(/reward_categories must be a json array/);
-  });
-
-  it("returns null without mutating cards when the finding is no longer pending", async () => {
-    const feeBefore = (
-      await db.query<{ annual_fee: string }>(`select annual_fee::text from public.cards where id = 'scotia-gold-amex'`)
-    ).rows[0]!.annual_fee;
-    const rpc = await db.transaction(async (tx) => {
-      await tx.query(
-        `update public.card_findings set review_status = 'rejected', review_note = 'taken' where run_id = ${RUN}`,
-      );
-      await tx.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify(VALIDATOR)]);
-      await tx.exec("set local role authenticated");
-      const { rows } = await tx.query<{ approve_finding_to_catalog: unknown }>(
-        `select public.approve_finding_to_catalog(
-          (select id from public.card_findings where run_id = ${RUN}),
-          $1::jsonb, $2::jsonb
-        ) as approve_finding_to_catalog`,
-        [JSON.stringify(FIELDS), JSON.stringify(updateCardOp(1))],
-      );
-      await tx.rollback();
-      return rows[0]!.approve_finding_to_catalog;
-    });
-    expect(rpc).toBeNull();
-    const feeAfter = (
-      await db.query<{ annual_fee: string }>(`select annual_fee::text from public.cards where id = 'scotia-gold-amex'`)
-    ).rows[0]!.annual_fee;
-    expect(feeAfter).toBe(feeBefore);
-  });
-});
-
 describe("approve_finding_to_catalog insert", () => {
   it("inserts a new verified card, links it, and audits the applied row", async () => {
     const out = await db.transaction(async (tx) => {

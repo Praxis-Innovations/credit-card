@@ -326,14 +326,21 @@ describe("crawler tables", () => {
     }
   });
 
-  it("lets a validator record a review decision and nothing else", async () => {
-    const reviewed = await asRole(db, "authenticated", VALIDATOR, (tx) =>
-      affected(
+  it("lets a validator reject a finding and nothing else", async () => {
+    const reviewed = await db.transaction(async (tx) => {
+      await tx.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify(VALIDATOR)]);
+      await tx.exec("set local role authenticated");
+      const n = await affected(
         tx,
-        `update public.card_findings set review_status = 'approved', reviewed_by = 'validator@example.com', reviewed_at = now()
+        `update public.card_findings
+         set review_status = 'rejected', review_note = 'not credible',
+             reviewed_by = 'validator@example.com', reviewed_at = now()
          where run_id = ${RUN}`,
-      ),
-    );
+      );
+      await tx.exec("reset role");
+      await tx.rollback();
+      return n;
+    });
     expect(reviewed).toBe(1);
     await expect(
       asRole(db, "authenticated", VALIDATOR, (tx) =>
@@ -420,21 +427,41 @@ describe("finding review", () => {
     expect(rows[0]!.n).toBe(0);
   });
 
-  it("lets a validator approve once, stamps the reviewer from the JWT, and audits field edits", async () => {
-    const fields = JSON.stringify({
+  it("does not let a validator approve via direct UPDATE", async () => {
+    await expect(
+      asRole(db, "authenticated", VALIDATOR, (tx) =>
+        tx.query(`update public.card_findings set review_status = 'approved' ${pending}`),
+      ),
+    ).rejects.toThrow(/row-level security/);
+    const { rows } = await db.query<{ review_status: string }>(
+      `select review_status from public.card_findings where run_id = ${RUN}`,
+    );
+    expect(rows[0]!.review_status).toBe("pending");
+  });
+
+  it("lets a validator approve once via RPC, stamps the reviewer from the JWT, and audits field edits", async () => {
+    const fields = {
       fields: [{ key: "annual_fee", save: true, page_value: "59", value: "599" }],
-    });
+    };
+    const cardOp = {
+      op: "update",
+      id: "scotia-gold-amex",
+      set: {
+        annual_fee: 599,
+        last_verified: "2026-10-16",
+        verified_at: "2026-10-16T12:00:00.000Z",
+        status: "verified",
+      },
+    };
     const out = await db.transaction(async (tx) => {
       await tx.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify(VALIDATOR)]);
       await tx.exec("set local role authenticated");
-      const first = await affected(
-        tx,
-        `update public.card_findings
-         set review_status = 'approved',
-             review_fields = '${fields}'::jsonb,
-             reviewed_by = 'someone.else@example.com',
-             reviewed_at = '2000-01-01'
-         ${pending}`,
+      await tx.query(
+        `select public.approve_finding_to_catalog(
+          (select id from public.card_findings where run_id = ${RUN} and review_status = 'pending'),
+          $1::jsonb, $2::jsonb
+        )`,
+        [JSON.stringify(fields), JSON.stringify(cardOp)],
       );
       const second = await affected(
         tx,
@@ -449,16 +476,13 @@ describe("finding review", () => {
       }>(`select review_status, reviewed_by, reviewed_at, review_fields from public.card_findings where run_id = ${RUN}`);
       const audit = await findingAudit(tx);
       await tx.rollback();
-      return { first, second, finding: rows[0]!, audit };
+      return { second, finding: rows[0]!, audit };
     });
 
-    expect(out.first).toBe(1);
     expect(out.second).toBe(0);
     expect(out.finding.review_status).toBe("approved");
     expect(out.finding.reviewed_by).toBe("validator@example.com");
-    expect(out.finding.review_fields).toEqual({
-      fields: [{ key: "annual_fee", save: true, page_value: "59", value: "599" }],
-    });
+    expect(out.finding.review_fields).toEqual(fields);
     expect(new Date(out.finding.reviewed_at).getFullYear()).toBeGreaterThan(2020);
     expect(out.audit).toHaveLength(1);
     expect(out.audit[0]).toMatchObject({
@@ -471,9 +495,7 @@ describe("finding review", () => {
         reviewed_by: "validator@example.com",
         card_name: "Scotiabank Gold American Express Card",
         linked_card_id: "scotia-gold-amex",
-        review_fields: {
-          fields: [{ key: "annual_fee", save: true, page_value: "59", value: "599" }],
-        },
+        review_fields: fields,
         edits: [{ key: "annual_fee", from: "59", to: "599" }],
       },
     });
@@ -482,19 +504,31 @@ describe("finding review", () => {
   });
 
   it("omits unsaved edited fields from audit edits", async () => {
-    const fields = JSON.stringify({
+    const fields = {
       fields: [
         { key: "annual_fee", save: true, page_value: "59", value: "599" },
         { key: "name", save: false, page_value: "Gold", value: "Gold Amex" },
       ],
-    });
+    };
+    const cardOp = {
+      op: "update",
+      id: "scotia-gold-amex",
+      set: {
+        annual_fee: 599,
+        last_verified: "2026-10-16",
+        verified_at: "2026-10-16T12:00:00.000Z",
+        status: "verified",
+      },
+    };
     const audit = await db.transaction(async (tx) => {
       await tx.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify(VALIDATOR)]);
       await tx.exec("set local role authenticated");
       await tx.query(
-        `update public.card_findings
-         set review_status = 'approved', review_fields = '${fields}'::jsonb
-         ${pending}`,
+        `select public.approve_finding_to_catalog(
+          (select id from public.card_findings where run_id = ${RUN} and review_status = 'pending'),
+          $1::jsonb, $2::jsonb
+        )`,
+        [JSON.stringify(fields), JSON.stringify(cardOp)],
       );
       await tx.exec("reset role");
       const rows = await findingAudit(tx);
@@ -503,12 +537,7 @@ describe("finding review", () => {
     });
     expect(audit).toHaveLength(1);
     expect(audit[0]!.after.edits).toEqual([{ key: "annual_fee", from: "59", to: "599" }]);
-    expect(audit[0]!.after.review_fields).toEqual({
-      fields: [
-        { key: "annual_fee", save: true, page_value: "59", value: "599" },
-        { key: "name", save: false, page_value: "Gold", value: "Gold Amex" },
-      ],
-    });
+    expect(audit[0]!.after.review_fields).toEqual(fields);
   });
 
   it("does not let a validator write review_fields without deciding the finding", async () => {
@@ -548,8 +577,8 @@ describe("finding review", () => {
     });
   });
 
-  it("only allows approved or rejected, and only the decision columns", async () => {
-    for (const status of ["ignored", "pending"]) {
+  it("only allows rejected via direct UPDATE, and only the decision columns", async () => {
+    for (const status of ["ignored", "pending", "approved"]) {
       await expect(
         asRole(db, "authenticated", VALIDATOR, (tx) =>
           tx.query(`update public.card_findings set review_status = '${status}' ${pending}`),
@@ -613,12 +642,18 @@ describe("finding review", () => {
     });
   });
 
-  it("recording the finding decision alone does not mutate cards (use the approve RPC)", async () => {
+  it("direct approve is blocked so the queue cannot clear without the catalog RPC", async () => {
     const cards = () => db.query<{ n: number }>("select count(*)::int as n from public.cards");
     const before = (await cards()).rows[0]!.n;
-    await asRole(db, "authenticated", VALIDATOR, (tx) =>
-      tx.query(`update public.card_findings set review_status = 'approved' ${pending}`),
-    );
+    await expect(
+      asRole(db, "authenticated", VALIDATOR, (tx) =>
+        tx.query(`update public.card_findings set review_status = 'approved' ${pending}`),
+      ),
+    ).rejects.toThrow(/row-level security/);
     expect((await cards()).rows[0]!.n).toBe(before);
+    const { rows } = await db.query<{ review_status: string }>(
+      `select review_status from public.card_findings where run_id = ${RUN}`,
+    );
+    expect(rows[0]!.review_status).toBe("pending");
   });
 });

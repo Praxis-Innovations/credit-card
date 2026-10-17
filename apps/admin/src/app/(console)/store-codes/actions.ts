@@ -23,6 +23,8 @@ function failure(message: string): AddTestPurchaseResult {
   return { ok: false, message };
 }
 
+type BrandRow = { id: string; name: string };
+
 type ValidatedPurchase = {
   date: string;
   statement: string;
@@ -36,6 +38,7 @@ type ValidatedPurchase = {
 };
 
 function validateFields(input: TestPurchaseInput): AddTestPurchaseResult | null {
+  if (!input.brandId.trim()) return failure("Pick a store brand.");
   const date = input.date.trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) {
     return failure("Pick a valid purchase date.");
@@ -74,16 +77,37 @@ async function loadCard(
   };
 }
 
+async function loadBrand(
+  supabase: SupabaseClient,
+  brandId: string,
+): Promise<BrandRow | null> {
+  const { data, error } = await supabase
+    .from("merchant_brands")
+    .select("id, name")
+    .eq("id", brandId.trim())
+    .maybeSingle();
+  if (error || !data) return null;
+  return { id: String(data.id), name: String(data.name) };
+}
+
+function brandNameMatches(inputName: string, dbName: string): boolean {
+  const typed = inputName.trim();
+  if (!typed) return true;
+  return typed.toLowerCase() === dbName.trim().toLowerCase();
+}
+
 function buildValidated(
   input: TestPurchaseInput,
   card: { id: string; name: string; network: string | null },
+  brand: BrandRow,
 ): ValidatedPurchase {
   const date = input.date.trim();
   const statement = input.statementText.trim();
   const shown = input.mccShown.trim();
   const categoryShown = input.categoryShown.trim();
   const parsed = chainFromStatement(statement);
-  const chain = input.brandName.trim() || parsed.chain;
+  // Chain / brand id come from the DB brand row, never the client name alone.
+  const chain = brand.name;
   const proposed = {
     date,
     card: card.name,
@@ -94,7 +118,7 @@ function buildValidated(
     category_shown: categoryShown || null,
     ...parsed,
     chain,
-    merchant_brand_id: input.brandId,
+    merchant_brand_id: brand.id,
     source_type: "test_purchase",
   };
   return {
@@ -104,7 +128,7 @@ function buildValidated(
     categoryShown,
     card,
     chain,
-    brandId: input.brandId,
+    brandId: brand.id,
     proposed,
     idempotencyKey: `${date}|${card.id}|${statement}`,
   };
@@ -158,15 +182,21 @@ export async function addTestPurchaseFinding(
   const fieldError = validateFields(input);
   if (fieldError) return fieldError;
 
+  const brand = await loadBrand(auth.supabase, input.brandId);
+  if (!brand) return failure("That store brand is not in the catalog.");
+  if (!brandNameMatches(input.brandName, brand.name)) {
+    return failure("Store brand name does not match the catalog.");
+  }
+
   const card = await loadCard(auth.supabase, input.cardId);
   if (!card) return failure("That card is not in the catalog.");
 
-  const validated = buildValidated(input, card);
+  const validated = buildValidated(input, card, brand);
   const writeError = await upsertFinding(auth.supabase, validated);
   if (writeError) return writeError;
 
   revalidatePath("/store-codes");
-  revalidatePath(`/store-codes/${encodeURIComponent(input.brandId)}`);
+  revalidatePath(`/store-codes/${encodeURIComponent(brand.id)}`);
   revalidatePath("/review");
   return {
     ok: true,
