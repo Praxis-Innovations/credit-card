@@ -90,6 +90,23 @@ describe("supabase migrations", () => {
     );
   });
 
+  it("seeds the Expo mobile API key as standard tier (not internal)", async () => {
+    const { rows } = await db.query<{
+      owner_label: string;
+      tier: string;
+      rate_limit_per_minute: number;
+    }>(
+      `select owner_label, tier::text as tier, rate_limit_per_minute
+       from public.api_keys
+       where key_hash = '08f44c4913063e05e5dcb4ff47f04f45eb197a07e34418427e5b23360e372183'`,
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.tier).toBe("standard");
+    expect(rows[0]!.rate_limit_per_minute).toBe(60);
+    expect(rows[0]!.owner_label.toLowerCase()).toMatch(/mobile|standard/);
+    expect(rows[0]!.owner_label.toLowerCase()).not.toMatch(/internal/);
+  });
+
   it("creates empty MCC tables with no seed rows", async () => {
     for (const table of [
       "mcc_codes",

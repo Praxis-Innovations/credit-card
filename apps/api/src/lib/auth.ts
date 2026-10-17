@@ -14,6 +14,9 @@ export interface ApiKeyRecord {
  * In-memory key hashes for static-catalog / unit-test mode (no Supabase).
  * Populated from NORTHTAP_STATIC_API_KEY at runtime, or via registerStaticApiKey
  * in tests — never hardcode plaintext keys in source.
+ *
+ * NORTHTAP_STATIC_API_KEY is server/CI only (internal tier). Never ship the
+ * same plaintext as EXPO_PUBLIC_NORTHTAP_API_KEY (standard-tier mobile key).
  */
 const STATIC_KEYS: Record<string, ApiKeyRecord> = {};
 

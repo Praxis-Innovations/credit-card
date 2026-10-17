@@ -67,9 +67,10 @@ from the `northtap-app` Vercel project (`vercel env pull --project northtap-app
 are disabled — see below) must set
 `EXPO_PUBLIC_NORTHTAP_API_URL=https://northtap-api.vercel.app` and
 `EXPO_PUBLIC_NORTHTAP_API_KEY`. The service-role key is never committed.
-`EXPO_PUBLIC_NORTHTAP_API_KEY` must equal `NORTHTAP_STATIC_API_KEY` on
-`northtap-api` and hash-match an active row in `public.api_keys` (SHA-256 of
-the plaintext, see `apps/api/src/lib/auth.ts`).
+`EXPO_PUBLIC_NORTHTAP_API_KEY` is a **standard**-tier client key (public in
+the app binary); it must hash-match the mobile/standard row in
+`public.api_keys` (SHA-256, see `apps/api/src/lib/auth.ts`). Do **not** reuse
+it as `NORTHTAP_STATIC_API_KEY` — that server/CI key is internal-tier only.
 
 Root scripts: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm test`.
 Card crawls: `pnpm --filter crawler crawl` (see [`apps/crawler/README.md`](./apps/crawler/README.md)).

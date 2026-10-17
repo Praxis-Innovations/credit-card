@@ -12,7 +12,6 @@
   "jscpd|apps/api/src/app/v1/merchant-brands/[id]/partnerships/route.ts|apps/api/src/app/v1/merchant-brands/[id]/route.ts": 1,
   "jscpd|apps/api/src/app/v1/merchant-brands/[id]/partnerships/route.ts|apps/api/src/app/v1/partnerships/[id]/route.ts": 1,
   "jscpd|apps/api/src/domain/recommend-merchant.ts|apps/api/src/domain/recommend.ts": 1,
-  "jscpd|apps/api/src/domain/schema.ts|apps/mobile/src/lib/api-types.ts": 1,
   "jscpd|apps/crawler/src/ci.ts|apps/crawler/src/cli.ts": 3,
   "jscpd|apps/mobile/src/components/flow/Buttons.tsx|apps/mobile/src/components/flow/Buttons.tsx": 1
 }

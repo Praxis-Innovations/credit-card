@@ -64,6 +64,10 @@
         "tests/**/*.ts"
       ],
       "project": ["**/*.ts"]
+    },
+    "packages/api-contract": {
+      "entry": ["src/index.ts", "src/**/*.test.ts", "vitest.config.ts"],
+      "project": ["src/**/*.{ts,tsx}", "*.{ts,tsx}"]
     }
   },
   "ignore": [
