@@ -22,9 +22,12 @@ test.describe("admin review", () => {
     const rowButton = page.getByRole("button", { name: approveName });
     await expect(rowButton).toBeVisible();
     await rowButton.click();
+    await page.waitForURL(/\/review\/[^/]+$/);
 
+    const detailPath = new URL(page.url()).pathname;
     await page.getByRole("button", { name: "Approve and next →" }).click();
-    // Approve navigates to the next pending card; confirm via the queue.
+    // runDecision only navigates after approveFinding resolves successfully.
+    await page.waitForURL((u) => u.pathname !== detailPath);
     await page.goto("/review");
     await expect(page.getByRole("button", { name: approveName })).toHaveCount(0);
   });
@@ -36,11 +39,14 @@ test.describe("admin review", () => {
     const rowButton = page.getByRole("button", { name: rejectName });
     await expect(rowButton).toBeVisible();
     await rowButton.click();
+    await page.waitForURL(/\/review\/[^/]+$/);
 
+    const detailPath = new URL(page.url()).pathname;
     await page.getByLabel("Reject reason").fill(
       "Fee quote does not match the current product page.",
     );
     await page.getByRole("button", { name: "Reject card" }).click();
+    await page.waitForURL((u) => u.pathname !== detailPath);
     await page.goto("/review");
     await expect(page.getByRole("button", { name: rejectName })).toHaveCount(0);
   });
