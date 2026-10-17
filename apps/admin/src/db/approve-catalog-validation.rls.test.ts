@@ -76,6 +76,25 @@ function rewardCategoriesOp(categories: unknown, extras: Record<string, unknown>
   };
 }
 
+/** Live scotia-gold-amex welcome_offer (seed). */
+const SCOTIA_GOLD_WELCOME = {
+  summary: "40,000 Scene+ points after spend",
+  estimatedValueCad: 400,
+};
+
+function welcomeOfferOp(offer: unknown) {
+  return {
+    op: "update",
+    id: "scotia-gold-amex",
+    set: {
+      welcome_offer: offer,
+      last_verified: "2026-10-16",
+      verified_at: "2026-10-16T12:00:00.000Z",
+      status: "verified",
+    },
+  };
+}
+
 function approve(fields: unknown, cardOp: unknown) {
   return asRole(db, "authenticated", VALIDATOR, (tx) =>
     tx.query(
@@ -168,5 +187,39 @@ describe("approve_finding_to_catalog validation", () => {
       await db.query<{ annual_fee: string }>(`select annual_fee::text from public.cards where id = 'scotia-gold-amex'`)
     ).rows[0]!.annual_fee;
     expect(feeAfter).toBe(feeBefore);
+  });
+});
+
+describe("approve_finding_to_catalog welcome_offer validation", () => {
+  it("rejects welcome_offer whose points diverge from saved welcome_bonus.points", async () => {
+    const fields = {
+      fields: [{ key: "welcome_bonus.points", save: true, page_value: "40000", value: "40000" }],
+    };
+    await expect(
+      approve(
+        fields,
+        welcomeOfferOp({
+          ...SCOTIA_GOLD_WELCOME,
+          summary: "40000 Scene+ points after spend",
+          points: 99999,
+        }),
+      ),
+    ).rejects.toThrow(/card_op welcome_offer does not match review_fields/);
+  });
+
+  it("rejects changing uncovered welcome_offer fields while saving welcome_bonus.points", async () => {
+    const fields = {
+      fields: [{ key: "welcome_bonus.points", save: true, page_value: "40000", value: "40000" }],
+    };
+    await expect(
+      approve(
+        fields,
+        welcomeOfferOp({
+          summary: "40000 Scene+ points after spend",
+          estimatedValueCad: 999,
+          points: 40000,
+        }),
+      ),
+    ).rejects.toThrow(/card_op welcome_offer does not match review_fields/);
   });
 });

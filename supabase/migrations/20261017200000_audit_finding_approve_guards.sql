@@ -28,6 +28,34 @@ as $$
   limit 1;
 $$;
 
+-- Raw saved value (distinguishes "not saved" from "saved empty").
+create or replace function public.review_saved_raw(p_review_fields jsonb, p_key text)
+returns text
+language sql
+stable
+set search_path = ''
+as $$
+  select f->>'value'
+  from jsonb_array_elements(p_review_fields -> 'fields') as f
+  where coalesce((f->>'save')::boolean, false)
+    and f->>'key' = p_key
+  limit 1;
+$$;
+
+create or replace function public.review_field_saved(p_review_fields jsonb, p_key text)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from jsonb_array_elements(p_review_fields -> 'fields') as f
+    where coalesce((f->>'save')::boolean, false)
+      and f->>'key' = p_key
+  );
+$$;
+
 create or replace function public.review_has_saved_prefix(p_review_fields jsonb, p_prefix text)
 returns boolean
 language sql
@@ -260,8 +288,190 @@ begin
 end;
 $$;
 
+-- Compare welcome_offer to saved welcome_bonus.* (mirrors catalog-write-offers.ts).
+create or replace function public.assert_welcome_offer_match_review(
+  p_offer jsonb,
+  p_review_fields jsonb,
+  p_existing jsonb
+)
+returns void
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_raw text;
+  v_expected numeric;
+  v_bool boolean;
+  v_offer jsonb := case
+    when p_offer is null or p_offer = 'null'::jsonb then '{}'::jsonb
+    else p_offer
+  end;
+  v_existing jsonb := case
+    when p_existing is null or p_existing = 'null'::jsonb then '{}'::jsonb
+    else p_existing
+  end;
+  v_cleared boolean := false;
+begin
+  if p_offer is not null
+     and p_offer <> 'null'::jsonb
+     and jsonb_typeof(p_offer) <> 'object' then
+    raise exception 'welcome_offer must be an object or null' using errcode = '22023';
+  end if;
+
+  -- welcome_bonus.points → points
+  if public.review_field_saved(p_review_fields, 'welcome_bonus.points') then
+    v_raw := coalesce(public.review_saved_raw(p_review_fields, 'welcome_bonus.points'), '');
+    if nullif(btrim(v_raw), '') is null then
+      v_cleared := true;
+      if v_offer ? 'points'
+         and v_offer -> 'points' is not null
+         and v_offer -> 'points' <> 'null'::jsonb then
+        raise exception 'card_op welcome_offer does not match review_fields'
+          using errcode = '22023';
+      end if;
+    else
+      begin
+        v_expected := btrim(v_raw)::numeric;
+      exception when others then
+        raise exception 'card_op welcome_offer does not match review_fields'
+          using errcode = '22023';
+      end;
+      if (v_offer ->> 'points')::numeric is distinct from v_expected then
+        raise exception 'card_op welcome_offer does not match review_fields'
+          using errcode = '22023';
+      end if;
+    end if;
+  elsif p_existing is not null then
+    if (v_offer -> 'points') is distinct from (v_existing -> 'points') then
+      raise exception 'card_op welcome_offer does not match review_fields'
+        using errcode = '22023';
+    end if;
+  end if;
+
+  -- welcome_bonus.rate → rate
+  if public.review_field_saved(p_review_fields, 'welcome_bonus.rate') then
+    v_raw := coalesce(public.review_saved_raw(p_review_fields, 'welcome_bonus.rate'), '');
+    if nullif(btrim(v_raw), '') is null then
+      if v_offer ? 'rate'
+         and v_offer -> 'rate' is not null
+         and v_offer -> 'rate' <> 'null'::jsonb then
+        raise exception 'card_op welcome_offer does not match review_fields'
+          using errcode = '22023';
+      end if;
+    else
+      begin
+        v_expected := btrim(v_raw)::numeric;
+      exception when others then
+        raise exception 'card_op welcome_offer does not match review_fields'
+          using errcode = '22023';
+      end;
+      if (v_offer ->> 'rate')::numeric is distinct from v_expected then
+        raise exception 'card_op welcome_offer does not match review_fields'
+          using errcode = '22023';
+      end if;
+    end if;
+  elsif p_existing is not null then
+    if (v_offer -> 'rate') is distinct from (v_existing -> 'rate') then
+      raise exception 'card_op welcome_offer does not match review_fields'
+        using errcode = '22023';
+    end if;
+  end if;
+
+  -- welcome_bonus.valid_from → validFrom
+  if public.review_field_saved(p_review_fields, 'welcome_bonus.valid_from') then
+    v_raw := nullif(btrim(coalesce(public.review_saved_raw(p_review_fields, 'welcome_bonus.valid_from'), '')), '');
+    if v_raw is null then
+      if nullif(btrim(v_offer ->> 'validFrom'), '') is not null then
+        raise exception 'card_op welcome_offer does not match review_fields'
+          using errcode = '22023';
+      end if;
+    elsif nullif(btrim(v_offer ->> 'validFrom'), '') is distinct from v_raw then
+      raise exception 'card_op welcome_offer does not match review_fields'
+        using errcode = '22023';
+    end if;
+  elsif p_existing is not null then
+    if nullif(btrim(v_offer ->> 'validFrom'), '')
+         is distinct from nullif(btrim(v_existing ->> 'validFrom'), '') then
+      raise exception 'card_op welcome_offer does not match review_fields'
+        using errcode = '22023';
+    end if;
+  end if;
+
+  -- welcome_bonus.valid_to → validTo
+  if public.review_field_saved(p_review_fields, 'welcome_bonus.valid_to') then
+    v_raw := nullif(btrim(coalesce(public.review_saved_raw(p_review_fields, 'welcome_bonus.valid_to'), '')), '');
+    if v_raw is null then
+      if nullif(btrim(v_offer ->> 'validTo'), '') is not null then
+        raise exception 'card_op welcome_offer does not match review_fields'
+          using errcode = '22023';
+      end if;
+    elsif nullif(btrim(v_offer ->> 'validTo'), '') is distinct from v_raw then
+      raise exception 'card_op welcome_offer does not match review_fields'
+        using errcode = '22023';
+    end if;
+  elsif p_existing is not null then
+    if nullif(btrim(v_offer ->> 'validTo'), '')
+         is distinct from nullif(btrim(v_existing ->> 'validTo'), '') then
+      raise exception 'card_op welcome_offer does not match review_fields'
+        using errcode = '22023';
+    end if;
+  end if;
+
+  -- welcome_bonus.new_cardholders_only → newCardholdersOnly
+  if public.review_field_saved(p_review_fields, 'welcome_bonus.new_cardholders_only') then
+    v_raw := nullif(
+      btrim(coalesce(public.review_saved_raw(p_review_fields, 'welcome_bonus.new_cardholders_only'), '')),
+      ''
+    );
+    if v_raw is null then
+      if v_offer ? 'newCardholdersOnly'
+         and v_offer -> 'newCardholdersOnly' is not null
+         and v_offer -> 'newCardholdersOnly' <> 'null'::jsonb then
+        raise exception 'card_op welcome_offer does not match review_fields'
+          using errcode = '22023';
+      end if;
+    else
+      v_bool := case lower(v_raw)
+        when 'yes' then true
+        when 'true' then true
+        when 'no' then false
+        when 'false' then false
+        else null
+      end;
+      if v_bool is null
+         or (v_offer ->> 'newCardholdersOnly')::boolean is distinct from v_bool then
+        raise exception 'card_op welcome_offer does not match review_fields'
+          using errcode = '22023';
+      end if;
+    end if;
+  elsif p_existing is not null then
+    if (v_offer -> 'newCardholdersOnly') is distinct from (v_existing -> 'newCardholdersOnly') then
+      raise exception 'card_op welcome_offer does not match review_fields'
+        using errcode = '22023';
+    end if;
+  end if;
+
+  -- Uncovered catalog-only fields must stay identical on update.
+  -- summary may be rewritten when points are saved (catalog-write-offers.ts).
+  if p_existing is not null and not v_cleared then
+    if not public.review_field_saved(p_review_fields, 'welcome_bonus.points')
+       and nullif(btrim(v_offer ->> 'summary'), '')
+            is distinct from nullif(btrim(v_existing ->> 'summary'), '') then
+      raise exception 'card_op welcome_offer does not match review_fields'
+        using errcode = '22023';
+    end if;
+    if (v_offer -> 'estimatedValueCad') is distinct from (v_existing -> 'estimatedValueCad') then
+      raise exception 'card_op welcome_offer does not match review_fields'
+        using errcode = '22023';
+    end if;
+  end if;
+end;
+$$;
+
 -- Ensure p_card_op only writes values justified by saved review_fields.
 drop function if exists public.assert_card_op_matches_review(jsonb, jsonb, text, text, text);
+drop function if exists public.assert_card_op_matches_review(jsonb, jsonb, text, text, text, jsonb, jsonb);
 create or replace function public.assert_card_op_matches_review(
   p_card_op jsonb,
   p_review_fields jsonb,
@@ -269,7 +479,8 @@ create or replace function public.assert_card_op_matches_review(
   p_finding_card_name text,
   p_issuer_name text,
   p_existing_reward_categories jsonb default null,
-  p_extracted jsonb default null
+  p_extracted jsonb default null,
+  p_existing_welcome_offer jsonb default null
 )
 returns void
 language plpgsql
@@ -360,6 +571,11 @@ begin
         raise exception 'card_op welcome_offer required by review_fields'
           using errcode = '22023';
       end if;
+      perform public.assert_welcome_offer_match_review(
+        v_payload -> 'welcome_offer',
+        p_review_fields,
+        p_existing_welcome_offer
+      );
     end if;
 
     for v_key in select jsonb_object_keys(v_payload)
@@ -427,8 +643,13 @@ begin
       p_extracted
     );
 
-    if not v_has_welcome
-       and v_payload ? 'welcome_offer'
+    if v_has_welcome then
+      perform public.assert_welcome_offer_match_review(
+        v_payload -> 'welcome_offer',
+        p_review_fields,
+        null
+      );
+    elsif v_payload ? 'welcome_offer'
        and v_payload -> 'welcome_offer' is not null
        and v_payload -> 'welcome_offer' <> 'null'::jsonb then
       raise exception 'card_op welcome_offer not justified by review_fields'
@@ -439,12 +660,16 @@ end;
 $$;
 
 revoke all on function public.review_saved_value(jsonb, text) from public, anon, authenticated;
+revoke all on function public.review_saved_raw(jsonb, text) from public, anon, authenticated;
+revoke all on function public.review_field_saved(jsonb, text) from public, anon, authenticated;
 revoke all on function public.review_has_saved_prefix(jsonb, text) from public, anon, authenticated;
 revoke all on function public.map_review_network(text) from public, anon, authenticated;
 revoke all on function public.validate_reward_categories(jsonb) from public, anon, authenticated;
 revoke all on function public.assert_reward_categories_match_review(jsonb, jsonb, jsonb, jsonb)
   from public, anon, authenticated;
-revoke all on function public.assert_card_op_matches_review(jsonb, jsonb, text, text, text, jsonb, jsonb)
+revoke all on function public.assert_welcome_offer_match_review(jsonb, jsonb, jsonb)
+  from public, anon, authenticated;
+revoke all on function public.assert_card_op_matches_review(jsonb, jsonb, text, text, text, jsonb, jsonb, jsonb)
   from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------------
@@ -479,6 +704,7 @@ declare
   v_after jsonb;
   v_issuer_name text;
   v_existing_cats jsonb;
+  v_existing_welcome jsonb;
   v_actor text := coalesce(nullif(auth.jwt() ->> 'email', ''), 'system:' || session_user);
 begin
   if not public.is_admin('validator') then
@@ -514,8 +740,10 @@ begin
     v_op := p_card_op ->> 'op';
 
     v_existing_cats := null;
+    v_existing_welcome := null;
     if v_op = 'update' and v_finding.linked_card_id is not null then
-      select c.reward_categories into v_existing_cats
+      select c.reward_categories, c.welcome_offer
+        into v_existing_cats, v_existing_welcome
       from public.cards c
       where c.id = v_finding.linked_card_id;
     end if;
@@ -527,7 +755,8 @@ begin
       v_finding.card_name,
       v_issuer_name,
       v_existing_cats,
-      v_finding.extracted
+      v_finding.extracted,
+      v_existing_welcome
     );
 
     if v_op = 'insert' then
